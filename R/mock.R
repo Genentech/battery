@@ -37,7 +37,7 @@
 #'
 #' reactive value with that may have different logic here same code as default
 #'
-#' input#new("foo", function(value) {
+#' input$new("foo", function(value) {
 #'    if (missing(value)) {
 #'      self[["__foo"]]
 #'    } else {
@@ -257,7 +257,7 @@ renderUI <- function(expr) {
 #' Traverse substitute expression and extract all references to active elements
 #' created by activeInput
 #'
-#' @param s - named list: expr - substitute expr, env - parent env (value returned from renderUI)
+#' @params s - named list: expr - substitute expr, env - parent env (value returned from renderUI)
 extractActiveInputs <- function(data) {
   s <- data$expr
   env <- data$env
