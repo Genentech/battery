@@ -85,7 +85,7 @@ activeInput <- function(...) {
     if (!is.null(env$listeners[[name]])) {
       env$listeners[[name]] <- list()
     }
-    env$listeners[[name]] <<- append(
+    env$listeners[[name]] <- append(
       env$listeners[[name]],
       list(
         list(
@@ -136,7 +136,7 @@ activeInput <- function(...) {
               if (!identical(old, value)) {
                 listener$fn(old, value)
                 args <- list(old = old, value = value)
-                env$listeners[[name]][[i]]$calls <<- append(listener$calls, list(args))
+                env$listeners[[name]][[i]]$calls <- append(listener$calls, list(args))
               }
             }
           }
@@ -217,11 +217,11 @@ activeOutput <- function(...) {
           var$active$on(var$prop, function(oldInputVal, newInputVal) {
             ## store renderUI expression output in private variable (exposed)
             ## so you can get it using output[[name]]
-            env[[privateName]] <<- eval(value$expr, env = value$env)
+            env[[privateName]] <- eval(value$expr, env = value$env)
           })
         })
         ## initial value
-        env[[privateName]] <<- eval(value$expr, env = value$env)
+        env[[privateName]] <- eval(value$expr, env = value$env)
       }
     }
   }
