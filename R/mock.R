@@ -250,7 +250,7 @@ activeOutput <- function(...) {
 renderUI <- function(expr) {
   list(
     expr = substitute(expr),
-    env = parent.env(environment())
+    env =  parent.frame()
   )
 }
 
