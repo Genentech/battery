@@ -79,24 +79,29 @@
 activeInput <- function(...) {
   input <- list(...)
   env <- new.env()
+  env$calls <- list()
   env$listeners <- list()
 
   env$on <- function(event.name,
                      fn,
                      expr = NULL,
                      ignoreNULL = TRUE,
+                     debounceMillis = NULL,
                      observerName = NULL,
                      ...) {
-    if (is.null(env$listeners[[name]])) {
-      env$listeners[[name]] <- list()
+    if (is.null(env$listeners[[event.name]])) {
+      env$listeners[[event.name]] <- list()
+    }
+    if (is.null(env$calls[[event.name]])) {
+      env$calls[[event.name]] <- list()
     }
 
     if (!is.null(debounceMillis)) {
       fn <- fn %>% shiny::debounce(debounceMillis)
     }
 
-    env$listeners[[name]] <- c(
-      env$listeners[[name]],
+    env$listeners[[event.name]] <- c(
+      env$listeners[[event.name]],
       list(
         list(
           expr = expr,
@@ -108,14 +113,14 @@ activeInput <- function(...) {
       )
     )
   }
-  env$off <- function(name, expr, observerName = NULL) {
+  env$off <- function(event.name, expr, observerName = NULL) {
     if (is.null(expr)) {
-      env$listeners[[name]] <- list()
+      env$listeners[[event.name]] <- list()
     } else {
-      for (i in seq_along(env$listeners[[name]])) {
-        listener <- env$listeners[[name]][[i]]
+      for (i in seq_along(env$listeners[[event.name]])) {
+        listener <- env$listeners[[event.name]][[i]]
         if (listener$expr == expr || identical(observerName, listener$observerName)) {
-          env$listeners[[name]][[i]] <- NULL
+          env$listeners[[event.name]][i] <- NULL
         }
       }
     }
@@ -140,29 +145,33 @@ activeInput <- function(...) {
       }
     }
   }
-  env$new <- function(name, fn = NULL) {
+  env$new <- function(event.name, fn = NULL) {
     if (is.null(fn)) {
-      fn <- make.default.fn(name)
+      fn <- make.default.fn(event.name)
     } else {
       environment(fn) <- env
     }
     makeActiveBinding(
-      sym = name,
+      sym = event.name,
       fun = function(value) {
         if (missing(value)) {
           fn(value)
         } else {
-          old <- env[[name]]
+          old <- env[[event.name]]
           ret <- fn(value)
-          if (!is.null(env$listeners[[name]])) {
+          if (!is.null(env$listeners[[event.name]])) {
             ## invoke listeners added by on and add args to list of args to check later
-            for (i in seq_along(env$listeners[[name]])) {
-              listener <- env$listeners[[name]][[i]]
+            for (i in seq_along(env$listeners[[event.name]])) {
+              listener <- env$listeners[[event.name]][[i]]
               if (!identical(old, value) &&
                   (listener$ignoreNULL && is.null(value) || !is.null(value))) {
-                  listener$fn(old, value)
-                  args <- list(old = old, value = value)
-                  env$listeners[[name]][[i]]$calls <- append(listener$calls, list(args))
+                listener$fn(old, value)
+                args <- list(old = old, value = value)
+                env$calls[[event.name]] <- append(listener$calls, list(args))
+                ## case when observeEvent remove event (once option)
+                if (!is.null(env$listeners[[event.name]][i][[1]])) {
+                  env$listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
+                }
               }
             }
           }
@@ -201,15 +210,16 @@ is.active.input <- function(obj) {
 #' destroy previous created observer, so there are no duplicates
 #'
 #' @export
-observeEventMock <- function(value,
-                             expr,
+observeEventMock <- function(eventExpr,
+                             handlerExpr,
                              handler.env = parent.frame(),
                              ignoreInit = FALSE,
+                             ignoreNULL = TRUE,
                              observerName = NULL,
                              once = FALSE,
                              ...) {
-  s <- substitute(value)
-  expr <- substitute(expr)
+  s <- substitute(eventExpr)
+  expr <- substitute(handlerExpr)
   activeEnv <- handler.env[[deparse(s[[2]])]]
   name <- if (s[[1]] == '$') {
     as.character(s[[3]])
@@ -220,7 +230,8 @@ observeEventMock <- function(value,
       s[[3]]
     }
   }
-  if (!ignoreInit) {
+  initValue <- activeEnv[[name]]
+  if (!ignoreInit && !(ignoreNULL && is.null(initValue))) {
     eval(expr, env = handler.env)
   }
   if (is.active.input(activeEnv)) {
@@ -351,5 +362,8 @@ extractActiveInputs <- function(data) {
       }
     }
   }
+  names(result) <- sapply(result, function(meta) {
+    meta$name
+  })
   result
 }
