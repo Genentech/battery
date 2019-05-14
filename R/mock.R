@@ -81,19 +81,44 @@ activeInput <- function(...) {
   env <- new.env()
   env$listeners <- list()
 
-  env$on <- function(name, fn) {
-    if (!is.null(env$listeners[[name]])) {
+  env$on <- function(event.name,
+                     fn,
+                     expr = NULL,
+                     ignoreNULL = TRUE,
+                     observerName = NULL,
+                     ...) {
+    if (is.null(env$listeners[[name]])) {
       env$listeners[[name]] <- list()
     }
-    env$listeners[[name]] <- append(
+
+    if (!is.null(debounceMillis)) {
+      fn <- fn %>% shiny::debounce(debounceMillis)
+    }
+
+    env$listeners[[name]] <- c(
       env$listeners[[name]],
       list(
         list(
+          expr = expr,
+          ignoreNULL = ignoreNULL,
           calls = list(),
+          observerName = observerName,
           fn = fn
         )
       )
     )
+  }
+  env$off <- function(name, expr, observerName = NULL) {
+    if (is.null(expr)) {
+      env$listeners[[name]] <- list()
+    } else {
+      for (i in seq_along(env$listeners[[name]])) {
+        listener <- env$listeners[[name]][[i]]
+        if (listener$expr == expr || identical(observerName, listener$observerName)) {
+          env$listeners[[name]][[i]] <- NULL
+        }
+      }
+    }
   }
   ## read only prop to test if this env is activeInput
   makeActiveBinding(
@@ -133,10 +158,11 @@ activeInput <- function(...) {
             ## invoke listeners added by on and add args to list of args to check later
             for (i in seq_along(env$listeners[[name]])) {
               listener <- env$listeners[[name]][[i]]
-              if (!identical(old, value)) {
-                listener$fn(old, value)
-                args <- list(old = old, value = value)
-                env$listeners[[name]][[i]]$calls <- append(listener$calls, list(args))
+              if (!identical(old, value) &&
+                  (listener$ignoreNULL && is.null(value) || !is.null(value))) {
+                  listener$fn(old, value)
+                  args <- list(old = old, value = value)
+                  env$listeners[[name]][[i]]$calls <- append(listener$calls, list(args))
               }
             }
           }
@@ -170,28 +196,42 @@ is.active.input <- function(obj) {
   FALSE
 }
 
-#' Function used same as shiny observeEvent that use active binding input mocks
+#' Function used the same as battery::observeEvent (based on shiny::observeEvent)
+#' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+#' destroy previous created observer, so there are no duplicates
 #'
 #' @export
-#' @params value - active input expression input [[ name ]] input$name or input[["name"]]
-#' @params expr - expression to be evaluated when active input change value
-observeEvent <- function(value, expr = NULL) {
+observeEventMock <- function(value,
+                             expr,
+                             handler.env = parent.frame(),
+                             ignoreInit = FALSE,
+                             observerName = NULL,
+                             once = FALSE,
+                             ...) {
   s <- substitute(value)
-  frame <- parent.frame(environment())
   expr <- substitute(expr)
-  reactiveEnv <- frame[[deparse(s[[2]])]]
+  activeEnv <- handler.env[[deparse(s[[2]])]]
   name <- if (s[[1]] == '$') {
-    deparse(s[[3]])
+    as.character(s[[3]])
   } else if (s[[1]] == '[[') {
     if (class(s[[3]]) == 'name') {
-      frame[[deparse(s[[3]])]]
+      handler.env[[deparse(s[[3]])]]
     } else {
       s[[3]]
     }
   }
-  reactiveEnv$on(name, function(old, value) {
-    eval(expr)
-  })
+  if (!ignoreInit) {
+    eval(expr, env = handler.env)
+  }
+  if (is.active.input(activeEnv)) {
+    activeEnv$off(name, expr, observerName = observerName)
+    activeEnv$on(name, function(old, value) {
+      eval(expr, env = handler.env)
+      if (once) {
+        activeEnv$off(name, expr, observerName = observerName)
+      }
+    }, observerName = observerName, expr = expr, ...)
+  }
 }
 
 #' Function create active binding output mock to be used with renderUI mock
@@ -209,16 +249,17 @@ activeOutput <- function(...) {
         env[[privateName]]
       } else {
         vars <- extractActiveInputs(value)
-        #env[["__names"]] <- extractActiveInputs(value)
         ## we use lapply to create closure
         lapply(vars, function(var) {
+          ## remove previous listener for given expression (when called twice)
+          var$active$off(var$prop, value$expr)
           ## evaluate renderUI expression when extracted active input value changes
           ## this is listener the input need to be created with input$new
           var$active$on(var$prop, function(oldInputVal, newInputVal) {
             ## store renderUI expression output in private variable (exposed)
             ## so you can get it using output[[name]]
             env[[privateName]] <- eval(value$expr, env = value$env)
-          })
+          }, expr = value$expr)
         })
         ## initial value
         env[[privateName]] <- eval(value$expr, env = value$env)

@@ -110,6 +110,7 @@ Component <- R6::R6Class(
     input = NULL,
     output = NULL,
     session = NULL,
+    observeEvent = NULL,
     ## each subclass need to copy this field which is used as static fields
     ## right now only one static filed is used which is counter for instances
     ## of the class (for id used in getById and ns namespace)
@@ -123,7 +124,8 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          component.id = NULL, ...) {
+                          component.id = NULL, observeEvent = NULL,
+                          ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste("Components without parent need to define input, output ",
@@ -144,6 +146,12 @@ Component <- R6::R6Class(
         } else {
           self$session <- session
         }
+      }
+      ## prepare for testing using mock - single optional dependency injection
+      self$observeEvent <- if (is.null(observeEvent)) {
+        battery::observeEvent
+      } else {
+        observeEvent
       }
       private$handlers <- list()
       private$observers <- list()
@@ -266,7 +274,7 @@ Component <- R6::R6Class(
       self$createEvent(event)
 
       uuid <- uuid::UUIDgenerate()
-      observer <- observeEvent(self$input[[elementId]], {
+      observer <- self$observeEvent(self$input[[elementId]], {
         self$emit(event, self$input[[elementId]], include.self = TRUE)
       }, observerName = uuid)
 
@@ -309,13 +317,13 @@ Component <- R6::R6Class(
         }
         uuid <- uuid::UUIDgenerate()
         observer <- if (input) {
-          observeEvent(self$input[[event]], {
+          self$observeEvent(self$input[[event]], {
             handler(self$input[[event]], self)
           }, observerName = uuid, ignoreInit = !init, ...)
         } else {
           self$createEvent(event)
 
-          observeEvent(self$events[[event]], {
+          self$observeEvent(self$events[[event]], {
             if (is.null(self$events[[event]])) {
               handler()
             } else {
