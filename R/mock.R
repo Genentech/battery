@@ -191,6 +191,10 @@ activeInput <- function(...) {
   env
 }
 
+#' name used only inside renderUI in substitute phase
+#' @export
+isolate <- function(x) x
+
 #' Function for checking if object is actie input - used by extractActiveInputs
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
@@ -210,7 +214,7 @@ is.active.input <- function(obj) {
 #' destroy previous created observer, so there are no duplicates
 #'
 #' @export
-observeEventMock <- function(eventExpr,
+observeEvent <- function(eventExpr,
                              handlerExpr,
                              handler.env = parent.frame(),
                              ignoreInit = FALSE,
@@ -315,18 +319,49 @@ extractActiveInputs <- function(data) {
   env <- data$env
   ## traverse
   result <- list()
+  isolate <- FALSE
   for (i in seq_along(s)) {
-    if (length(s[[i]]) > 1) {
+    if (is.symbol(s[[i]]) && s[[i]] == 'isolate') {
+      isolate <- TRUE
+    }
+    if (length(s[[i]]) > 1 && !isolate) {
       ret <- extractActiveInputs(list(expr = s[[i]], env = env))
       if (length(ret) > 0) {
         result <- append(result, ret)
       }
-    }
-    if (is.name(s[[i]])) {
+    } else if (typeof(s[[i]]) == "language") {
+      ## foo() or x$foo() have type of 'language' and it have length == 1
+      fn <- NULL
+      if (is.symbol(s[[i]][[1]])) {
+        fn <- env[[deparse(s[[i]][[1]])]]
+      } else if (length(s[[i]][[1]]) > 1) {
+        expr <- s[[i]][[1]]
+        obj <- env[[deparse(expr[[2]])]]
+        prop <- if (expr[[1]] == '$') {
+          deparse(expr[[3]])
+        } else if (expr[[1]] == '[[') {
+          if (is.name(expr[[3]])) {
+            varName <- deparse(expr[[3]])
+            env[[varName]] ## get [[ name ]] from env
+          } else if (is.character(expr[[3]])) {
+            expr[[3]]
+          }
+        }
+        if (!is.null(prop)) {
+          fn <- obj[[prop]]
+        }
+      }
+      if (!is.null(fn)) {
+        ret <- extractActiveInputs(list(expr = body(fn), env = environment(fn)))
+        if (length(ret) > 0) {
+          result <- append(result, ret)
+        }
+      }
+    } else if (is.name(s[[i]])) {
       metaData <- NULL
       ## sub-expression foo$name
       if (s[[i]] == "$") {
-        name <- as.character(s[[i + 1]])
+        name <- deparse(s[[i + 1]])
         value <- env[[name]] ## get foo from env
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
@@ -339,9 +374,9 @@ extractActiveInputs <- function(data) {
         ## sub-expression is foo[[ name ]] or foo[[ "name" ]]
         ## first name need to be extracted from environment
         ## second is return as is because it's string
-        name <- as.character(s[[i + 1]])
+        name <- deparse(s[[i + 1]])
         prop <- if (is.name(s[[i + 2]])) {
-          varName <- as.character(s[[i + 2]])
+          varName <- deparse(s[[i + 2]])
           env[[varName]] ## get [[ name ]] from env
         } else if (is.character(s[[i + 2]])) {
           s[[ i + 2]]

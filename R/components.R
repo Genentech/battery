@@ -69,12 +69,6 @@
 ##
 ## the code will invoke initialize R6 class constructor and call constructor method
 ## with remaining parameters added when creating new object
-##
-## NOTE: if you'r creating child component you need to us appendChild on parent
-##       and pick a name, otherwise the tree will not be constructed properly
-##       and you will not have proper event propagation, there was problem
-##       with making this automatic and also you will have default name in
-##       self$children with append you can pick the name
 
 #' Base class for components
 #' @export
@@ -110,7 +104,6 @@ Component <- R6::R6Class(
     input = NULL,
     output = NULL,
     session = NULL,
-    observeEvent = NULL,
     ## each subclass need to copy this field which is used as static fields
     ## right now only one static filed is used which is counter for instances
     ## of the class (for id used in getById and ns namespace)
@@ -124,8 +117,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          component.id = NULL, observeEvent = NULL,
-                          ...) {
+                          component.id = NULL, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste("Components without parent need to define input, output ",
@@ -146,12 +138,6 @@ Component <- R6::R6Class(
         } else {
           self$session <- session
         }
-      }
-      ## prepare for testing using mock - single optional dependency injection
-      self$observeEvent <- if (is.null(observeEvent)) {
-        battery::observeEvent
-      } else {
-        observeEvent
       }
       private$handlers <- list()
       private$observers <- list()
