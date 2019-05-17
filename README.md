@@ -23,8 +23,8 @@ Button <- R6Class("Button",
       e
     },
     count = NULL,
-    constructor is artifical method so you don't need to call super
-    which you may forget to add
+    ## constructor is artifical method so you don't need to call super
+    ## which you may forget to add
     constructor = function(canEdit = TRUE) {
       self$connect("click", self$ns("button"))
       self$count <- 0
