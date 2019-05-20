@@ -1,87 +1,82 @@
-## Component base class
-## example usage:
-#
-## Button <- R6Class("Button",
-##   inherit = Component,
-##   public = list(
-##     static = {
-##       e <- new.env()
-##       e$count <- 0
-##       e
-##     },
-##     count = NULL,
-##     ## constructor is artifical method so you don't need to call super
-##     ## which you may forget to add
-##     constructor = function(canEdit = TRUE) {
-##       super$initialize(input, output, parent)
-##       self$connect("click", self$ns("button"))
-##       self$count <- 0
-##       self$on("click", function(e = NULL, target = NULL) {
-##         self$count <- self$count + 1
-##       }, enabled = canEdit)
-##       self$output[[self$ns("buttonOutput")]] <- renderUI({
-##         self$events$click
-##         tags$div(
-##           tags$span(self$count),
-##           actionButton(self$ns("button"), "click")
-##         )
-##       })
-##     },
-##     render = function() {
-##       tags$div(
-##         class = "button-component",
-##         uiOutput(self$ns("buttonOutput"))
-##       )
-##     }
-##   )
-## )
-## Panel <- R6Class("Panel",
-##   inherit = Component,
-##   public = list(
-##     static = {
-##       e <- new.env()
-##       e$count <- 0
-##       e
-##     },
-##     constructor = function(title) {
-##       self$title <- title
-##       btn <- Button$new()
-##       self$appendChild("button", btn)
-##       self$output[[self$ns("button")]] <- renderUI({
-##         btn$render()
-##       })
-##     },
-##     render = function() {
-##       tags$div(
-##         tags$h2(self$title),
-##         tags$div(uiOutput(self$ns("button")))
-##       )
-##     }
-##   )
-## )
-##
-## Root component that don't have parent need to be called with input output and session
-##
-## root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
-## output$root <- renderUI({
-##    root$render()
-## })
-##
-## the code will invoke initialize R6 class constructor and call constructor method
-## with remaining parameters added when creating new object
-
+#' Component base class
+#'
+#' Button <- R6Class('Button',
+#'   inherit = Component,
+#'   public = list(
+#'     static = {
+#'       e <- new.env()
+#'       e$count <- 0
+#'       e
+#'     },
+#'     count = NULL,
+#'     ## constructor is artifical method so you don't need to call super
+#'     ## which you may forget to add
+#'     constructor = function(canEdit = TRUE) {
+#'       super$initialize(input, output, parent)
+#'       self$connect('click', self$ns('button'))
+#'       self$count <- 0
+#'       self$on('click', function(e = NULL, target = NULL) {
+#'         self$count <- self$count + 1
+#'       }, enabled = canEdit)
+#'       self$output[[self$ns('buttonOutput')]] <- renderUI({
+#'         self$events$click
+#'         tags$div(
+#'           tags$span(self$count),
+#'           actionButton(self$ns('button'), 'click')
+#'         )
+#'       })
+#'     },
+#'     render = function() {
+#'       tags$div(
+#'         class = 'button-component',
+#'         uiOutput(self$ns('buttonOutput'))
+#'       )
+#'     }
+#'   )
+#' )
+#' Panel <- R6Class('Panel',
+#'   inherit = Component,
+#'   public = list(
+#'     static = {
+#'       e <- new.env()
+#'       e$count <- 0
+#'       e
+#'     },
+#'     constructor = function(title) {
+#'       self$title <- title
+#'       btn <- Button$new()
+#'       self$appendChild('button', btn)
+#'       self$output[[self$ns('button')]] <- renderUI({
+#'         btn$render()
+#'       })
+#'     },
+#'     render = function() {
+#'       tags$div(
+#'         tags$h2(self$title),
+#'         tags$div(uiOutput(self$ns('button')))
+#'       )
+#'     }
+#'   )
+#' )
+#'
+#' Root component that don't have parent need to be called with input output and session
+#'
+#' root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
+#' output$root <- renderUI({
+#'    root$render()
+#' })
+#'
+#' the code will invoke initialize R6 class constructor and call constructor method
+#' with remaining parameters added when creating new object
+#'
 #' Base class for components
 #' @export
 Component <- R6::R6Class(
-  classname = "Component",
+  classname = 'Component',
   private = list(
     handlers = NULL,
     observers = NULL,
-    global = {
-      g <- new.env()
-      g$components <- list()
-      g
-    },
+    global =  list2env(list(components = list())),
     ## ---------------------------------------------------------------
     trigger = function(name, data) {
       if (name %in% ls(self$events)) {
@@ -107,11 +102,7 @@ Component <- R6::R6Class(
     ## each subclass need to copy this field which is used as static fields
     ## right now only one static filed is used which is counter for instances
     ## of the class (for id used in getById and ns namespace)
-    static = {
-      static <- new.env()
-      static$count <- 0
-      static
-    },
+    static = list2env(list(count = 0)),
     ## ---------------------------------------------------------------
     ## :: native R6 class constructor
     ## ---------------------------------------------------------------
@@ -120,8 +111,8 @@ Component <- R6::R6Class(
                           component.id = NULL, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
-        stop(paste("Components without parent need to define input, output ",
-                   " and session in constructor"))
+        stop(paste('Components without parent need to define input, output ',
+                   ' and session in constructor'))
       } else {
         if (is.null(input)) {
           self$input <- parent$input
@@ -196,14 +187,14 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     appendChild = function(name, child) {
       if (!is.null(self$children[[name]])) {
-        stop(sprintf("Child with name `%s` already exists", name))
+        stop(sprintf('Child with name `%s` already exists', name))
       } else {
         self$children[[name]] <- child
       }
     },
     ## ---------------------------------------------------------------
     ns = function(name) {
-      paste0(self$id, "_", name)
+      paste0(self$id, '_', name)
     },
     ## ---------------------------------------------------------------
     ## :: create internal event that can be used in renderUI or render function
@@ -279,16 +270,16 @@ Component <- R6::R6Class(
     ## :: add event listener to given internal event or native input
     ## ::
     ## :: usage:
-    ## ::   self$on(self$ns("input"), function(value = NULL, target = NULL) {
+    ## ::   self$on(self$ns('input'), function(value = NULL, target = NULL) {
     ## ::   }, input = TRUE)
     ## :: or
-    ## ::   self$on("event", function(value = NULL, target = NULL) {
+    ## ::   self$on('event', function(value = NULL, target = NULL) {
     ## ::   })
     ## :: second event will be triggered if any of child components have
     ## :: called Component::connect or use parent component call
     ## :: Component::broadcast or child component Component::emit
     ## :: if component only waiting for internal events it need to call
-    ## :: Component::createEvent("name")
+    ## :: Component::createEvent('name')
     #'
     #' @param event - name of internal event or input id
     #' @param handler - function that should have value and target parameters
@@ -372,7 +363,80 @@ Component <- R6::R6Class(
     },
     ## ---------------------------------------------------------------
     render = function() {
-      stop("this function need to be overwritten in child class")
+      stop('this function need to be overwritten in child class')
     }
   )
 )
+
+merge.env <- function(...) {
+  as.environment(do.call('c', lapply(list(...), as.list)))
+}
+
+#' Helper function for defining components with additional static field. It can also be used
+#' so you don't confuse battery component with normal R6Class
+#'
+#' @param public - list of public functions and properties
+#' @param private - list of private functions and properties
+#' @param static - list of fields that will stay the same for every instance of the component
+#' @param inherit - base class - if not specifed it will inherit from Base class (battery::Component)
+#'
+#' @export
+component <- function(public = NULL,
+                      private = NULL,
+                      static = NULL,
+                      inherit = battery::Component,
+                      ...) {
+  static.env <- new.env()
+  static.env$count <- 0
+  if (!is.null(static)) {
+    for (name in names(static)) {
+      static.env[[name]] <- static[[name]]
+    }
+  }
+  class <- R6::R6Class(inherit = inherit, ...)
+  class$set('public', 'static', static.env)
+  r6.class.add(class, public)
+  r6.class.add(class, private)
+  class$extend <- make.extend(class)
+  class
+}
+
+#' helper function for adding properties to R6Class
+r6.class.add <- function(class, seq) {
+  prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
+  lapply(names(seq), function(name) {
+    if (is.function(seq[[name]])) {
+      ## the only way to have scope from when function was create with self and private
+      ## eval substitute simply circument R6 encapsulation and use scope from where function
+      ## was created (closure) and env.fn patch the env of inner function so it get self
+      ## and private as magic names - this is done so component function the same as
+      ## when R6Class is created inline - so component is referencial transparent and can
+      ## be replaced with R6Class
+      fn <- eval(substitute(function(...) {
+        fn <- fn.expr # fn.expr will be inline function expression
+        ## patch function env
+        parent <- parent.env(environment())
+        ## we don't overwrite function environment so
+        ## you can nest one constructor in another constructor
+        env <- new.env(parent = environment(fn))
+        env$self <- parent$self
+        env$super <- parent$super
+        env$private <- parent$private
+        environment(fn) <- env
+        fn(...)
+      }, list(fn.expr = seq[[name]])))
+      class$set(prop.name, name, fn)
+    } else {
+      class$set(prop.name, name, seq[[name]])
+    }
+  })
+}
+
+#' higher order function for creating extend static method on every battery::Component
+make.extend <- function(class) {
+  function(...) {
+    component(inherit = class, ...)
+  }
+}
+
+Component$extend <- make.extend(Component)

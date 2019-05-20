@@ -74,7 +74,7 @@
 
 #' Function create mock for shiny input
 #'
-#' @params args - initial active names
+#' @param args - initial active names
 #' @export
 activeInput <- function(...) {
   input <- list(...)
@@ -251,7 +251,7 @@ observeEvent <- function(eventExpr,
 
 #' Function create active binding output mock to be used with renderUI mock
 #'
-#' @params args - named initial active inputs
+#' @param args - named initial active inputs
 #' @export
 activeOutput <- function(...) {
   input <- list(...)
@@ -301,7 +301,7 @@ activeOutput <- function(...) {
 #' the output will parse the expression and bind input and output
 #' note: input can have different name for instance events in components
 #'
-#' @params expr - any expression
+#' @param expr - any expression
 #' @export
 renderUI <- function(expr) {
   list(
@@ -313,7 +313,7 @@ renderUI <- function(expr) {
 #' Traverse substitute expression and extract all references to active elements
 #' created by activeInput
 #'
-#' @params s - named list: expr - substitute expr, env - parent env (value returned from renderUI)
+#' @param s - named list: expr - substitute expr, env - parent env (value returned from renderUI)
 extractActiveInputs <- function(data) {
   s <- data$expr
   env <- data$env
@@ -321,21 +321,22 @@ extractActiveInputs <- function(data) {
   result <- list()
   isolate <- FALSE
   for (i in seq_along(s)) {
-    if (is.symbol(s[[i]]) && s[[i]] == 'isolate') {
+    item <- s[[i]]
+    if (is.symbol(item) && item == 'isolate') {
       isolate <- TRUE
     }
-    if (length(s[[i]]) > 1 && !isolate) {
-      ret <- extractActiveInputs(list(expr = s[[i]], env = env))
+    if (length(item) > 1 && !isolate) {
+      ret <- extractActiveInputs(list(expr = item, env = env))
       if (length(ret) > 0) {
         result <- append(result, ret)
       }
-    } else if (typeof(s[[i]]) == "language") {
+    } else if (typeof(item) == "language") {
       ## foo() or x$foo() have type of 'language' and it have length == 1
       fn <- NULL
-      if (is.symbol(s[[i]][[1]])) {
-        fn <- env[[deparse(s[[i]][[1]])]]
-      } else if (length(s[[i]][[1]]) > 1) {
-        expr <- s[[i]][[1]]
+      if (is.symbol(item[[1]])) {
+        fn <- env[[deparse(item[[1]])]]
+      } else if (length(item[[1]]) > 1) {
+        expr <- item[[1]]
         obj <- env[[deparse(expr[[2]])]]
         prop <- if (expr[[1]] == '$') {
           deparse(expr[[3]])
@@ -357,10 +358,10 @@ extractActiveInputs <- function(data) {
           result <- append(result, ret)
         }
       }
-    } else if (is.name(s[[i]])) {
+    } else if (is.name(item)) {
       metaData <- NULL
       ## sub-expression foo$name
-      if (s[[i]] == "$") {
+      if (item == "$") {
         name <- deparse(s[[i + 1]])
         value <- env[[name]] ## get foo from env
         if (!is.null(value) && is.active.input(value)) {
@@ -370,16 +371,17 @@ extractActiveInputs <- function(data) {
             prop = s[[i + 2]]
           )
         }
-      } else if (s[[i]] == '[[') {
+      } else if (item == '[[') {
+        arg <- s[[i + 2]]
         ## sub-expression is foo[[ name ]] or foo[[ "name" ]]
         ## first name need to be extracted from environment
         ## second is return as is because it's string
         name <- deparse(s[[i + 1]])
-        prop <- if (is.name(s[[i + 2]])) {
-          varName <- deparse(s[[i + 2]])
+        prop <- if (is.name(arg)) {
+          varName <- deparse(arg)
           env[[varName]] ## get [[ name ]] from env
-        } else if (is.character(s[[i + 2]])) {
-          s[[ i + 2]]
+        } else if (is.character(arg)) {
+          arg
         }
         if (!is.null(prop)) {
           value <- env[[name]] ## get input from env

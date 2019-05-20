@@ -6,6 +6,9 @@
 \usage{
 activeInput(...)
 }
+\arguments{
+\item{args}{- initial active names}
+}
 \description{
 usage:
 }

@@ -16,7 +16,7 @@ test_that('it should invoke observeEvent when called before creating active prop
   observeEvent(input$foo, {
     env$calls <- c(env$calls, list(input$foo))
   })
-  input$new("foo")
+  input$new('foo')
   input$foo <- 10
   expect_equal(env$calls, list(10))
 })

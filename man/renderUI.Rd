@@ -11,6 +11,9 @@ note: input can have different name for instance events in components}
 \usage{
 renderUI(expr)
 }
+\arguments{
+\item{expr}{- any expression}
+}
 \description{
 RenderUI just send exression to output active prop, the prop need to be added first
 if renderUI is called in constructor and it use self$ns() you can pass component.id to

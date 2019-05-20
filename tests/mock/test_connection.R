@@ -32,7 +32,7 @@ test_that('it should create single listener', {
     ret
   })
   input$foo <- 20
-  expect_equal(length(input$listeners[["foo"]]), 1)
+  expect_equal(length(input$listeners[['foo']]), 1)
   ## every renderUI will get called once - inital value - and once for reactive update
   expect_equal(env$calls, list(15, 15, 15, 30))
 })
@@ -95,12 +95,12 @@ test_that('it should bind in nested object method', {
   expect_equal(output$bar, 6)
   ## test string prop
   foo <- function() {
-    x[["foo"]]() + 1
+    x[['foo']]() + 1
   }
   input$foo <- 3
   expect_equal(output$bar, 7)
   ## test variable prop
-  name <- "foo"
+  name <- 'foo'
   foo <- function() {
     x[[name]]() + 1
   }
