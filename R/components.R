@@ -420,11 +420,12 @@ r6.class.add <- function(class, seq) {
         ## you can nest one constructor in another constructor
         env <- new.env(parent = environment(fn))
         env$self <- parent$self
+        env$static <- parent$self$static
         env$super <- parent$super
         env$private <- parent$private
         environment(fn) <- env
         fn(...)
-      }, list(fn.expr = seq[[name]])))
+      }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
     } else {
       class$set(prop.name, name, seq[[name]])

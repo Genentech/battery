@@ -9,6 +9,6 @@ test_dir <- function(dir) {
   testthat::test_dir(path)
 }
 
-test_dir("mock")
+test_dir("mocks")
 ## TODO
 ## test_dir("components")
