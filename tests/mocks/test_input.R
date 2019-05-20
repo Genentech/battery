@@ -16,6 +16,7 @@ test_that('it should create init binding', {
   }
 })
 
+## ----------------------------------------------------------------------------
 test_that('it create event before binding', {
   input <- activeInput()
   args <- NULL
@@ -27,6 +28,7 @@ test_that('it create event before binding', {
   expect_equal(args, list(NULL, 10))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should invoke listener', {
   input <- activeInput(foo = NULL)
   called <- FALSE
@@ -38,6 +40,7 @@ test_that('it should invoke listener', {
   expect_equal(called, TRUE)
 })
 
+## ----------------------------------------------------------------------------
 test_that('event have proper args', {
   input <- activeInput(foo = NULL)
   args <- list()
@@ -49,6 +52,7 @@ test_that('event have proper args', {
   expect_equal(args, list(list(NULL, 10), list(10, 20)))
 })
 
+## ----------------------------------------------------------------------------
 test_that('create proxy value', {
   input <- activeInput(foo = function(value) {
     if (missing(value)) {

@@ -9,6 +9,7 @@ test_that('it should invoke observeEvent', {
   expect_equal(env$calls, list(10))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should invoke observeEvent when called before creating active prop', {
   input <- activeInput()
   env <- new.env()
@@ -21,6 +22,7 @@ test_that('it should invoke observeEvent when called before creating active prop
   expect_equal(env$calls, list(10))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should clear observe event', {
   input <- activeInput(foo = NULL)
   env <- new.env()
@@ -35,6 +37,7 @@ test_that('it should clear observe event', {
   expect_equal(env$calls, list(10))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should invoke observer multiple times', {
   input <- activeInput(foo = NULL)
   env <- new.env()
@@ -49,6 +52,7 @@ test_that('it should invoke observer multiple times', {
   expect_equal(env$calls, list(10, 20, 30))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should invoke observer only once', {
   input <- activeInput(foo = NULL)
   env <- new.env()
@@ -63,6 +67,7 @@ test_that('it should invoke observer only once', {
   expect_equal(env$calls, list(10))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should call on NULL value', {
   input <- activeInput(foo = NULL)
   env <- new.env()

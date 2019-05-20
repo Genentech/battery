@@ -10,6 +10,7 @@ test_that('it should create input/output binding', {
   expect_equal(input$foo, 10)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should create single listener', {
   input <- activeInput(foo = NULL)
   output <- activeOutput(bar = NULL)
@@ -37,6 +38,7 @@ test_that('it should create single listener', {
   expect_equal(env$calls, list(15, 15, 15, 30))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in nested function', {
   foo <- function() {
     input$foo + 10
@@ -50,6 +52,7 @@ test_that('it should bind in nested function', {
   expect_equal(output$bar, 40)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in deep nested function', {
   foo <- function() {
     bar() + 1
@@ -69,6 +72,7 @@ test_that('it should bind in deep nested function', {
   expect_equal(output$bar, 5)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in nested object method', {
   x <- list(
     foo = function() {
@@ -107,6 +111,8 @@ test_that('it should bind in nested object method', {
   input$foo <- 4
   expect_equal(output$bar, 8)
 })
+
+## ----------------------------------------------------------------------------
 test_that('it should find active variable inside R constructs', {
   x <- TRUE
   specs <- list(
@@ -153,6 +159,7 @@ test_that('it should find active variable inside R constructs', {
   }
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should not find active name when using isolate', {
    input <- activeInput(foo = NULL)
    output <- activeOutput(bar = NULL)

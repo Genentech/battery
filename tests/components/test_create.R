@@ -24,6 +24,8 @@ test_that('it should create component using R6Class', {
   expect_equal(a$value, 10)
   expect_equal(a$render(), shiny::tags$p("component hello"))
 })
+
+## ----------------------------------------------------------------------------
 test_that('it should create component using component function', {
   A <- component(
     public = list(
@@ -46,8 +48,7 @@ test_that('it should create component using component function', {
   expect_equal(a$render(), shiny::tags$p("component hello"))
 })
 
-
-
+## ----------------------------------------------------------------------------
 test_that('it should extend base component using extend static method', {
   A <- Component$extend(
     public = list(
@@ -70,6 +71,7 @@ test_that('it should extend base component using extend static method', {
   expect_equal(a$render(), shiny::tags$p("component hello"))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should create child component', {
   A <- Component$extend(
     public = list(
@@ -99,6 +101,7 @@ test_that('it should create child component', {
   expect_equal(b$render(), shiny::tags$p("component hi"))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should create static fields', {
   A <- Component$extend(
     static = list(
@@ -124,6 +127,7 @@ test_that('it should create static fields', {
   expect_equal(c$static$number, 13)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should call parent constructor if no constuctor in child component', {
   A <- Component$extend(
     public = list(
@@ -144,6 +148,7 @@ test_that('it should call parent constructor if no constuctor in child component
   expect_equal(b$x, 10)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should create new static field in child component', {
   A <- Component$extend(
     static = list(
