@@ -1,87 +1,108 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel('Components Demo'),
-  mainPanel(uiOutput('output'))
+  uiOutput('output')
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-
-  x <- '__'
   Button <- battery::component(
-    classname = 'Button',
-    private = list(
-      text = NULL,
-      x = NULL
-    ),
+    classname = "Button",
     public = list(
-      constructor = function(text) {
-        private$text = text
-      },
-      render = function() {
-        tags$button(paste0(private$text, x))
-      }
-    )
-  )
-
-  hello <- 'Hello'
-  label <- 'button'
-
-  HelloButton <- Button$extend(
-    classname = 'HelloButton',
-    private = list(
-      label = NULL
-    ),
-    public = list(
-      constructor = function() {
-        super$constructor(hello)
-      },
-      render = function() {
-        tags$div(
-          tags$label(label),
-          super$render()
-        )
-      }
-    )
-  )
-
-
-
-  Panel <- battery::component(
-    classname = 'Panel',
-    private = list(
-      name = NULL
-    ),
-    public = list(
-      constructor = function(name = NULL) {
-        private$name <- name
-        btn <- HelloButton$new(component.name = 'btn', parent = self)
-        base <- Button$new(text = name, component.name = "btn_base", parent = self)
-        self$output[[self$ns('content')]] <- shiny::renderUI({
+      count = NULL,
+      label = NULL,
+      ## constructor is artifical method so you don't need to call super
+      ## which you may forget to add
+      constructor = function(label, canEdit = TRUE) {
+        self$label <- label
+        self$connect("click", self$ns("button"))
+        self$count <- 0
+        self$on("click", function(e = NULL, target = NULL) {
+          self$count <- self$count + 1
+        }, enabled = canEdit)
+        self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
+          self$events$click
           tags$div(
-            self$children$btn$render(),
-            self$children$btn_base$render()
+            tags$span(self$count),
+            actionButton(self$ns("button"), "click")
           )
         })
       },
       render = function() {
         tags$div(
-          tags$h2(paste('Panel', private$name)),
-          uiOutput(self$ns('content'))
+          class = "button-component",
+          tags$p(class = "buton-label", self$label),
+          shiny::uiOutput(self$ns("buttonOutput"))
         )
       }
     )
   )
 
-  a <- Panel$new(name = "a", input = input, output = output, session = session)
-  b <- Panel$new(name = "b", input = input, output = output, session = session)
+  HelloButton <- Button$extend(
+    classname = "HelloButton",
+    public = list(
+      constructor = function() {
+        super$constructor("hello")
+      }
+    )
+  )
+
+  Panel <- battery::Component$extend(
+    classname = "Panel",
+    public = list(
+      title = NULL,
+      constructor = function(title) {
+        self$title <- title
+        Button$new(label = "click Me", component.name = "btn1", parent = self)
+        HelloButton$new(component.name = "btn2", parent = self)
+        self$output[[self$ns("button")]] <- shiny::renderUI({
+          tags$div(
+            self$children$btn1$render(),
+            self$children$btn2$render()
+          )
+        })
+      },
+      render = function() {
+        tags$div(
+          tags$h2(self$title),
+          tags$div(shiny::uiOutput(self$ns("button")))
+        )
+      }
+    )
+  )
+  App <- battery::component(
+    classname = "App",
+    public = list(
+      constructor = function() {
+        ## for root node you don't need to use ns to create namespace but you can
+        a <- Panel$new(title = "A", component.name = "panelA", parent = self)
+        b <- Panel$new(title = "B", component.name = "panelB", parent = self)
+        self$output[[ self$ns("root") ]] <- shiny::renderUI({
+          tags$div(
+            a$render(),
+            b$render()
+          )
+        })
+      },
+      render = function() {
+        tags$div(
+          titlePanel('Shiny App using Battery R package'),
+          mainPanel(shiny::uiOutput(self$ns("root")))
+        )
+      }
+    )
+  )
+
+  ## Root component that don't have parent need to be called with input output and session.
+  root <- App$new(input = input, output = output, session = session)
+
+  ## this is how you connect components to normal code, you can create one component
+  ## App that will be added to single output using renderUI and while application
+  ## can use components
+
 
   output$output <- shiny::renderUI({
-    tags$div(
-      a$render(),
-      b$render()
-    )
+    root$render()
   })
 }
 

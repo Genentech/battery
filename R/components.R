@@ -99,6 +99,7 @@ Component <- R6::R6Class(
     input = NULL,
     output = NULL,
     session = NULL,
+    observeEvent = NULL,
     ## each subclass need to copy this field which is used as static fields
     ## right now only one static filed is used which is counter for instances
     ## of the class (for id used in getById and ns namespace)
@@ -108,7 +109,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          component.id = NULL, ...) {
+                          observeEvent = NULL, component.id = NULL, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -137,6 +138,16 @@ Component <- R6::R6Class(
       private$global$components <- append(private$global$components, list(
         self
       ))
+      ## use battery modified observeEvent from shiny or mock from argument
+      if (is.null(observeEvent)) {
+        if (!is.null(parent)) {
+          self$observeEvent <- parent$observeEvent
+        } else {
+          self$observeEvent <- battery::observeEvent
+        }
+      } else {
+        self$observeEvent <- observeEvent
+      }
       self$parent <- parent
       if (is.null(component.id)) {
         self$id <- paste0(head(class(self), 1), self$static$count)

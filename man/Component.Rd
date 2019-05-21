@@ -5,7 +5,7 @@
 \title{Helper function for defining components with additional static field. It can also be used
 so you don't confuse battery component with normal R6Class}
 \usage{
-component(public = NULL, private = NULL, static = NULL,
+component(classname, public = NULL, private = NULL, static = NULL,
   inherit = battery::Component, ...)
 }
 \arguments{
