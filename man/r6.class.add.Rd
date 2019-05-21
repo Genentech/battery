@@ -4,7 +4,7 @@
 \alias{r6.class.add}
 \title{helper function for adding properties to R6Class}
 \usage{
-r6.class.add(class, seq)
+r6.class.add(class, seq, spy = FALSE)
 }
 \description{
 helper function for adding properties to R6Class

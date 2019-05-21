@@ -14,8 +14,10 @@ and broadcast events from child to parents.
 
 Components are based on R6Class to create new component you call battery::component function or use
 $extend method on any component. You can also create new R6 class that inherit from battery::Component
-but this should not be used because you will lost access to static variable inside R6Class methods.
-(you will need to access them using `self$static`)
+but this should not be used because you will lost access to static variable inside R6Class methods
+(you will need to access them using `self$static`) and will not be able to use spy parameter to check
+method calls while testing your components.
+
 
 ```R
 server <- function(input, output, session) {

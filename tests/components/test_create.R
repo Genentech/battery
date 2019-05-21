@@ -1,6 +1,3 @@
-source("../../R/components.R")
-source("../../R/mock.R")
-
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
     classname = "A",

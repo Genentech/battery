@@ -76,20 +76,36 @@ Component <- R6::R6Class(
   private = list(
     handlers = NULL,
     observers = NULL,
+    makeReactiveBinding = NULL,
+    observeEvent = NULL,
+    isolate = NULL,
     global =  list2env(list(components = list())),
     ## ---------------------------------------------------------------
     trigger = function(name, data) {
       if (name %in% ls(self$events)) {
         if (is.null(data)) {
-          self$events[[name]] <- isolate(!self$events[[name]])
+          self$events[[name]] <- private$isolate(!self$events[[name]])
         } else {
           data$timestamp <- as.numeric(Sys.time())*1000
           self$events[[name]] <- data
         }
       }
+    },
+    ## ---------------------------------------------------------------
+    dependency = function(dependency, default) {
+      name <- as.character(substitute(dependency))
+      if (is.null(dependency)) {
+        if (!is.null(self$parent) && !is.null(self$parent[[name]])) {
+          private[[name]] <- self$parent[[name]]
+        } else {
+          private[[name]] <- default
+        }
+      } else {
+        private[[name]] <- dependency
+      }
     }
   ),
-  ## ---------------------------------------------------------------
+  ## -----------------------------------------------------------------
   public = list(
     id = NULL,
     name = NULL,
@@ -99,7 +115,6 @@ Component <- R6::R6Class(
     input = NULL,
     output = NULL,
     session = NULL,
-    observeEvent = NULL,
     ## each subclass need to copy this field which is used as static fields
     ## right now only one static filed is used which is counter for instances
     ## of the class (for id used in getById and ns namespace)
@@ -108,8 +123,9 @@ Component <- R6::R6Class(
     ## :: native R6 class constructor
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
-                          parent = NULL, component.name = NULL,
-                          observeEvent = NULL, component.id = NULL, ...) {
+                          parent = NULL, component.name = NULL, isolate = NULL,
+                          makeReactiveBinding = NULL, observeEvent = NULL,
+                          component.id = NULL, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -138,17 +154,14 @@ Component <- R6::R6Class(
       private$global$components <- append(private$global$components, list(
         self
       ))
-      ## use battery modified observeEvent from shiny or mock from argument
-      if (is.null(observeEvent)) {
-        if (!is.null(parent)) {
-          self$observeEvent <- parent$observeEvent
-        } else {
-          self$observeEvent <- battery::observeEvent
-        }
-      } else {
-        self$observeEvent <- observeEvent
-      }
       self$parent <- parent
+
+      ## DEPENDENCY INJECTION - use shiny (or patched version) or mock from argument
+      private$dependency(observeEvent, battery::observeEvent)
+      private$dependency(makeReactiveBinding, shiny::makeReactiveBinding)
+      private$dependency(isolate, shiny::isolate)
+
+
       if (is.null(component.id)) {
         self$id <- paste0(head(class(self), 1), self$static$count)
       } else {
@@ -213,6 +226,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     createEvent = function(name, value = NULL) {
       if (!name %in% ls(self$events)) {
+        private$makeReactiveBinding(name, env = self$events)
         if (FALSE && is.null(value)) {
           self$events[[name]] <- TRUE
         } else {
@@ -222,7 +236,6 @@ Component <- R6::R6Class(
           )
           self$events[[name]] <- data
         }
-        makeReactiveBinding(name, env = self$events)
       }
     },
     ## ---------------------------------------------------------------
@@ -236,7 +249,7 @@ Component <- R6::R6Class(
         private$trigger(name, list(value = value, target = target))
       }
       if (!is.null(self$parent)) {
-        self$parent$emit(name, value, self$id, include.self = TRUE)
+        self$parent$emit(name, value, target = target, include.self = TRUE)
       }
     },
     ## ---------------------------------------------------------------
@@ -262,7 +275,7 @@ Component <- R6::R6Class(
       self$createEvent(event)
 
       uuid <- uuid::UUIDgenerate()
-      observer <- self$observeEvent(self$input[[elementId]], {
+      observer <- private$observeEvent(self$input[[elementId]], {
         self$emit(event, self$input[[elementId]], include.self = TRUE)
       }, observerName = uuid)
 
@@ -305,13 +318,13 @@ Component <- R6::R6Class(
         }
         uuid <- uuid::UUIDgenerate()
         observer <- if (input) {
-          self$observeEvent(self$input[[event]], {
+          private$observeEvent(self$input[[event]], {
             handler(self$input[[event]], self)
           }, observerName = uuid, ignoreInit = !init, ...)
         } else {
           self$createEvent(event)
 
-          self$observeEvent(self$events[[event]], {
+          private$observeEvent(self$events[[event]], {
             if (is.null(self$events[[event]])) {
               handler()
             } else {
@@ -397,6 +410,7 @@ component <- function(classname,
                       private = NULL,
                       static = NULL,
                       inherit = battery::Component,
+                      spy = FALSE,
                       ...) {
   static.env <- new.env()
   static.env$count <- 0
@@ -405,16 +419,30 @@ component <- function(classname,
       static.env[[name]] <- static[[name]]
     }
   }
-  class <- R6::R6Class(classname = classname, inherit = inherit, ...)
+  class <- R6::R6Class(
+    classname = classname,
+    inherit = inherit,
+    public = `if`(spy, list(
+      .calls = list(),
+      .spy = function(name, ...) {
+        if (is.null(self$.calls[[name]])) {
+          self$.calls[[name]] <- list()
+        }
+        args <- list(...)
+        self$.calls[[name]] <- c(self$.calls[[name]], list(args))
+      })),
+    ...
+  )
   class$set('public', 'static', static.env)
-  r6.class.add(class, public)
-  r6.class.add(class, private)
+  r6.class.add(class, public, spy = spy)
+  r6.class.add(class, private, spy = spy)
   class$extend <- make.extend(class)
   class
 }
 
 #' helper function for adding properties to R6Class
-r6.class.add <- function(class, seq) {
+r6.class.add <- function(class, seq, spy = FALSE) {
+
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
   lapply(names(seq), function(name) {
     if (is.function(seq[[name]])) {
@@ -427,17 +455,20 @@ r6.class.add <- function(class, seq) {
       fn <- eval(substitute(function(...) {
         fn <- fn.expr # fn.expr will be inline function expression
         ## patch function env
-        parent <- parent.env(environment())
+        current <- environment()
         ## we don't overwrite function environment so
         ## you can nest one constructor in another constructor
         env <- new.env(parent = environment(fn))
-        env$self <- parent$self
-        env$static <- parent$self$static
-        env$super <- parent$super
-        env$private <- parent$private
+        env$self <- get("self", current)
+        env$static <- get("self", current)$static
+        env$super <- get("super", current)
+        env$private <- get("private", current)
         environment(fn) <- env
+        if (spy) {
+          env$self$.spy(name = name, ...)
+        }
         fn(...)
-      }, list(fn.expr = seq[[name]], name = name)))
+      }, list(fn.expr = seq[[name]], name = name, spy = spy)))
       class$set(prop.name, name, fn)
     } else {
       class$set(prop.name, name, seq[[name]])

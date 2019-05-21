@@ -64,6 +64,7 @@ test_that('it should invoke observer only once', {
   input$foo <- 10
   input$foo <- 20
   input$foo <- 30
+  print(env$calls)
   expect_equal(env$calls, list(10))
 })
 

@@ -49,7 +49,7 @@
 #'
 #' input$foo <- 10
 #'
-#' observer expression will be avaluated also input$listeners will have data for each listener
+#' observer expression will be avaluated also input$.listeners will have data for each listener
 #' that will have data about each call to each listener with old and new values
 #'
 #' usually there will be single listener for single active value
@@ -76,11 +76,23 @@
 #'
 #' @param args - initial active names
 #' @export
-activeInput <- function(...) {
+activeInput <- function(env = new.env(), ...) {
   input <- list(...)
-  env <- new.env()
-  env$calls <- list()
-  env$listeners <- list()
+  init.binding <- function() {
+    for (name in names(input)) {
+      if (name == "self") {
+        stop("You can't use self as name")
+      }
+      env$new(name, fn = input[[name]])
+    }
+  }
+  if (is.active.input(env)) {
+    init.binding()
+    return(env)
+  }
+  env$.active.symbols = list()
+  env$.calls <- list()
+  env$.listeners <- list()
 
   env$on <- function(event.name,
                      fn,
@@ -89,19 +101,19 @@ activeInput <- function(...) {
                      debounceMillis = NULL,
                      observerName = NULL,
                      ...) {
-    if (is.null(env$listeners[[event.name]])) {
-      env$listeners[[event.name]] <- list()
+    if (is.null(env$.listeners[[event.name]])) {
+      env$.listeners[[event.name]] <- list()
     }
     if (is.null(env$calls[[event.name]])) {
-      env$calls[[event.name]] <- list()
+      env$.calls[[event.name]] <- list()
     }
 
     if (!is.null(debounceMillis)) {
       fn <- fn %>% shiny::debounce(debounceMillis)
     }
 
-    env$listeners[[event.name]] <- c(
-      env$listeners[[event.name]],
+    env$.listeners[[event.name]] <- c(
+      env$.listeners[[event.name]],
       list(
         list(
           expr = expr,
@@ -115,12 +127,12 @@ activeInput <- function(...) {
   }
   env$off <- function(event.name, expr, observerName = NULL) {
     if (is.null(expr)) {
-      env$listeners[[event.name]] <- list()
+      env$.listeners[[event.name]] <- list()
     } else {
-      for (i in seq_along(env$listeners[[event.name]])) {
-        listener <- env$listeners[[event.name]][[i]]
+      for (i in seq_along(env$.listeners[[event.name]])) {
+        listener <- env$.listeners[[event.name]][[i]]
         if (listener$expr == expr || identical(observerName, listener$observerName)) {
-          env$listeners[[event.name]][i] <- NULL
+          env$.listeners[[event.name]][i] <- NULL
         }
       }
     }
@@ -151,6 +163,7 @@ activeInput <- function(...) {
     } else {
       environment(fn) <- env
     }
+    env$.active.symbols = append(env$.active.symbols, list(event.name))
     makeActiveBinding(
       sym = event.name,
       fun = function(value) {
@@ -159,18 +172,18 @@ activeInput <- function(...) {
         } else {
           old <- env[[event.name]]
           ret <- fn(value)
-          if (!is.null(env$listeners[[event.name]])) {
+          if (!is.null(env$.listeners[[event.name]])) {
             ## invoke listeners added by on and add args to list of args to check later
-            for (i in seq_along(env$listeners[[event.name]])) {
-              listener <- env$listeners[[event.name]][[i]]
+            for (i in seq_along(env$.listeners[[event.name]])) {
+              listener <- env$.listeners[[event.name]][[i]]
               if (!identical(old, value) &&
                   (listener$ignoreNULL && is.null(value) || !is.null(value))) {
                 listener$fn(old, value)
                 args <- list(old = old, value = value)
-                env$calls[[event.name]] <- append(listener$calls, list(args))
+                env$.calls[[event.name]] <- append(listener$calls, list(args))
                 ## case when observeEvent remove event (once option)
-                if (!is.null(env$listeners[[event.name]][i][[1]])) {
-                  env$listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
+                if (!is.null(env$.listeners[[event.name]][i][[1]])) {
+                  env$.listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
                 }
               }
             }
@@ -182,12 +195,7 @@ activeInput <- function(...) {
     )
   }
   env$self <- env
-  for (name in names(input)) {
-    if (name == "self") {
-      stop("You can't use self as name")
-    }
-    env$new(name, fn = input[[name]])
-  }
+  init.binding()
   env
 }
 
@@ -209,12 +217,16 @@ is.active.input <- function(obj) {
   FALSE
 }
 
+is.active.binding <- function(name, env) {
+  is.active.input(env) && name %in% env$.active.symbols
+}
+
 #' Function used the same as battery::observeEvent (based on shiny::observeEvent)
 #' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
 #' destroy previous created observer, so there are no duplicates
 #'
 #' @export
-observeEvent <- function(eventExpr,
+observeEventMock <- function(eventExpr,
                              handlerExpr,
                              handler.env = parent.frame(),
                              ignoreInit = FALSE,
@@ -222,22 +234,34 @@ observeEvent <- function(eventExpr,
                              observerName = NULL,
                              once = FALSE,
                              ...) {
-  s <- substitute(eventExpr)
+  sub <- substitute(eventExpr)
   expr <- substitute(handlerExpr)
-  activeEnv <- handler.env[[deparse(s[[2]])]]
-  name <- if (s[[1]] == '$') {
-    as.character(s[[3]])
-  } else if (s[[1]] == '[[') {
-    if (class(s[[3]]) == 'name') {
-      handler.env[[deparse(s[[3]])]]
+  ## check if this is self$name - we don't check every corner case
+  ## we will only use self$events (in components) and maybe
+  ## just in case input$foo or input[[name]] with this mock
+  activeEnv <- if (length(sub[[2]]) > 1) {
+    prop <- sub[[2]]
+    if (prop[[1]] == '$') {
+      obj <- get(deparse(prop[[2]]), handler.env)
+      obj[[deparse(prop[[3]])]]
+    }
+  } else {
+    get(deparse(sub[[2]]), handler.env)
+  }
+  name <- if (sub[[1]] == '$') {
+    as.character(sub[[3]])
+  } else if (sub[[1]] == '[[') {
+    if (class(sub[[3]]) == 'name') {
+      get(deparse(sub[[3]]), handler.env)
     } else {
-      s[[3]]
+      sub[[3]]
     }
   }
   initValue <- activeEnv[[name]]
   if (!ignoreInit && !(ignoreNULL && is.null(initValue))) {
     eval(expr, env = handler.env)
   }
+
   if (is.active.input(activeEnv)) {
     activeEnv$off(name, expr, observerName = observerName)
     activeEnv$on(name, function(old, value) {
@@ -256,7 +280,7 @@ observeEvent <- function(eventExpr,
 activeOutput <- function(...) {
   input <- list(...)
   env <- new.env()
-  env$listeners <- list()
+  env$.listeners <- list()
   make.default.fn <- function(name) {
     privateName <- paste0("__", name)
     function(value) {
@@ -322,7 +346,9 @@ extractActiveInputs <- function(data) {
   isolate <- FALSE
   for (i in seq_along(s)) {
     item <- s[[i]]
-    if (is.symbol(item) && item == 'isolate') {
+    ## isolate() || self$isolate used in components
+    if ((is.symbol(item) && item == 'isolate') ||
+        (length(item) > 1 &&  item[[1]] == '$' && item[[3]] == 'isolate')) {
       isolate <- TRUE
     }
     if (length(item) > 1 && !isolate) {
@@ -403,4 +429,16 @@ extractActiveInputs <- function(data) {
     meta$name
   })
   result
+}
+
+#' Mock for shiny::makeReactiveBinding to be injected into components
+#' limiation it can't be called after value is added to environment (it will work in components)
+#'
+#' @export
+makeReactiveBinding <- function(name, env) {
+  activeInput(env = env)
+  if (!is.active.binding(name, env)) {
+    env$new(name)
+  }
+  env
 }

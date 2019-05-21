@@ -1,5 +1,8 @@
 library(shiny)
 
+observeEvent <- battery::observeEvent
+assignInNamespace("observeEvent", observeEvent, "shiny")
+
 ui <- fluidPage(
   uiOutput('output')
 )

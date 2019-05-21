@@ -4,7 +4,7 @@
 \alias{activeInput}
 \title{shiny: input, output observeEvent and renderUI mocks with active binding and exosed data}
 \usage{
-activeInput(...)
+activeInput(env = new.env(), ...)
 }
 \arguments{
 \item{args}{- initial active names}

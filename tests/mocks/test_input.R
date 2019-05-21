@@ -1,5 +1,3 @@
-source('../../R/mock.R')
-
 
 test_that('it should create init binding', {
   input <- activeInput(foo = NULL, bar = NULL)

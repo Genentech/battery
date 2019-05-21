@@ -1,4 +1,3 @@
-source('../../R/mock.R')
 
 test_that('it should create input/output binding', {
   input <- activeInput(foo = NULL)
@@ -33,7 +32,7 @@ test_that('it should create single listener', {
     ret
   })
   input$foo <- 20
-  expect_equal(length(input$listeners[['foo']]), 1)
+  expect_equal(length(input$.listeners[['foo']]), 1)
   ## every renderUI will get called once - inital value - and once for reactive update
   expect_equal(env$calls, list(15, 15, 15, 30))
 })
