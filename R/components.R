@@ -381,7 +381,8 @@ merge.env <- function(...) {
 #' @param inherit - base class - if not specifed it will inherit from Base class (battery::Component)
 #'
 #' @export
-component <- function(public = NULL,
+component <- function(classname,
+                      public = NULL,
                       private = NULL,
                       static = NULL,
                       inherit = battery::Component,
@@ -393,7 +394,7 @@ component <- function(public = NULL,
       static.env[[name]] <- static[[name]]
     }
   }
-  class <- R6::R6Class(inherit = inherit, ...)
+  class <- R6::R6Class(classname = classname, inherit = inherit, ...)
   class$set('public', 'static', static.env)
   r6.class.add(class, public)
   r6.class.add(class, private)
