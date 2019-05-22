@@ -1,3 +1,4 @@
+context("test_input")
 
 test_that('it should create init binding', {
   input <- activeInput(foo = NULL, bar = NULL)

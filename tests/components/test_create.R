@@ -1,3 +1,5 @@
+context("test_create")
+
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
     classname = "A",

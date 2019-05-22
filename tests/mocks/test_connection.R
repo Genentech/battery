@@ -1,3 +1,4 @@
+context("test_connection")
 
 test_that('it should create input/output binding', {
   input <- activeInput(foo = NULL)
