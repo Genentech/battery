@@ -76,32 +76,16 @@ Component <- R6::R6Class(
   private = list(
     handlers = NULL,
     observers = NULL,
-    makeReactiveBinding = NULL,
-    observeEvent = NULL,
-    isolate = NULL,
     global =  list2env(list(components = list())),
     ## ---------------------------------------------------------------
     trigger = function(name, data) {
       if (name %in% ls(self$events)) {
         if (is.null(data)) {
-          self$events[[name]] <- private$isolate(!self$events[[name]])
+          self$events[[name]] <- shiny::isolate(!self$events[[name]])
         } else {
           data$timestamp <- as.numeric(Sys.time())*1000
           self$events[[name]] <- data
         }
-      }
-    },
-    ## ---------------------------------------------------------------
-    dependency = function(dependency, default) {
-      name <- as.character(substitute(dependency))
-      if (is.null(dependency)) {
-        if (!is.null(self$parent) && !is.null(self$parent[[name]])) {
-          private[[name]] <- self$parent[[name]]
-        } else {
-          private[[name]] <- default
-        }
-      } else {
-        private[[name]] <- dependency
       }
     }
   ),
@@ -155,12 +139,6 @@ Component <- R6::R6Class(
         self
       ))
       self$parent <- parent
-
-      ## DEPENDENCY INJECTION - use shiny (or patched version) or mock from argument
-      private$dependency(observeEvent, battery::observeEvent)
-      private$dependency(makeReactiveBinding, shiny::makeReactiveBinding)
-      private$dependency(isolate, shiny::isolate)
-
 
       if (is.null(component.id)) {
         self$id <- paste0(head(class(self), 1), self$static$count)
@@ -226,7 +204,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     createEvent = function(name, value = NULL) {
       if (!name %in% ls(self$events)) {
-        private$makeReactiveBinding(name, env = self$events)
+        shiny::makeReactiveBinding(name, env = self$events)
         if (FALSE && is.null(value)) {
           self$events[[name]] <- TRUE
         } else {
@@ -275,7 +253,7 @@ Component <- R6::R6Class(
       self$createEvent(event)
 
       uuid <- uuid::UUIDgenerate()
-      observer <- private$observeEvent(self$input[[elementId]], {
+      observer <- battery::observeEvent(self$input[[elementId]], {
         self$emit(event, self$input[[elementId]], include.self = TRUE)
       }, observerName = uuid)
 
@@ -318,13 +296,13 @@ Component <- R6::R6Class(
         }
         uuid <- uuid::UUIDgenerate()
         observer <- if (input) {
-          private$observeEvent(self$input[[event]], {
+          battery::observeEvent(self$input[[event]], {
             handler(self$input[[event]], self)
           }, observerName = uuid, ignoreInit = !init, ...)
         } else {
           self$createEvent(event)
 
-          private$observeEvent(self$events[[event]], {
+          battery::observeEvent(self$events[[event]], {
             if (is.null(self$events[[event]])) {
               handler()
             } else {

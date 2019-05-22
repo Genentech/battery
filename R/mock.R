@@ -109,7 +109,7 @@ activeInput <- function(env = new.env(), ...) {
     }
 
     if (!is.null(debounceMillis)) {
-      fn <- fn %>% shiny::debounce(debounceMillis)
+      fn <- shiny::debounce(fn, debounceMillis)
     }
 
     env$.listeners[[event.name]] <- c(
@@ -179,8 +179,8 @@ activeInput <- function(env = new.env(), ...) {
               if (!identical(old, value) &&
                   (listener$ignoreNULL && is.null(value) || !is.null(value))) {
                 listener$fn(old, value)
-                args <- list(old = old, value = value)
-                env$.calls[[event.name]] <- append(listener$calls, list(args))
+                args <- list(old = old, new = value)
+                env$.calls[[event.name]] <- append(env$.calls[[event.name]], list(args))
                 ## case when observeEvent remove event (once option)
                 if (!is.null(env$.listeners[[event.name]][i][[1]])) {
                   env$.listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
@@ -287,9 +287,10 @@ activeOutput <- function(...) {
       if (missing(value)) {
         env[[privateName]]
       } else {
-        vars <- extractActiveInputs(value)
+        data <- extractActiveNames(value)
+        lapply(data$output, env$new) ## for Each uiOutput we add reactive value
         ## we use lapply to create closure
-        lapply(vars, function(var) {
+        lapply(data$input, function(var) {
           ## remove previous listener for given expression (when called twice)
           var$active$off(var$prop, value$expr)
           ## evaluate renderUI expression when extracted active input value changes
@@ -306,11 +307,20 @@ activeOutput <- function(...) {
     }
   }
   env$new <- function(name) {
+    init.value <- NULL
+    if (!is.null(env[[name]]) && is.environment(env[[name]]$env)) {
+      init.value <- env[[name]]
+      env[[name]] <- NULL
+    }
+    fn <- make.default.fn(name)
     makeActiveBinding(
       sym = name,
-      fun = make.default.fn(name),
+      fun = fn,
       env = env
     )
+    if (!is.null(init.value)) {
+      fn(init.value)
+    }
   }
   for (name in names(input)) {
     env$new(name)
@@ -334,15 +344,31 @@ renderUI <- function(expr) {
   )
 }
 
-#' Traverse substitute expression and extract all references to active elements
-#' created by activeInput
+merge.props <- function(desc, src) {
+  lapply(names(src), function(name) {
+    desc[[name]] <<- append(desc[[name]], src[[name]])
+  })
+  desc
+}
+
+safe.get <- function(name, env) {
+  if (exists(name, env)) {
+    get(name, env)
+  }
+}
+
+#' Traverse substitute expressions and function invocation and extract all references to active elements
+#' created by activeInput and uiOutput
 #'
-#' @param s - named list: expr - substitute expr, env - parent env (value returned from renderUI)
-extractActiveInputs <- function(data) {
+#' @param data - named list: expr - substitute expr, env - parent env (value returned from renderUI)
+extractActiveNames <- function(data) {
   s <- data$expr
   env <- data$env
   ## traverse
-  result <- list()
+  result <- list(
+    input = list(),
+    output = list()
+  )
   isolate <- FALSE
   for (i in seq_along(s)) {
     item <- s[[i]]
@@ -352,11 +378,12 @@ extractActiveInputs <- function(data) {
       isolate <- TRUE
       next
     }
+    if (length(item) > 1 && item[[1]] == 'uiOutput') {
+      result$output <- append(result$output, list(eval(item[[2]], env = env)))
+      next
+    }
     if (length(item) > 1 && !isolate) {
-      ret <- extractActiveInputs(list(expr = item, env = env))
-      if (length(ret) > 0) {
-        result <- append(result, ret)
-      }
+      result <- merge.props(result, extractActiveNames(list(expr = item, env = env)))
     } else if (typeof(item) == "language") {
       ## code like `foo() + bar()` have type of language
       ## here we detect case of foo() x$foo() or x[[name]]()
@@ -385,10 +412,9 @@ extractActiveInputs <- function(data) {
       }
       if (!is.null(fn)) {
         ## detect active names from inside functions
-        ret <- extractActiveInputs(list(expr = body(fn), env = environment(fn)))
-        if (length(ret) > 0) {
-          result <- append(result, ret)
-        }
+        body.fn <- body(fn)
+        env.fn <- environment(fn)
+        result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = env.fn)))
       }
     } else if (is.name(item)) {
       ## here we find active bindings
@@ -396,7 +422,7 @@ extractActiveInputs <- function(data) {
       ## sub-expression foo$name
       if (item == "$") {
         name <- deparse(s[[i + 1]])
-        value <- get(name, env) ## get foo from env
+        value <- safe.get(name, env) ## get foo from env
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
             name = name,
@@ -428,11 +454,11 @@ extractActiveInputs <- function(data) {
         }
       }
       if (!is.null(metaData)) {
-        result <- append(result, list(metaData))
+        result$input <- append(result$input, list(metaData))
       }
     }
   }
-  names(result) <- sapply(result, function(meta) {
+  names(result$input) <- sapply(result$input, function(meta) {
     meta$name
   })
   result
@@ -449,3 +475,8 @@ makeReactiveBinding <- function(name, env) {
   }
   env
 }
+
+#' Mock for shiny::uiOutput
+#'
+#' @export
+uiOutput <- function(x) x

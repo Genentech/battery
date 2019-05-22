@@ -59,7 +59,7 @@ if you set the value
 
 input$foo <- 10
 
-observer expression will be avaluated also input$listeners will have data for each listener
+observer expression will be avaluated also input$.listeners will have data for each listener
 that will have data about each call to each listener with old and new values
 
 usually there will be single listener for single active value
