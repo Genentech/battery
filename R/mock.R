@@ -346,10 +346,11 @@ extractActiveInputs <- function(data) {
   isolate <- FALSE
   for (i in seq_along(s)) {
     item <- s[[i]]
-    ## isolate() || self$isolate used in components
+    ## detect isolate() or self$isolate used in components active values should be ignored
     if ((is.symbol(item) && item == 'isolate') ||
-        (length(item) > 1 &&  item[[1]] == '$' && item[[3]] == 'isolate')) {
+        (length(item) > 1 && item[[1]] == '$' && item[[3]] == 'isolate')) {
       isolate <- TRUE
+      next
     }
     if (length(item) > 1 && !isolate) {
       ret <- extractActiveInputs(list(expr = item, env = env))
@@ -357,7 +358,11 @@ extractActiveInputs <- function(data) {
         result <- append(result, ret)
       }
     } else if (typeof(item) == "language") {
-      ## foo() or x$foo() have type of 'language' and it have length == 1
+      ## code like `foo() + bar()` have type of language
+      ## here we detect case of foo() x$foo() or x[[name]]()
+      ## We do this to find functions and methods calls and extract names
+      ## from inside of the functions body - body return same data
+      ## as substitute so we can use recursion here
       fn <- NULL
       if (is.symbol(item[[1]])) {
         fn <- env[[deparse(item[[1]])]]
@@ -379,17 +384,19 @@ extractActiveInputs <- function(data) {
         }
       }
       if (!is.null(fn)) {
+        ## detect active names from inside functions
         ret <- extractActiveInputs(list(expr = body(fn), env = environment(fn)))
         if (length(ret) > 0) {
           result <- append(result, ret)
         }
       }
     } else if (is.name(item)) {
+      ## here we find active bindings
       metaData <- NULL
       ## sub-expression foo$name
       if (item == "$") {
         name <- deparse(s[[i + 1]])
-        value <- env[[name]] ## get foo from env
+        value <- get(name, env) ## get foo from env
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
             name = name,
@@ -410,7 +417,7 @@ extractActiveInputs <- function(data) {
           arg
         }
         if (!is.null(prop)) {
-          value <- env[[name]] ## get input from env
+          value <- get(name, env)
           if (!is.null(value) && is.active.input(value)) {
             metaData <- list(
               name = name,
