@@ -357,9 +357,84 @@ merge.props <- function(desc, src) {
 }
 
 safe.get <- function(name, env) {
-  if (exists(name, env)) {
-    get(name, env)
+  if (is.environment(env)) {
+    if (exists(name, env)) {
+      get(name, env)
+    }
+  } else {
+    for (e in env) {
+      value <- safe.get(name, e)
+      if (!is.null(value)) {
+        return(value)
+      }
+    }
   }
+}
+
+#' function check if expression from environment is function call
+#'
+is.function.call <- function(expr, env) {
+  if (typeof(expr) == 'language' && is.symbol(expr[[1]])) {
+    re <- paste0("^", escapeRegex(expr[[1]]), "\\(")
+    if (grepl(re, as.character(expr))[[1]]) {
+      value <- safe.get(deparse(expr[[1]]), env)
+      typeof(value) == 'closure'
+      return(TRUE)
+    }
+  }
+  FALSE
+}
+
+#' function taken from Hmisc package source code (no need to whole package)
+escapeRegex <- function(string) {
+  gsub('([.|()\\^{}+$*?]|\\[|\\])', '\\\\\\1', string)
+}
+
+#' Function return true if function is internal - used to prevent infinite recursion
+#'
+is.internal.function <- function(fn.body) {
+  length(fn.body) == 2 && fn.body[[1]] == '.Internal'
+}
+
+#' Function is parsing code like `foo() + bar()` that have type of language
+#' it and also detect cases of `foo()`, `x$foo()` or `x[[name]]()`
+#' We do this to find functions and methods calls and extract names
+#' from inside of the functions body - body return same data
+#' as substitute so we can call extractActiveNames on body
+parse.function <- function(item, env) {
+  result <- list(
+    input = list(),
+    output = list()
+  )
+  fn <- NULL
+  if (is.symbol(item[[1]])) {
+    fn <- safe.get(deparse(item[[1]]), env)
+  } else if (length(item[[1]]) > 1) {
+    expr <- item[[1]]
+    obj <- safe.get(deparse(expr[[2]]), env)
+    prop <- if (expr[[1]] == '$') {
+      deparse(expr[[3]])
+    } else if (expr[[1]] == '[[') {
+      if (is.name(expr[[3]])) {
+        varName <- deparse(expr[[3]])
+        safe.get(varName, env) ## get [[ name ]] from env
+      } else if (is.character(expr[[3]])) {
+        expr[[3]]
+      }
+    }
+    if (!is.null(prop)) {
+      fn <- obj[[prop]]
+    }
+  }
+  if (!is.null(fn)) {
+    ## detect active names from inside functions
+    body.fn <- body(fn)
+    if (!is.internal.function(body.fn)) {
+      env.fn <- environment(fn)
+      result <- extractActiveNames(list(expr = body.fn, env = env.fn))
+    }
+  }
+  result
 }
 
 #' Traverse substitute expressions and function invocation and extract all references to active elements
@@ -417,40 +492,16 @@ extractActiveNames <- function(data) {
       result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = fn.env)))
       next
     }
-    if (length(item) > 1 && !isolate) {
+    if (is.function.call(item, env)) {
+      e <- `if`(is.null(closure), env, list(env, closure))
+      result <- merge.props(result, parse.function(item, data$env))
+      if (length(item) > 1) {
+        result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
+      }
+    } else if (length(item) > 1 && !isolate) {
       result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
     } else if (typeof(item) == "language") {
-      ## code like `foo() + bar()` have type of language
-      ## here we detect case of foo() x$foo() or x[[name]]()
-      ## We do this to find functions and methods calls and extract names
-      ## from inside of the functions body - body return same data
-      ## as substitute so we can use recursion here
-      fn <- NULL
-      if (is.symbol(item[[1]])) {
-        fn <- env[[deparse(item[[1]])]]
-      } else if (length(item[[1]]) > 1) {
-        expr <- item[[1]]
-        obj <- env[[deparse(expr[[2]])]]
-        prop <- if (expr[[1]] == '$') {
-          deparse(expr[[3]])
-        } else if (expr[[1]] == '[[') {
-          if (is.name(expr[[3]])) {
-            varName <- deparse(expr[[3]])
-            env[[varName]] ## get [[ name ]] from env
-          } else if (is.character(expr[[3]])) {
-            expr[[3]]
-          }
-        }
-        if (!is.null(prop)) {
-          fn <- obj[[prop]]
-        }
-      }
-      if (!is.null(fn)) {
-        ## detect active names from inside functions
-        body.fn <- body(fn)
-        env.fn <- environment(fn)
-        result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = env.fn)))
-      }
+      result <- merge.props(result, parse.function(item, data$env))
     } else if (is.name(item)) {
       ## here we find active bindings
       metaData <- NULL
@@ -473,12 +524,12 @@ extractActiveNames <- function(data) {
         name <- deparse(s[[i + 1]])
         prop <- if (is.name(arg)) {
           varName <- deparse(arg)
-          env[[varName]] ## get [[ name ]] from env
+          safe.get(varName,  env) ## get [[ name ]] from env
         } else if (is.character(arg)) {
           arg
         }
         if (!is.null(prop)) {
-          value <- get(name, env)
+          value <- safe.get(name, env)
           if (!is.null(value) && is.active.input(value)) {
             metaData <- list(
               name = name,
@@ -518,7 +569,8 @@ make.uiOutput <- function(env) {
   function(name) {
     ## return same div as shiny
     shiny::tags$div(
-      class = "shiny-html-output shiny-bound-output",
+      id = name,
+      class = "shiny-html-output",
       env[[name]]
     )
   }
