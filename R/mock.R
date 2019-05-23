@@ -313,9 +313,9 @@ activeOutput <- function(...) {
   }
   env$new <- function(name) {
     init.value <- NULL
-    if (!is.null(env[[name]]) && is.environment(env[[name]]$env)) {
+    if (name %in% ls(env) && is.environment(env[[name]]$env)) {
       init.value <- env[[name]]
-      env[[name]] <- NULL
+      remove(list = name, envir = env)
     }
     fn <- make.default.fn(name)
     makeActiveBinding(
