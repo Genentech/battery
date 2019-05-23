@@ -12,8 +12,6 @@ makeReactiveBinding <- battery::makeReactiveBinding
 assignInNamespace("makeReactiveBinding", makeReactiveBinding, "shiny")
 renderUI <- battery::renderUI
 assignInNamespace("renderUI", renderUI, "shiny")
-uiOutput <- battery::uiOutput
-assignInNamespace("uiOutput", uiOutput, "shiny")
 
 test_dir <- function(dir) {
   path <- file.path(getSrcDirectory(function(x) x), dir)

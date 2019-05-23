@@ -288,7 +288,12 @@ activeOutput <- function(...) {
         env[[privateName]]
       } else {
         data <- extractActiveNames(value)
-        lapply(data$output, env$new) ## for Each uiOutput we add reactive value
+        ## for Each uiOutput we add reactive value
+        ## and new function to environement that will return value of that variable
+        lapply(data$output, function(data) {
+          env$new(data$name)
+          data$env$uiOutput <- make.uiOutput(env)
+        })
         ## we use lapply to create closure
         lapply(data$input, function(var) {
           ## remove previous listener for given expression (when called twice)
@@ -363,7 +368,13 @@ safe.get <- function(name, env) {
 #' @param data - named list: expr - substitute expr, env - parent env (value returned from renderUI)
 extractActiveNames <- function(data) {
   s <- data$expr
-  env <- data$env
+  closure <- NULL
+  if (is.environment(data$env)) {
+    env <- data$env
+  } else {
+    closure <- data$env$closure
+    env <- data$env$env
+  }
   ## traverse
   result <- list(
     input = list(),
@@ -379,11 +390,35 @@ extractActiveNames <- function(data) {
       next
     }
     if (length(item) > 1 && item[[1]] == 'uiOutput') {
-      result$output <- append(result$output, list(eval(item[[2]], env = env)))
+      ## invoke self$ns that is insisde uiOutput to get the string
+      args <- list(
+        name = eval(item[[2]], env = env),
+        env = `if`(is.null(closure), env, closure)
+      )
+      result$output <- append(result$output, list(args))
+      next
+    }
+    ## include function - needed for components - where there is `fn <- fn.expr`
+    ## it's inside `r6.class.add` function where `fn.expr` is inline function
+    ## injected by substitute - but it's not function but closure
+    if (typeof(item) == 'closure') {
+      ## with include function you need to evaluate it to get the body but not with closure
+      body.fn <- body(item)
+      ## here we need two environments - we can't merge them because we need to
+      ## modify one of them in activeOutput setter - this case is for render() method
+      ## that have uiOutput inside - which is quite common
+      ## one env have self (env) and function env is closure that have values from where it
+      ## was defined - it can call local function defined outside of component
+      fn.env <- list(
+        closure = environment(item),
+        env = env
+      )
+      ## body(fn) give same result as substitute so we can use recursion here
+      result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = fn.env)))
       next
     }
     if (length(item) > 1 && !isolate) {
-      result <- merge.props(result, extractActiveNames(list(expr = item, env = env)))
+      result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
     } else if (typeof(item) == "language") {
       ## code like `foo() + bar()` have type of language
       ## here we detect case of foo() x$foo() or x[[name]]()
@@ -422,7 +457,7 @@ extractActiveNames <- function(data) {
       ## sub-expression foo$name
       if (item == "$") {
         name <- deparse(s[[i + 1]])
-        value <- safe.get(name, env) ## get foo from env
+        value <- safe.get(name, env) ## get foo from env - it will return NULL and not throw like get
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
             name = name,
@@ -476,7 +511,15 @@ makeReactiveBinding <- function(name, env) {
   env
 }
 
-#' Mock for shiny::uiOutput
+#' function that return uiOutput function for given enviromnet
 #'
-#' @export
-uiOutput <- function(x) x
+#' @param env - enviroment that should be active output
+make.uiOutput <- function(env) {
+  function(name) {
+    ## return same div as shiny
+    shiny::tags$div(
+      class = "shiny-html-output shiny-bound-output",
+      env[[name]]
+    )
+  }
+}
