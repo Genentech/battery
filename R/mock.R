@@ -79,21 +79,51 @@
 activeInput <- function(...) {
   input <- list(...)
   env <- new.env()
+  env$calls <- list()
   env$listeners <- list()
 
-  env$on <- function(name, fn) {
-    if (!is.null(env$listeners[[name]])) {
-      env$listeners[[name]] <- list()
+  env$on <- function(event.name,
+                     fn,
+                     expr = NULL,
+                     ignoreNULL = TRUE,
+                     debounceMillis = NULL,
+                     observerName = NULL,
+                     ...) {
+    if (is.null(env$listeners[[event.name]])) {
+      env$listeners[[event.name]] <- list()
     }
-    env$listeners[[name]] <- append(
-      env$listeners[[name]],
+    if (is.null(env$calls[[event.name]])) {
+      env$calls[[event.name]] <- list()
+    }
+
+    if (!is.null(debounceMillis)) {
+      fn <- fn %>% shiny::debounce(debounceMillis)
+    }
+
+    env$listeners[[event.name]] <- c(
+      env$listeners[[event.name]],
       list(
         list(
+          expr = expr,
+          ignoreNULL = ignoreNULL,
           calls = list(),
+          observerName = observerName,
           fn = fn
         )
       )
     )
+  }
+  env$off <- function(event.name, expr, observerName = NULL) {
+    if (is.null(expr)) {
+      env$listeners[[event.name]] <- list()
+    } else {
+      for (i in seq_along(env$listeners[[event.name]])) {
+        listener <- env$listeners[[event.name]][[i]]
+        if (listener$expr == expr || identical(observerName, listener$observerName)) {
+          env$listeners[[event.name]][i] <- NULL
+        }
+      }
+    }
   }
   ## read only prop to test if this env is activeInput
   makeActiveBinding(
@@ -115,28 +145,33 @@ activeInput <- function(...) {
       }
     }
   }
-  env$new <- function(name, fn = NULL) {
+  env$new <- function(event.name, fn = NULL) {
     if (is.null(fn)) {
-      fn <- make.default.fn(name)
+      fn <- make.default.fn(event.name)
     } else {
       environment(fn) <- env
     }
     makeActiveBinding(
-      sym = name,
+      sym = event.name,
       fun = function(value) {
         if (missing(value)) {
           fn(value)
         } else {
-          old <- env[[name]]
+          old <- env[[event.name]]
           ret <- fn(value)
-          if (!is.null(env$listeners[[name]])) {
+          if (!is.null(env$listeners[[event.name]])) {
             ## invoke listeners added by on and add args to list of args to check later
-            for (i in seq_along(env$listeners[[name]])) {
-              listener <- env$listeners[[name]][[i]]
-              if (!identical(old, value)) {
+            for (i in seq_along(env$listeners[[event.name]])) {
+              listener <- env$listeners[[event.name]][[i]]
+              if (!identical(old, value) &&
+                  (listener$ignoreNULL && is.null(value) || !is.null(value))) {
                 listener$fn(old, value)
                 args <- list(old = old, value = value)
-                env$listeners[[name]][[i]]$calls <- append(listener$calls, list(args))
+                env$calls[[event.name]] <- append(listener$calls, list(args))
+                ## case when observeEvent remove event (once option)
+                if (!is.null(env$listeners[[event.name]][i][[1]])) {
+                  env$listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
+                }
               }
             }
           }
@@ -156,6 +191,10 @@ activeInput <- function(...) {
   env
 }
 
+#' name used only inside renderUI in substitute phase
+#' @export
+isolate <- function(x) x
+
 #' Function for checking if object is actie input - used by extractActiveInputs
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
@@ -170,28 +209,44 @@ is.active.input <- function(obj) {
   FALSE
 }
 
-#' Function used same as shiny observeEvent that use active binding input mocks
+#' Function used the same as battery::observeEvent (based on shiny::observeEvent)
+#' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+#' destroy previous created observer, so there are no duplicates
 #'
 #' @export
-#' @params value - active input expression input [[ name ]] input$name or input[["name"]]
-#' @params expr - expression to be evaluated when active input change value
-observeEvent <- function(value, expr = NULL) {
-  s <- substitute(value)
-  frame <- parent.frame(environment())
-  expr <- substitute(expr)
-  reactiveEnv <- frame[[deparse(s[[2]])]]
+observeEvent <- function(eventExpr,
+                             handlerExpr,
+                             handler.env = parent.frame(),
+                             ignoreInit = FALSE,
+                             ignoreNULL = TRUE,
+                             observerName = NULL,
+                             once = FALSE,
+                             ...) {
+  s <- substitute(eventExpr)
+  expr <- substitute(handlerExpr)
+  activeEnv <- handler.env[[deparse(s[[2]])]]
   name <- if (s[[1]] == '$') {
-    deparse(s[[3]])
+    as.character(s[[3]])
   } else if (s[[1]] == '[[') {
     if (class(s[[3]]) == 'name') {
-      frame[[deparse(s[[3]])]]
+      handler.env[[deparse(s[[3]])]]
     } else {
       s[[3]]
     }
   }
-  reactiveEnv$on(name, function(old, value) {
-    eval(expr)
-  })
+  initValue <- activeEnv[[name]]
+  if (!ignoreInit && !(ignoreNULL && is.null(initValue))) {
+    eval(expr, env = handler.env)
+  }
+  if (is.active.input(activeEnv)) {
+    activeEnv$off(name, expr, observerName = observerName)
+    activeEnv$on(name, function(old, value) {
+      eval(expr, env = handler.env)
+      if (once) {
+        activeEnv$off(name, expr, observerName = observerName)
+      }
+    }, observerName = observerName, expr = expr, ...)
+  }
 }
 
 #' Function create active binding output mock to be used with renderUI mock
@@ -209,16 +264,17 @@ activeOutput <- function(...) {
         env[[privateName]]
       } else {
         vars <- extractActiveInputs(value)
-        #env[["__names"]] <- extractActiveInputs(value)
         ## we use lapply to create closure
         lapply(vars, function(var) {
+          ## remove previous listener for given expression (when called twice)
+          var$active$off(var$prop, value$expr)
           ## evaluate renderUI expression when extracted active input value changes
           ## this is listener the input need to be created with input$new
           var$active$on(var$prop, function(oldInputVal, newInputVal) {
             ## store renderUI expression output in private variable (exposed)
             ## so you can get it using output[[name]]
             env[[privateName]] <- eval(value$expr, env = value$env)
-          })
+          }, expr = value$expr)
         })
         ## initial value
         env[[privateName]] <- eval(value$expr, env = value$env)
@@ -250,7 +306,7 @@ activeOutput <- function(...) {
 renderUI <- function(expr) {
   list(
     expr = substitute(expr),
-    env = parent.env(environment())
+    env =  parent.frame()
   )
 }
 
@@ -263,18 +319,49 @@ extractActiveInputs <- function(data) {
   env <- data$env
   ## traverse
   result <- list()
+  isolate <- FALSE
   for (i in seq_along(s)) {
-    if (length(s[[i]]) > 1) {
+    if (is.symbol(s[[i]]) && s[[i]] == 'isolate') {
+      isolate <- TRUE
+    }
+    if (length(s[[i]]) > 1 && !isolate) {
       ret <- extractActiveInputs(list(expr = s[[i]], env = env))
       if (length(ret) > 0) {
         result <- append(result, ret)
       }
-    }
-    if (is.name(s[[i]])) {
+    } else if (typeof(s[[i]]) == "language") {
+      ## foo() or x$foo() have type of 'language' and it have length == 1
+      fn <- NULL
+      if (is.symbol(s[[i]][[1]])) {
+        fn <- env[[deparse(s[[i]][[1]])]]
+      } else if (length(s[[i]][[1]]) > 1) {
+        expr <- s[[i]][[1]]
+        obj <- env[[deparse(expr[[2]])]]
+        prop <- if (expr[[1]] == '$') {
+          deparse(expr[[3]])
+        } else if (expr[[1]] == '[[') {
+          if (is.name(expr[[3]])) {
+            varName <- deparse(expr[[3]])
+            env[[varName]] ## get [[ name ]] from env
+          } else if (is.character(expr[[3]])) {
+            expr[[3]]
+          }
+        }
+        if (!is.null(prop)) {
+          fn <- obj[[prop]]
+        }
+      }
+      if (!is.null(fn)) {
+        ret <- extractActiveInputs(list(expr = body(fn), env = environment(fn)))
+        if (length(ret) > 0) {
+          result <- append(result, ret)
+        }
+      }
+    } else if (is.name(s[[i]])) {
       metaData <- NULL
       ## sub-expression foo$name
       if (s[[i]] == "$") {
-        name <- as.character(s[[i + 1]])
+        name <- deparse(s[[i + 1]])
         value <- env[[name]] ## get foo from env
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
@@ -287,9 +374,9 @@ extractActiveInputs <- function(data) {
         ## sub-expression is foo[[ name ]] or foo[[ "name" ]]
         ## first name need to be extracted from environment
         ## second is return as is because it's string
-        name <- as.character(s[[i + 1]])
+        name <- deparse(s[[i + 1]])
         prop <- if (is.name(s[[i + 2]])) {
-          varName <- as.character(s[[i + 2]])
+          varName <- deparse(s[[i + 2]])
           env[[varName]] ## get [[ name ]] from env
         } else if (is.character(s[[i + 2]])) {
           s[[ i + 2]]
@@ -310,5 +397,8 @@ extractActiveInputs <- function(data) {
       }
     }
   }
+  names(result) <- sapply(result, function(meta) {
+    meta$name
+  })
   result
 }

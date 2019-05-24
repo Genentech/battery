@@ -7,9 +7,6 @@ created by activeInput}
 \usage{
 extractActiveInputs(data)
 }
-\arguments{
-\item{s}{- named list: expr - substitute expr, env - parent env (value returned from renderUI)}
-}
 \description{
 Traverse substitute expression and extract all references to active elements
 created by activeInput

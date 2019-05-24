@@ -2,10 +2,19 @@
 % Please edit documentation in R/mock.R
 \name{observeEvent}
 \alias{observeEvent}
-\title{Function used same as shiny observeEvent that use active binding input mocks}
+\title{Function used the same as battery::observeEvent (based on shiny::observeEvent)
+that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+destroy previous created observer, so there are no duplicates}
 \usage{
-observeEvent(value, expr = NULL)
+observeEvent(eventExpr, handlerExpr, event.env = parent.frame(),
+  event.quoted = FALSE, handler.env = parent.frame(),
+  handler.quoted = FALSE, suspended = FALSE, priority = 0,
+  observerName = NULL, domain = getDefaultReactiveDomain(),
+  autoDestroy = TRUE, ignoreNULL = TRUE, ignoreInit = FALSE,
+  once = FALSE, debounceMillis = NULL, canRunIt = NULL)
 }
 \description{
-Function used same as shiny observeEvent that use active binding input mocks
+Function used the same as battery::observeEvent (based on shiny::observeEvent)
+that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+destroy previous created observer, so there are no duplicates
 }

@@ -44,7 +44,7 @@ input$new(component$ns("save"))
 
 reactive value with that may have different logic here same code as default
 
-input#new("foo", function(value) {
+input$new("foo", function(value) {
    if (missing(value)) {
      self[["__foo"]]
    } else {

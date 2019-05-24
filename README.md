@@ -1,13 +1,116 @@
-```                            
- _____     _   _               
-| __  |___| |_| |_ ___ ___ _ _ 
+```
+ _____     _   _
+| __  |___| |_| |_ ___ ___ _ _
 | __ -| .'|  _|  _| -_|  _| | |
 |_____|__,|_| |_| |___|_| |_  |
                           |___|
 ```
 
-Battery - R6Class based component architecture for Shiny apps
+Battery - R6Class based component architecture for Shiny apps with testing framework
 
+# Components
+
+Components are based on R6Class to create new component you create new R6 class that inherit
+from battery::Component
+
+```R
+Button <- R6Class("Button",
+  inherit = batter::Component,
+  public = list(
+    static = {
+      e <- env.new()
+      e$count <- 0
+      e
+    },
+    count = NULL,
+    ## constructor is artifical method so you don't need to call super
+    ## which you may forget to add
+    constructor = function(canEdit = TRUE) {
+      self$connect("click", self$ns("button"))
+      self$count <- 0
+      self$on("click", function(e = NULL, target = NULL) {
+        self$count <- self$count + 1
+      }, enabled = canEdit)
+      self$output[[self$ns("buttonOutput")]] <- renderUI({
+        self$events$click
+        tags$div(
+          tags$span(self$count),
+          actionButton(self$ns("button"), "click")
+        )
+      })
+    },
+    render = function() {
+      tags$div(
+        class = "button-component",
+        uiOutput(self$ns("buttonOutput"))
+      )
+    }
+  )
+)
+
+Panel <- R6Class("Panel",
+  inherit = batter::Component,
+  public = list(
+    static = {
+      e <- new.env()
+      e$count <- 0
+      e
+    },
+    constructor = function(title) {
+      self$title <- title
+      btn <- Button$new(parent = self)
+      self$appendChild("button", btn)
+      self$output[[self$ns("button")]] <- renderUI({
+        btn$render()
+      })
+    },
+    render = function() {
+      tags$div(
+        tags$h2(self$title),
+        tags$div(uiOutput(self$ns("button")))
+      )
+    }
+  )
+)
+```
+
+Root component that don't have parent need to be called with input output and session.
+
+```R
+root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
+output$root <- renderUI({
+  root$render()
+})
+```
+
+Every other component only need parent attribute and you don't need to specify those parameters
+in `constructor` because R6Class use `initialize` function as constructor and battery use handy
+`constructor` function so you don't need to remember to call super, and only use extra parameters
+you need when you create components.
+
+If you're creating child component you have two options:
+
+```R
+btn <- Button$new(parent = self)
+self$appendChild("button", btn)
+```
+
+or
+
+```R
+Button$new(parent = self, component.name = "button")
+```
+
+Second is shortcut. You need use either so you have proper tree of components so event propagaion
+work properly.
+
+# Testing Components
+
+when testing Components you can use this mocks instead of running whole shiny app. So you can
+test single component in isolation.
+
+Here is quick summary for how to use testing framework. See `./tests/` directory to see how
+to tests you own components.
 
 ## Mocks
 
