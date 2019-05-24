@@ -112,9 +112,6 @@ test_that('it should broadcast event', {
   InputComponent <- battery::component(
     classname = "InputComponent",
     public = list(
-      constructor = function() {
-        NestedComponent$new(component.name = "nc", parent = self)
-      },
       run = function(arg) {
         self$broadcast("foo", arg)
       }
@@ -124,6 +121,9 @@ test_that('it should broadcast event', {
   input <- activeInput()
   output <- activeOutput()
   ic <- InputComponent$new(input = input, output = output, session = session)
+  ## we create child component outside of InputComponent so it recieve broadcast event
+  ## it's outside so it emulate component that is outside of tests (main testing component)
+  NestedComponent$new(component.name = "nc", parent = ic)
   ic$run(100)
   ic$run("foo")
   args <- lapply(ic$children$nc$events$.calls$foo, function(x) { x[["new"]][["value"]] })

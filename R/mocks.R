@@ -139,7 +139,7 @@ activeInput <- function(env = new.env(), ...) {
   }
   ## read only prop to test if this env is activeInput
   makeActiveBinding(
-    sym = "__reactive__",
+    sym = "__reactive_input__",
     fun = function(value) {
       if (missing(value)) {
         TRUE
@@ -207,9 +207,22 @@ isolate <- function(x) x
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
-    if (!is.null(obj[['__reactive__']])) {
-      obj[['__reactive__']] <- FALSE
-      if (obj[['__reactive__']]) {
+    if (!is.null(obj[['__reactive_input__']])) {
+      obj[['__reactive_input__']] <- FALSE
+      if (obj[['__reactive_input__']]) {
+        return(TRUE)
+      }
+    }
+  }
+  FALSE
+}
+
+is.active.output <- function(obj) {
+  if (is.environment(obj)) {
+    ## test read only prop to be sure
+    if (!is.null(obj[['__reactive_output__']])) {
+      obj[['__reactive_output__']] <- FALSE
+      if (obj[['__reactive_output__']]) {
         return(TRUE)
       }
     }
@@ -218,7 +231,7 @@ is.active.input <- function(obj) {
 }
 
 is.active.binding <- function(name, env) {
-  is.active.input(env) && name %in% env$.active.symbols
+  (is.active.input(env) || is.active.output(env)) && name %in% env$.active.symbols
 }
 
 #' Function used the same as battery::observeEvent (based on shiny::observeEvent)
@@ -281,6 +294,16 @@ activeOutput <- function(...) {
   input <- list(...)
   env <- new.env()
   env$.listeners <- list()
+  makeActiveBinding(
+    sym = "__reactive_output__",
+    fun = function(value) {
+      if (missing(value)) {
+        TRUE
+      }
+    },
+    env = env
+  )
+  env$.active.symbols = list()
   make.default.fn <- function(name) {
     privateName <- paste0("__", name)
     function(value) {
@@ -291,7 +314,6 @@ activeOutput <- function(...) {
         ## for Each uiOutput we add reactive value
         ## and new function to environement that will return value of that variable
         lapply(data$output, function(data) {
-          env$new(data$name)
           data$env$uiOutput <- make.uiOutput(env)
         })
         ## we use lapply to create closure
@@ -313,6 +335,10 @@ activeOutput <- function(...) {
   }
   env$new <- function(name) {
     init.value <- NULL
+    if (name %in% env$.active.symbols) {
+      return(NULL)
+    }
+    env$.active.symbols <- append(env$.active.symbols, list(name))
     if (name %in% ls(env) && is.environment(env[[name]]$env)) {
       init.value <- env[[name]]
       remove(list = name, envir = env)
@@ -374,12 +400,17 @@ safe.get <- function(name, env) {
 #' function check if expression from environment is function call
 #'
 is.function.call <- function(expr, env) {
-  if (typeof(expr) == 'language' && is.symbol(expr[[1]])) {
+  if (typeof(expr) == 'language' && is.symbol(expr[[1]]) && expr[[1]] != '{') {
     re <- paste0("^", escapeRegex(expr[[1]]), "\\(")
-    if (grepl(re, as.character(expr))[[1]]) {
+
+    if (any(grepl(re, deparse(expr)))) {
       value <- safe.get(deparse(expr[[1]]), env)
-      typeof(value) == 'closure'
-      return(TRUE)
+      if (typeof(value) == 'closure') {
+        ## if value environment is base env it mean it's native function
+        ## this prevent infinite recursion - maybe other part of the code
+        ## have some bug that it create initite loop but this fixed the issue
+        return(!identical(environment(value), environment(environment)))
+      }
     }
   }
   FALSE
@@ -393,13 +424,13 @@ escapeRegex <- function(string) {
 #' Function return true if function is internal - used to prevent infinite recursion
 #'
 is.internal.function <- function(fn.body) {
-  length(fn.body) == 2 && fn.body[[1]] == '.Internal'
+  length(fn.body) > 1 && fn.body[[1]] == '.Internal'
 }
 
 #' Function is parsing code like `foo() + bar()` that have type of language
-#' it and also detect cases of `foo()`, `x$foo()` or `x[[name]]()`
+#' and it also detect cases of `foo()`, `x$foo()` or `x[[name]]()`
 #' We do this to find functions and methods calls and extract names
-#' from inside of the functions body - body return same data
+#' from inside of the functions bodies - body return same data
 #' as substitute so we can call extractActiveNames on body
 parse.function <- function(item, env) {
   result <- list(
@@ -407,6 +438,11 @@ parse.function <- function(item, env) {
     output = list()
   )
   fn <- NULL
+  ## if value is foo() it's firt value is symbol
+  ## with case of foo$bar() and foo[[name]] the first element is
+  ## structure with 3 elements 
+  ## eg. foo$bar(input$name) it have structure like this:
+  ## list(list('$', 'foo', 'bar'), list('$', 'input', 'name'))
   if (is.symbol(item[[1]])) {
     fn <- safe.get(deparse(item[[1]]), env)
   } else if (length(item[[1]]) > 1) {
@@ -429,8 +465,12 @@ parse.function <- function(item, env) {
   if (!is.null(fn)) {
     ## detect active names from inside functions
     body.fn <- body(fn)
-    if (!is.internal.function(body.fn)) {
-      env.fn <- environment(fn)
+    if (!is.null(body.fn) && !is.internal.function(body.fn) && length(body.fn) > 1) {
+      if (is.environment(env)) {
+        env.fn <- merge.env(environment(fn), env)
+      } else {
+        env.fn <- list(closure = env$closure, merge.env(environment(fn), env$env))
+      }
       result <- extractActiveNames(list(expr = body.fn, env = env.fn))
     }
   }
@@ -458,6 +498,7 @@ extractActiveNames <- function(data) {
   isolate <- FALSE
   for (i in seq_along(s)) {
     item <- s[[i]]
+    
     ## detect isolate() or self$isolate used in components active values should be ignored
     if ((is.symbol(item) && item == 'isolate') ||
         (length(item) > 1 && item[[1]] == '$' && item[[3]] == 'isolate')) {
@@ -465,11 +506,12 @@ extractActiveNames <- function(data) {
       next
     }
     if (length(item) > 1 && item[[1]] == 'uiOutput') {
-      ## invoke self$ns that is insisde uiOutput to get the string
+      ## we save environment for wrapper function so we can pach it
+      ## it with uiOUtput function in activeOutput
       args <- list(
-        name = eval(item[[2]], env = env),
         env = `if`(is.null(closure), env, closure)
       )
+
       result$output <- append(result$output, list(args))
       next
     }
@@ -477,7 +519,6 @@ extractActiveNames <- function(data) {
     ## it's inside `r6.class.add` function where `fn.expr` is inline function
     ## injected by substitute - but it's not function but closure
     if (typeof(item) == 'closure') {
-      ## with include function you need to evaluate it to get the body but not with closure
       body.fn <- body(item)
       ## here we need two environments - we can't merge them because we need to
       ## modify one of them in activeOutput setter - this case is for render() method
@@ -491,9 +532,8 @@ extractActiveNames <- function(data) {
       ## body(fn) give same result as substitute so we can use recursion here
       result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = fn.env)))
       next
-    }
-    if (is.function.call(item, env)) {
-      e <- `if`(is.null(closure), env, list(env, closure))
+    } else if (is.function.call(item, data$env)) {
+      
       result <- merge.props(result, parse.function(item, data$env))
       if (length(item) > 1) {
         result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
@@ -508,7 +548,7 @@ extractActiveNames <- function(data) {
       ## sub-expression foo$name
       if (item == "$") {
         name <- deparse(s[[i + 1]])
-        value <- safe.get(name, env) ## get foo from env - it will return NULL and not throw like get
+        value <- safe.get(name, data$env) ## get foo from env - it will return NULL and not throw like get
         if (!is.null(value) && is.active.input(value)) {
           metaData <- list(
             name = name,
@@ -524,12 +564,12 @@ extractActiveNames <- function(data) {
         name <- deparse(s[[i + 1]])
         prop <- if (is.name(arg)) {
           varName <- deparse(arg)
-          safe.get(varName,  env) ## get [[ name ]] from env
+          safe.get(varName,  data$env) ## get [[ name ]] from env
         } else if (is.character(arg)) {
           arg
         }
         if (!is.null(prop)) {
-          value <- safe.get(name, env)
+          value <- safe.get(name, data$env)
           if (!is.null(value) && is.active.input(value)) {
             metaData <- list(
               name = name,
@@ -567,6 +607,9 @@ makeReactiveBinding <- function(name, env) {
 #' @param env - enviroment that should be active output
 make.uiOutput <- function(env) {
   function(name) {
+    if (is.active.output(env)) {
+      env$new(name)
+    }
     ## return same div as shiny
     shiny::tags$div(
       id = name,

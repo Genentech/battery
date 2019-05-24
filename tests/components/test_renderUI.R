@@ -1,9 +1,9 @@
 context('test_renderUI')
 
-source("../../R/mocks.R")
-source("../../R/components.R")
+##source("../../R/mocks.R")
+##source("../../R/components.R")
 
-## overwrite shiny function so we know that we have right inject function istead of shiny one
+## overwrite shiny function so we know that we have right injected function istead of shiny one
 uiOutput <- function(x) x
 
 x_test_that <- function(x,y) NULL
@@ -31,6 +31,8 @@ test_that('it renders the output using uiOutput', {
   )
   ## component.id is a way to force id when creating two instances 
   c <- C$new(input = input, output = output, session = session)
+  ## it also work when you create active output after adding first value
+  ## so you can know what is the id when creating multiple instances
   output$new(c$ns("xx"))
   output$new("foo")
   output$foo <- renderUI({ c$render() })
@@ -58,7 +60,10 @@ test_that('is should render output when uiOutput is in function', {
   fn <- uiOutput
   foo <- function(name) {
     args <<- list(name)
-    print(uiOutput)
+    ## foo environment is patched in battery::activeOutput
+    ## so it have different uiOutput function with active value
+    ## same shiny::tags as with shiny and with output[[name]] as
+    ## content inside shiny::tags
     expect_false(identical(uiOutput, fn))
     uiOutput(name)
   }
@@ -93,6 +98,7 @@ test_that('is should render output when uiOutput is in function', {
     tags$div(
       tags$p("foo bar"),
       tags$div(
+        id = "C1_xx",
         class = "shiny-html-output",
         tags$p("hello")
       )
@@ -100,4 +106,8 @@ test_that('is should render output when uiOutput is in function', {
   )
 })
 
+test_that('is should render output when uiOutput is in other method', {})
 
+test_that('it should render output with active input', {})
+
+test_that('it should render output with active input inside method', {})
