@@ -199,10 +199,12 @@ activeInput <- function(env = new.env(), ...) {
   env
 }
 
+# -----------------------------------------------------------------------------
 #' name used only inside renderUI in substitute phase
 #' @export
 isolate <- function(x) x
 
+# -----------------------------------------------------------------------------
 #' Function for checking if object is actie input - used by extractActiveInputs
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
@@ -217,6 +219,7 @@ is.active.input <- function(obj) {
   FALSE
 }
 
+# -----------------------------------------------------------------------------
 is.active.output <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
@@ -230,10 +233,12 @@ is.active.output <- function(obj) {
   FALSE
 }
 
+# -----------------------------------------------------------------------------
 is.active.binding <- function(name, env) {
   (is.active.input(env) || is.active.output(env)) && name %in% env$.active.symbols
 }
 
+# -----------------------------------------------------------------------------
 #' Function used the same as battery::observeEvent (based on shiny::observeEvent)
 #' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
 #' destroy previous created observer, so there are no duplicates
@@ -286,6 +291,7 @@ observeEventMock <- function(eventExpr,
   }
 }
 
+# -----------------------------------------------------------------------------
 #' Function create active binding output mock to be used with renderUI mock
 #'
 #' @param args - named initial active inputs
@@ -359,6 +365,7 @@ activeOutput <- function(...) {
   env
 }
 
+# -----------------------------------------------------------------------------
 #' RenderUI just send exression to output active prop, the prop need to be added first
 #' if renderUI is called in constructor and it use self$ns() you can pass component.id to
 #' constructor so instance will have same id and you can generate the name before constructor
@@ -375,6 +382,7 @@ renderUI <- function(expr) {
   )
 }
 
+# -----------------------------------------------------------------------------
 merge.props <- function(desc, src) {
   lapply(names(src), function(name) {
     desc[[name]] <<- append(desc[[name]], src[[name]])
@@ -382,6 +390,7 @@ merge.props <- function(desc, src) {
   desc
 }
 
+# -----------------------------------------------------------------------------
 safe.get <- function(name, env) {
   if (is.environment(env)) {
     if (exists(name, env)) {
@@ -397,6 +406,7 @@ safe.get <- function(name, env) {
   }
 }
 
+# -----------------------------------------------------------------------------
 #' function check if expression from environment is function call
 #'
 is.function.call <- function(expr, env) {
@@ -416,17 +426,27 @@ is.function.call <- function(expr, env) {
   FALSE
 }
 
+# -----------------------------------------------------------------------------
+is.method.call <- function(expr) {
+  typeof(expr) == 'language' && length(expr) == 2 && typeof(expr[[1]]) == 'language' &&
+  expr[[1]][[1]] == '$' &&
+    grepl(paste0("^", escapeRegex(deparse(expr[[1]])), "\\("), deparse(expr))
+}
+
+# -----------------------------------------------------------------------------
 #' function taken from Hmisc package source code (no need to whole package)
 escapeRegex <- function(string) {
   gsub('([.|()\\^{}+$*?]|\\[|\\])', '\\\\\\1', string)
 }
 
+# -----------------------------------------------------------------------------
 #' Function return true if function is internal - used to prevent infinite recursion
 #'
 is.internal.function <- function(fn.body) {
   length(fn.body) > 1 && fn.body[[1]] == '.Internal'
 }
 
+# -----------------------------------------------------------------------------
 #' Function is parsing code like `foo() + bar()` that have type of language
 #' and it also detect cases of `foo()`, `x$foo()` or `x[[name]]()`
 #' We do this to find functions and methods calls and extract names
@@ -477,6 +497,7 @@ parse.function <- function(item, env) {
   result
 }
 
+# -----------------------------------------------------------------------------
 #' Traverse substitute expressions and function invocation and extract all references to active elements
 #' created by activeInput and uiOutput
 #'
@@ -532,7 +553,7 @@ extractActiveNames <- function(data) {
       ## body(fn) give same result as substitute so we can use recursion here
       result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = fn.env)))
       next
-    } else if (is.function.call(item, data$env)) {
+    } else if (is.function.call(item, data$env) || is.method.call(item)) {
       
       result <- merge.props(result, parse.function(item, data$env))
       if (length(item) > 1) {
@@ -590,6 +611,7 @@ extractActiveNames <- function(data) {
   result
 }
 
+# -----------------------------------------------------------------------------
 #' Mock for shiny::makeReactiveBinding to be injected into components
 #' limiation it can't be called after value is added to environment (it will work in components)
 #'
@@ -602,6 +624,7 @@ makeReactiveBinding <- function(name, env) {
   env
 }
 
+# -----------------------------------------------------------------------------
 #' function that return uiOutput function for given enviromnet
 #'
 #' @param env - enviroment that should be active output

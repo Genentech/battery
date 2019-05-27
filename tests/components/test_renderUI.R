@@ -1,10 +1,7 @@
 context('test_renderUI')
 
-##source("../../R/mocks.R")
-##source("../../R/components.R")
-
 ## overwrite shiny function so we know that we have right injected function istead of shiny one
-uiOutput <- function(x) x
+uiOutput <- function(x) stop("function not overwritten by mocks")
 
 x_test_that <- function(x,y) NULL
 
@@ -106,8 +103,57 @@ test_that('is should render output when uiOutput is in function', {
   )
 })
 
-test_that('is should render output when uiOutput is in other method', {})
+test_that('is should render output when uiOutput is in other method', {
+  session <- list()
+  input <- activeInput()
+  output <- activeOutput()
+  
+  C <- battery::component(
+    classname = "C",
+    public = list(
+      constructor = function() {
+        self$output[[self$ns("xxx")]] <- renderUI({
+          tags$p("hello")
+        })
+      },
+      render = function() {
+        tags$div(
+          tags$p("foo bar"),
+          self$foo("xxx")
+        )
+      },
+      foo = function(name) {
+        tags$div(class = "foo", uiOutput(self$ns(name)))
+      }
+    )
+  )
+  c <- C$new(input = input, output = output, session = session)
+  output$new("foo")
+  output$foo <- renderUI({
+    c$render()
+  })
+
+  expect_equal(
+    output$foo,
+    tags$div(
+      tags$p("foo bar"),
+      tags$div(
+        class = "foo",
+        tags$div(
+          id = "C1_xxx",
+          class = "shiny-html-output",
+          tags$p("hello")
+        )
+      )
+    )
+  )
+})
 
 test_that('it should render output with active input', {})
 
+test_that('is should render output when uiOutput is in other method that have if', {
+})
+
+
 test_that('it should render output with active input inside method', {})
+
