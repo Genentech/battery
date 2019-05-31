@@ -1,5 +1,7 @@
 context("test_input")
 
+battery::useMocks()
+
 test_that('it should create init binding', {
   input <- activeInput(foo = NULL, bar = NULL)
   input$foo <- 'foo'

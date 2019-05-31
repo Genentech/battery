@@ -1,5 +1,7 @@
 context("test_events")
 
+battery::useMocks()
+
 test_that('it should emit event', {
   InputComponent <- battery::component(
     classname = "InputComponent",

@@ -1,9 +1,6 @@
 context('test_renderUI')
 
-#source("../../R/mocks.R")
-#source("../../R/components.R")
-#library(shiny)
-#observeEvent <- observeEventMock
+battery::useMocks()
 
 ## overwrite shiny function so we know that we have right injected function istead of shiny one
 uiOutput <- function(x) stop("function not overwritten by mocks")

@@ -1,5 +1,7 @@
 context("test_connection")
 
+battery::useMocks()
+
 test_that('it should create input/output binding', {
   input <- activeInput(foo = NULL)
   output <- activeOutput(bar = NULL)

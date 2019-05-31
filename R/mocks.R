@@ -695,3 +695,22 @@ make.uiOutput <- function(env) {
     )
   }
 }
+
+
+#' Helper function to be used in test files that overwrite shiny functions
+#' 
+#' @export
+useMocks <- function() {
+  library(testthat)
+  library(shiny)
+  
+  observeEvent <<- battery::observeEventMock
+  assignInNamespace("observeEvent", observeEvent, "battery")
+  assignInNamespace("observeEvent", observeEvent, "shiny")
+  isolate <<- battery::isolate
+  assignInNamespace("isolate", isolate, "shiny")
+  makeReactiveBinding <- battery::makeReactiveBinding
+  assignInNamespace("makeReactiveBinding", makeReactiveBinding, "shiny")
+  renderUI <<- battery::renderUI
+  assignInNamespace("renderUI", renderUI, "shiny")
+}

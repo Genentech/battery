@@ -1,5 +1,7 @@
 context("test_observeEvent")
 
+battery::useMocks()
+
 test_that('it should invoke observeEvent', {
   input <- activeInput(foo = NULL)
   env <- new.env()
