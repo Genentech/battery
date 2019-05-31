@@ -6,7 +6,7 @@
 so you don't confuse battery component with normal R6Class}
 \usage{
 component(classname, public = NULL, private = NULL, static = NULL,
-  inherit = battery::Component, spy = FALSE, ...)
+  inherit = battery::Component, ...)
 }
 \arguments{
 \item{public}{- list of public functions and properties}

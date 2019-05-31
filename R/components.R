@@ -75,6 +75,7 @@ Component <- R6::R6Class(
   classname = 'Component',
   private = list(
     handlers = NULL,
+    ..spying = NULL,
     observers = NULL,
     global =  list2env(list(components = list())),
     ## ---------------------------------------------------------------
@@ -109,7 +110,7 @@ Component <- R6::R6Class(
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL, isolate = NULL,
                           makeReactiveBinding = NULL, observeEvent = NULL,
-                          component.id = NULL, ...) {
+                          component.id = NULL, spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -131,6 +132,7 @@ Component <- R6::R6Class(
           self$session <- session
         }
       }
+      private$..spying <- spy
       private$handlers <- list()
       private$observers <- list()
       self$static$count <- self$static$count + 1
@@ -384,7 +386,6 @@ component <- function(classname,
                       private = NULL,
                       static = NULL,
                       inherit = battery::Component,
-                      spy = FALSE,
                       ...) {
   static.env <- new.env()
   static.env$count <- 0
@@ -396,26 +397,28 @@ component <- function(classname,
   class <- R6::R6Class(
     classname = classname,
     inherit = inherit,
-    public = `if`(spy, list(
-      .calls = list(),
+    public = list(
+      .calls = list()
+    ),
+    private = list(
       .spy = function(name, ...) {
         if (is.null(self$.calls[[name]])) {
           self$.calls[[name]] <- list()
         }
         args <- list(...)
         self$.calls[[name]] <- c(self$.calls[[name]], list(args))
-      })),
+      }),
     ...
   )
   class$set('public', 'static', static.env)
-  r6.class.add(class, public, spy = spy)
-  r6.class.add(class, private, spy = spy)
+  r6.class.add(class, public)
+  r6.class.add(class, private)
   class$extend <- make.extend(class)
   class
 }
 
 #' helper function for adding properties to R6Class
-r6.class.add <- function(class, seq, spy = FALSE) {
+r6.class.add <- function(class, seq) {
 
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
   lapply(names(seq), function(name) {
@@ -438,11 +441,11 @@ r6.class.add <- function(class, seq, spy = FALSE) {
         env$super <- get("super", current)
         env$private <- get("private", current)
         environment(fn) <- env
-        if (spy) {
-          env$self$.spy(name = name, ...)
+        if (env$private$..spying) {
+          env$private$.spy(name = name, ...)
         }
         fn(...)
-      }, list(fn.expr = seq[[name]], name = name, spy = spy)))
+      }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
     } else {
       class$set(prop.name, name, seq[[name]])

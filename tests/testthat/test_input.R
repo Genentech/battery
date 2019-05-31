@@ -1,3 +1,6 @@
+library(testthat)
+library(shiny)
+
 context("test_input")
 
 battery::useMocks()

@@ -8,13 +8,14 @@
 
 Battery - R6Class based component architecture for Shiny apps with testing framework.
 The components design is based on AngularJS that can emit event from root it it's children
-and broadcast events from child to parents.
+and broadcast events from child to parents. It give better structure of non trivial shiny apps,
+that need to have lots of differnt parts.
 
 # Components
 
-Components are based on R6Class to create new component you call battery::component function or use
+Components are based on R6Class. To create new component you call battery::component function or use
 $extend method on any component. You can also create new R6 class that inherit from battery::Component
-but this should not be used because you will lost access to static variable inside R6Class methods
+but this should not be used because you will lost access to static variables inside R6Class methods
 (you will need to access them using `self$static`) and will not be able to use spy parameter to check
 method calls while testing your components.
 
@@ -151,6 +152,13 @@ will work properly.
 
 See example/shiny-app.R for simple shiny app that you can run to test battery R pacakge.
 
+
+## Events
+
+Nice feature of battery is that create structure for events, just like in AngularJS (which batter is inspired by) you
+can call `$emit` and `$broadcast` methods to send events to parets and to all children. Future versions may have notion of
+services but right now to send to siblings you need to emit the event to parent and in parent broadcast the event it all children.
+
 # Testing Components
 
 when testing Components you can use this mocks instead of running whole shiny app. So you can
@@ -160,6 +168,8 @@ Here is quick summary for how to use testing framework. See `./tests/` directory
 to tests you own components.
 
 ## Mocks
+
+You should never need to use mocks directly but here is examples how to use it, for testing components see next section
 
 creating empty input
 
@@ -255,3 +265,58 @@ input$foo <- 200
 print(input$foo) ## 200
 print(output$bar) ## 210
 ```
+
+## Testing components
+
+## Mock reactive shiny data
+
+Battery have moks for input and output that you can use to test your components. Just create session
+(base batter component don't use it) `activeInput` and `activeOutout` and create instance of component just like R6Class
+
+```
+session <- list()
+input <- activeInput()
+output <- activeOutput()
+x <- Comp$new(input = input, output = output, session = session)
+```
+
+if your component have more arguments pass them to constructor.
+
+now if component call something like this:
+
+```R
+self$outout[[self$ns("xxx")]] <- renderUI({
+   paste("you typed: ", self$input$input)
+})
+```
+
+you can call:
+
+```R
+output$new(x$ns("xxx"))
+```
+
+after constructor is called, so this renderUI can be in constructor (where they usually be created) same is with active input
+active property with `$new` can be created after component is created so you can get namespace id from component.
+
+```
+input$new("button")
+```
+
+## Spies
+
+If you create your component with spy option set to `TRUE` it will spy on all the methods. Each time a method
+is called it will be in component$.calls named list, were each function will have list of argument lists
+
+e.g.
+
+```R
+t <- TestingComponent$new(input = input, output = output, session = session, spy = TRUE)
+
+t$foo(10)
+t$foo(x = 20)
+expect_that(t$.calls$foo, list(list(10), list(x = 20)))
+```
+
+constructor is also on the list of `.calls`, everything except of functions that are in base component class (this may change in
+the future if will be needed).

@@ -1,3 +1,6 @@
+library(testthat)
+library(shiny)
+
 context("test_connection")
 
 battery::useMocks()
@@ -175,4 +178,32 @@ test_that('it should not find active name when using isolate', {
      isolate({ input$foo })
    })
    expect_equal(output$bar, 20)
+})
+
+test_that('it should allow to create active input after output', {
+  input <- activeInput()
+  output <- activeOutput()
+  output$bar <- renderUI({
+    input$foo + 10
+  })
+  output$new("bar")
+  input$new("foo")
+  input$foo <- 10
+  expect_equal(output$bar, 20)
+  input$foo <- 20
+  expect_equal(output$bar, 30)
+})
+          
+test_that('it should allow to create active output after renderUI', {
+  input <- activeInput()
+  output <- activeOutput()
+  output$bar <- renderUI({
+    input$foo + 10
+  })
+  input$new("foo")
+  output$new("bar")
+  input$foo <- 10
+  expect_equal(output$bar, 20)
+  input$foo <- 20
+  expect_equal(output$bar, 30)
 })

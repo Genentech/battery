@@ -1,3 +1,6 @@
+library(testthat)
+library(shiny)
+
 context("test_events")
 
 battery::useMocks()
@@ -13,28 +16,26 @@ test_that('it should emit event', {
       foo = function(x) {
 
       }
-    ),
-    spy = TRUE
+    )
   )
   args <- list()
   TestingComponent <- battery::component(
     classname = "TestingComponent",
     public = list(
       constructor = function() {
-        InputComponent$new(component.name = "c", parent = self)
+        InputComponent$new(component.name = "c", parent = self, spy = TRUE)
         self$on("foo", function(value, target) {
           self$foo(value)
           args <<- list(value)
         })
       },
       foo = function(x) { }
-    ),
-    spy = TRUE
+    )
   )
   session <- list()
   input <- activeInput()
   output <- activeOutput()
-  t <- TestingComponent$new(input = input, output = output, session = session)
+  t <- TestingComponent$new(input = input, output = output, session = session,  spy = TRUE)
   t$children$c$run(100)
   expect_equal(args, list(100))
   expect_equal(t$.calls$foo, list(list(100)))
@@ -74,14 +75,13 @@ test_that('should emit events to parent of parent', {
         })
       },
       foo = function(x) { }
-    ),
-    spy = TRUE
+    )
   )
   session <- list()
   input <- activeInput()
   output <- activeOutput()
 
-  t <- ParentTestingComponent$new(input = input, output = output, session = session)
+  t <- ParentTestingComponent$new(input = input, output = output, session = session, spy = TRUE)
 
   t$children$tc$children$c$run(100)
   expect_equal(args, list(100))

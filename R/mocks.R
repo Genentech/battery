@@ -701,16 +701,17 @@ make.uiOutput <- function(env) {
 #' 
 #' @export
 useMocks <- function() {
-  library(testthat)
-  library(shiny)
-  
-  observeEvent <<- battery::observeEventMock
+  observeEvent <- battery::observeEventMock
   assignInNamespace("observeEvent", observeEvent, "battery")
   assignInNamespace("observeEvent", observeEvent, "shiny")
-  isolate <<- battery::isolate
+  isolate <- battery::isolate
   assignInNamespace("isolate", isolate, "shiny")
   makeReactiveBinding <- battery::makeReactiveBinding
   assignInNamespace("makeReactiveBinding", makeReactiveBinding, "shiny")
-  renderUI <<- battery::renderUI
+  renderUI <- battery::renderUI
   assignInNamespace("renderUI", renderUI, "shiny")
+  env <- parent.frame()
+  env$observeEvent <- observeEvent
+  env$isolate <- isolate
+  env$renderUI <- renderUI
 }
