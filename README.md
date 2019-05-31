@@ -270,17 +270,33 @@ print(output$bar) ## 210
 
 ## Mock reactive shiny data
 
-Battery have moks for input and output that you can use to test your components. Just create session
+when you're writing tests first you need to call
+
+
+```
+library(testthat)
+library(shiny)
+
+battery::useMocks()
+```
+
+At the root of the test. This will import testthat and shiny and `useMocks()` will patch the functions
+that came from shiny with proper mocks created by battter, Mocks give better way to test the active variables.
+You can inspect `output` and `input` without an any issue usually related to shiny apps (e.g. require of `isolate`).
+
+Also Battery have moks for input and output that you can use to test your components. Just create session
 (base batter component don't use it) `activeInput` and `activeOutout` and create instance of component just like R6Class
 
 ```
-session <- list()
-input <- activeInput()
-output <- activeOutput()
-x <- Comp$new(input = input, output = output, session = session)
+test_that('it should work', {
+  session <- list()
+  input <- activeInput()
+  output <- activeOutput()
+  x <- Comp$new(input = input, output = output, session = session)
+})
 ```
 
-if your component have more arguments pass them to constructor.
+if your component have more arguments pass them to the constructor.
 
 now if component call something like this:
 
@@ -303,6 +319,8 @@ active property with `$new` can be created after component is created so you can
 input$new("button")
 ```
 
+the order doesn't matter you can create input before output and vice versa.
+
 ## Spies
 
 If you create your component with spy option set to `TRUE` it will spy on all the methods. Each time a method
@@ -318,5 +336,5 @@ t$foo(x = 20)
 expect_that(t$.calls$foo, list(list(10), list(x = 20)))
 ```
 
-constructor is also on the list of `.calls`, everything except of functions that are in base component class (this may change in
+constructor is also on the list of `.calls`, everything except of functions that are in base component R6 class (this may change in
 the future if will be needed).

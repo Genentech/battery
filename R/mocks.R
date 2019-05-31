@@ -710,6 +710,7 @@ useMocks <- function() {
   assignInNamespace("makeReactiveBinding", makeReactiveBinding, "shiny")
   renderUI <- battery::renderUI
   assignInNamespace("renderUI", renderUI, "shiny")
+  ## we modify the parent frame so it update environment when function is called not the package
   env <- parent.frame()
   env$observeEvent <- observeEvent
   env$isolate <- isolate
