@@ -108,8 +108,7 @@ Component <- R6::R6Class(
     ## :: native R6 class constructor
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
-                          parent = NULL, component.name = NULL, isolate = NULL,
-                          makeReactiveBinding = NULL, observeEvent = NULL,
+                          parent = NULL, component.name = NULL,
                           component.id = NULL, spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
