@@ -177,7 +177,7 @@ Component <- R6::R6Class(
          self$children[[name]] <- NULL
       } else {
         for (name in names(self$children)) {
-          if (self$children[[name]] == child) {
+          if (self$children[[name]]$id == child$id) {
             self$children[[name]] <- NULL
             break
           }
@@ -349,7 +349,7 @@ Component <- R6::R6Class(
     ## :: Method remove all observers created for this component
     ## ---------------------------------------------------------------
     destroy = function() {
-      for (even in names(private$handlers[[event]])) {
+      for (event in names(private$handlers)) {
         self$off(event)
       }
       for (handler in names(private$observers)) {
