@@ -1,3 +1,5 @@
+#' Helper function used by observeEvent
+#' 
 #' @export
 handleErrors <- function(expr, reactionsPerType = list()){
   withCallingHandlers(

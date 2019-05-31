@@ -1,5 +1,4 @@
 library(testthat)
-library(battery)
 library(shiny)
 
 ## setup mocks
@@ -21,5 +20,5 @@ test_dir <- function(dir) {
   testthat::test_dir(path)
 }
 
-test_dir("mocks")
-test_dir("components")
+a <- test_dir("mocks")
+b <- test_dir("components")

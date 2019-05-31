@@ -370,10 +370,6 @@ Component <- R6::R6Class(
   )
 )
 
-merge.env <- function(...) {
-  as.environment(do.call('c', lapply(list(...), as.list)))
-}
-
 #' Helper function for defining components with additional static field. It can also be used
 #' so you don't confuse battery component with normal R6Class
 #'

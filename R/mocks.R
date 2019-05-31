@@ -58,7 +58,6 @@
 #' Output and connection between input and output can be explained using this example code
 #'
 #' ##
-#' input <- activeInput(foo = NULL)
 #'
 #' input$foo <- 100
 #'
@@ -316,14 +315,14 @@ activeOutput <- function(...) {
       if (missing(value)) {
         env[[privateName]]
       } else {
-        data <- extractActiveNames(value)
+        active.names <- extractActiveNames(value)
         ## for Each uiOutput we add reactive value
         ## and new function to environement that will return value of that variable
-        lapply(data$output, function(data) {
-          data$env$uiOutput <- make.uiOutput(env)
+        lapply(active.names$output, function(name) {
+          name$env$uiOutput <- make.uiOutput(env)
         })
         ## we use lapply to create closure
-        lapply(data$input, function(var) {
+        lapply(active.names$input, function(var) {
           ## remove previous listener for given expression (when called twice)
           var$active$off(var$prop, value$expr)
           ## evaluate renderUI expression when extracted active input value changes
@@ -428,7 +427,7 @@ is.function.call <- function(expr, env) {
 
 # -----------------------------------------------------------------------------
 is.method.call <- function(expr) {
-  typeof(expr) == 'language' && length(expr) == 2 && typeof(expr[[1]]) == 'language' &&
+  typeof(expr) == 'language' && typeof(expr[[1]]) == 'language' &&
   expr[[1]][[1]] == '$' &&
     grepl(paste0("^", escapeRegex(deparse(expr[[1]])), "\\("), deparse(expr))
 }
@@ -497,29 +496,112 @@ parse.function <- function(item, env) {
   result
 }
 
+#' Helper function that create single environment from environments in arguments
+#' 
+merge.env <- function(...) {
+  args <- list(...)
+  if (length(args) > 1) {
+    as.environment(do.call('c', lapply(args, as.list)))
+  }
+}
+
+#' Helper function used for debugging it convert nested expression structure tree to list
+#' 
+#' @param expr - substitute expression
+recur.list <- function(expr) {
+  if (length(expr) == 1) {
+    deparse(expr)
+  } else {
+    lapply(as.list(expr), function(e) {
+      recur.list(e)
+    })
+  }
+}
+
+#' Higher order function for creating functions for checking if item is foo$bar or foo[[bar]]
+#' 
+#' @param chr - character to match as first item in expression
+is.variable <- function(chr) {
+  function(item) {
+    typeof(item) == 'language' && length(item) == 3 && item[[1]] == chr
+  }
+}
+
+#' Function check if expression is foo$bar
+#' 
+#' @param item - substitute expression
+is.dolar.variable <- is.variable('$')
+
+#' Function check if argumnet is expression foo[[bar]]
+#' 
+#' @param item - substitute expression
+is.dbbracket.variable <- is.variable('[[')
+
+
+#' Recursive function that get nested object and prop name for give object access exression
+#' 
+#' @param item - substitute expression
+#' @param env - environment for this expression
+get.object <- function(item, env) {
+  ## substitute( self$x$input[["foo"]]$foo ) have this structure:
+  ## ["$",["[[",["$",["$","self","x"],"input"],"\"foo\""],"foo"] 
+  ## the function parses this nested expression structure
+  if (typeof(item) == 'language' && length(item) == 3 &&
+      deparse(item[[1]]) %in% c('[[', '$')) {
+    obj <- if (is.name(item[[2]])) {
+      name <- deparse(item[[2]])
+      safe.get(name, env)
+    } else if (is.dolar.variable(item[[2]]) || is.dbbracket.variable(item[[2]])) {
+      x <- get.object(item[[2]], env)
+      x$obj[[x$prop]]
+    }
+    if (!is.null(obj)) {
+      if (item[[1]] == '$') {
+        list(
+          obj = obj,
+          prop = deparse(item[[3]])
+        )
+      } else if (item[[1]] == '[[') {
+        arg <- item[[3]]
+        prop <- if (is.name(arg)) {
+          varName <- deparse(arg)
+          safe.get(varName,  env) ## get [[ name ]] from env
+        } else if (is.character(arg)) {
+          arg
+        }
+        if (!is.null(prop)) {
+          list(
+            obj = obj,
+            prop = prop
+          )
+        }
+      }
+    }
+  }
+}
+
 # -----------------------------------------------------------------------------
 #' Traverse substitute expressions and function invocation and extract all references to active elements
 #' created by activeInput and uiOutput
 #'
 #' @param data - named list: expr - substitute expr, env - parent env (value returned from renderUI)
-extractActiveNames <- function(data) {
-  s <- data$expr
+extractActiveNames <- function(arg) {
+  s <- arg$expr
   closure <- NULL
-  if (is.environment(data$env)) {
-    env <- data$env
+  if (is.environment(arg$env)) {
+    env <- arg$env
   } else {
-    closure <- data$env$closure
-    env <- data$env$env
+    closure <- arg$env$closure
+    env <- arg$env$env
   }
-  ## traverse
   result <- list(
     input = list(),
     output = list()
   )
   isolate <- FALSE
+  
   for (i in seq_along(s)) {
     item <- s[[i]]
-    
     ## detect isolate() or self$isolate used in components active values should be ignored
     if ((is.symbol(item) && item == 'isolate') ||
         (length(item) > 1 && item[[1]] == '$' && item[[3]] == 'isolate')) {
@@ -529,11 +611,10 @@ extractActiveNames <- function(data) {
     if (length(item) > 1 && item[[1]] == 'uiOutput') {
       ## we save environment for wrapper function so we can pach it
       ## it with uiOUtput function in activeOutput
-      args <- list(
+      output.args <- list(
         env = `if`(is.null(closure), env, closure)
       )
-
-      result$output <- append(result$output, list(args))
+      result$output <- append(result$output, list(output.args))
       next
     }
     ## include function - needed for components - where there is `fn <- fn.expr`
@@ -553,55 +634,28 @@ extractActiveNames <- function(data) {
       ## body(fn) give same result as substitute so we can use recursion here
       result <- merge.props(result, extractActiveNames(list(expr = body.fn, env = fn.env)))
       next
-    } else if (is.function.call(item, data$env) || is.method.call(item)) {
-      
-      result <- merge.props(result, parse.function(item, data$env))
+    } else if (is.function.call(item, arg$env) || is.method.call(item)) {
+      result <- merge.props(result, parse.function(item, arg$env))
       if (length(item) > 1) {
-        result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
+        result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))
       }
-    } else if (length(item) > 1 && !isolate) {
-      result <- merge.props(result, extractActiveNames(list(expr = item, env = data$env)))
+      
+    } else if (length(item) > 1 && !isolate &&
+               !(is.dolar.variable(item) || is.dbbracket.variable(item))) {
+      result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))
     } else if (typeof(item) == "language") {
-      result <- merge.props(result, parse.function(item, data$env))
-    } else if (is.name(item)) {
-      ## here we find active bindings
-      metaData <- NULL
-      ## sub-expression foo$name
-      if (item == "$") {
-        name <- deparse(s[[i + 1]])
-        value <- safe.get(name, data$env) ## get foo from env - it will return NULL and not throw like get
-        if (!is.null(value) && is.active.input(value)) {
+      if (is.dolar.variable(item) || is.dbbracket.variable(item)) {
+        ## foo$bar... and foo[[]] ...
+        object.data <- get.object(item, arg$env)
+        if (is.active.input(object.data$obj)) {
           metaData <- list(
-            name = name,
-            active = value,
-            prop = s[[i + 2]]
+            active = object.data$obj,
+            prop = object.data$prop
           )
+          result$input <- append(result$input, list(metaData))
         }
-      } else if (item == '[[') {
-        arg <- s[[i + 2]]
-        ## sub-expression is foo[[ name ]] or foo[[ "name" ]]
-        ## first name need to be extracted from environment
-        ## second is return as is because it's string
-        name <- deparse(s[[i + 1]])
-        prop <- if (is.name(arg)) {
-          varName <- deparse(arg)
-          safe.get(varName,  data$env) ## get [[ name ]] from env
-        } else if (is.character(arg)) {
-          arg
-        }
-        if (!is.null(prop)) {
-          value <- safe.get(name, data$env)
-          if (!is.null(value) && is.active.input(value)) {
-            metaData <- list(
-              name = name,
-              active = value,
-              prop = prop
-            )
-          }
-        }
-      }
-      if (!is.null(metaData)) {
-        result$input <- append(result$input, list(metaData))
+      } else {
+        result <- merge.props(result, parse.function(item, arg$env))
       }
     }
   }
