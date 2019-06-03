@@ -13,9 +13,9 @@ that need to have lots of differnt parts.
 
 # Components
 
-Components are based on R6Class. To create new component you call battery::component function or use
-$extend method on any component. You can also create new R6 class that inherit from battery::Component
-but this should not be used because you will lost access to static variables inside R6Class methods
+Components are based on R6Class. To create new component you should call `battery::component` function or use
+$extend method on any component. You can also create new R6 class that inherit from `battery::Component`
+but this should not be used because you will loose access to static variables inside R6Class methods
 (you will need to access them using `self$static`) and will not be able to use spy parameter to check
 method calls while testing your components.
 
@@ -285,7 +285,8 @@ that came from shiny with proper mocks created by battter, Mocks give better way
 You can inspect `output` and `input` without an any issue usually related to shiny apps (e.g. require of `isolate`).
 
 Also Battery have moks for input and output that you can use to test your components. Just create session
-(base batter component don't use it) `activeInput` and `activeOutout` and create instance of component just like R6Class
+(base batter component don't use it) `activeInput` and `activeOutput` and create instance of component
+using `battery::component` or `battery::Component$extend`.
 
 ```
 test_that('it should work', {
@@ -301,9 +302,15 @@ if your component have more arguments pass them to the constructor.
 now if component call something like this:
 
 ```R
-self$outout[[self$ns("xxx")]] <- renderUI({
-   paste("you typed: ", self$input$input)
-})
+Comp <- battery::component(
+  public = list(
+    constructor = function() {
+      self$outout[[self$ns("xxx")]] <- renderUI({
+        paste0("you typed: ", self$input$foo)
+      })
+    }
+  )
+)
 ```
 
 you can call:
@@ -316,10 +323,21 @@ after constructor is called, so this renderUI can be in constructor (where they 
 active property with `$new` can be created after component is created so you can get namespace id from component.
 
 ```
-input$new("button")
+input$new("foo")
 ```
 
 the order doesn't matter you can create input before output and vice versa.
+
+After this if you call:
+
+```R
+input$foo <- "hello"
+```
+
+the output will be updated and `outout[[self$ns("xxx")]]` will have string `"you typed: hello"`.
+
+One benefit of mocks in battery is that you don't need to use isolate outside of components to get the value of input.
+There also no problems in checking output value.
 
 ## Spies
 

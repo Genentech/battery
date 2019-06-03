@@ -1,13 +1,7 @@
 #' Component base class
 #'
-#' Button <- R6Class('Button',
-#'   inherit = Component,
+#' Button <- battery::component(
 #'   public = list(
-#'     static = {
-#'       e <- new.env()
-#'       e$count <- 0
-#'       e
-#'     },
 #'     count = NULL,
 #'     ## constructor is artifical method so you don't need to call super
 #'     ## which you may forget to add
@@ -34,14 +28,8 @@
 #'     }
 #'   )
 #' )
-#' Panel <- R6Class('Panel',
-#'   inherit = Component,
+#' Panel <- battery::component(
 #'   public = list(
-#'     static = {
-#'       e <- new.env()
-#'       e$count <- 0
-#'       e
-#'     },
 #'     constructor = function(title) {
 #'       self$title <- title
 #'       btn <- Button$new()
