@@ -50,3 +50,27 @@ handleErrors <- function(expr, reactionsPerType = list()){
     }
   )
 }
+
+callReaction <- function(type, reactions, message){
+  if (type %in% names(reactions)){
+    reactions[[type]](message)
+  }
+}
+
+#' @export
+logMessage <- function(msgData, msgType, stackTrace = NULL) {
+  time <- Sys.time()
+  msg <- msgData$message
+  expr <- paste(trimws(deparse(msgData$call)), collapse = "")
+  
+  if (msgType == "log"){
+    message(sprintf("[%s] %s\n", time, msg))
+  } else {
+    message(sprintf("[%s] %s in:\n `%s`:\n%s\n", time, msgType, expr, msg))
+    
+    if (!is.null(stackTrace)) {
+      message("Traceback:\n")
+      message(paste(shiny::formatStackTrace(stackTrace), collapse = "\n"))
+    }
+  }
+}

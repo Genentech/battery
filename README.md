@@ -155,7 +155,7 @@ See example/shiny-app.R for simple shiny app that you can run to test battery R 
 
 ## Events
 
-Nice feature of battery is that create structure for events, just like in AngularJS (which batter is inspired by) you
+Nice feature of battery is that create structure for events, just like in AngularJS (which battery is inspired by) you
 can call `$emit` and `$broadcast` methods to send events to parets and to all children. Future versions may have notion of
 services but right now to send to siblings you need to emit the event to parent and in parent broadcast the event it all children.
 
@@ -281,11 +281,11 @@ battery::useMocks()
 ```
 
 At the root of the test. This will import testthat and shiny and `useMocks()` will patch the functions
-that came from shiny with proper mocks created by battter, Mocks give better way to test the active variables.
+that came from shiny with proper mocks created by battery, Mocks give better way to test the active variables.
 You can inspect `output` and `input` without an any issue usually related to shiny apps (e.g. require of `isolate`).
 
 Also Battery have moks for input and output that you can use to test your components. Just create session
-(base batter component don't use it) `activeInput` and `activeOutput` and create instance of component
+(base battery component don't use it) `activeInput` and `activeOutput` and create instance of component
 using `battery::component` or `battery::Component$extend`.
 
 ```
@@ -305,7 +305,7 @@ now if component call something like this:
 Comp <- battery::component(
   public = list(
     constructor = function() {
-      self$outout[[self$ns("xxx")]] <- renderUI({
+      self$output[[self$ns("xxx")]] <- renderUI({
         paste0("you typed: ", self$input$foo)
       })
     }
@@ -334,10 +334,7 @@ After this if you call:
 input$foo <- "hello"
 ```
 
-the output will be updated and `outout[[self$ns("xxx")]]` will have string `"you typed: hello"`.
-
-One benefit of mocks in battery is that you don't need to use isolate outside of components to get the value of input.
-There also no problems in checking output value.
+the output will be updated and `output[[self$ns("xxx")]]` will have string `"you typed: hello"`.
 
 ## Spies
 
