@@ -1,4 +1,9 @@
-source('../../R/mock.R')
+library(testthat)
+library(shiny)
+
+context("test_connection")
+
+battery::useMocks()
 
 test_that('it should create input/output binding', {
   input <- activeInput(foo = NULL)
@@ -10,6 +15,7 @@ test_that('it should create input/output binding', {
   expect_equal(input$foo, 10)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should create single listener', {
   input <- activeInput(foo = NULL)
   output <- activeOutput(bar = NULL)
@@ -32,11 +38,12 @@ test_that('it should create single listener', {
     ret
   })
   input$foo <- 20
-  expect_equal(length(input$listeners[["foo"]]), 1)
+  expect_equal(length(input$.listeners[['foo']]), 1)
   ## every renderUI will get called once - inital value - and once for reactive update
   expect_equal(env$calls, list(15, 15, 15, 30))
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in nested function', {
   foo <- function() {
     input$foo + 10
@@ -50,6 +57,7 @@ test_that('it should bind in nested function', {
   expect_equal(output$bar, 40)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in deep nested function', {
   foo <- function() {
     bar() + 1
@@ -69,6 +77,7 @@ test_that('it should bind in deep nested function', {
   expect_equal(output$bar, 5)
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should bind in nested object method', {
   x <- list(
     foo = function() {
@@ -95,18 +104,20 @@ test_that('it should bind in nested object method', {
   expect_equal(output$bar, 6)
   ## test string prop
   foo <- function() {
-    x[["foo"]]() + 1
+    x[['foo']]() + 1
   }
   input$foo <- 3
   expect_equal(output$bar, 7)
   ## test variable prop
-  name <- "foo"
+  name <- 'foo'
   foo <- function() {
     x[[name]]() + 1
   }
   input$foo <- 4
   expect_equal(output$bar, 8)
 })
+
+## ----------------------------------------------------------------------------
 test_that('it should find active variable inside R constructs', {
   x <- TRUE
   specs <- list(
@@ -153,6 +164,7 @@ test_that('it should find active variable inside R constructs', {
   }
 })
 
+## ----------------------------------------------------------------------------
 test_that('it should not find active name when using isolate', {
    input <- activeInput(foo = NULL)
    output <- activeOutput(bar = NULL)
@@ -166,4 +178,32 @@ test_that('it should not find active name when using isolate', {
      isolate({ input$foo })
    })
    expect_equal(output$bar, 20)
+})
+
+test_that('it should allow to create active input after output', {
+  input <- activeInput()
+  output <- activeOutput()
+  output$bar <- renderUI({
+    input$foo + 10
+  })
+  output$new("bar")
+  input$new("foo")
+  input$foo <- 10
+  expect_equal(output$bar, 20)
+  input$foo <- 20
+  expect_equal(output$bar, 30)
+})
+          
+test_that('it should allow to create active output after renderUI', {
+  input <- activeInput()
+  output <- activeOutput()
+  output$bar <- renderUI({
+    input$foo + 10
+  })
+  input$new("foo")
+  output$new("bar")
+  input$foo <- 10
+  expect_equal(output$bar, 20)
+  input$foo <- 20
+  expect_equal(output$bar, 30)
 })

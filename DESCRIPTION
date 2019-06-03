@@ -1,12 +1,13 @@
 Package: battery
 Type: Package
-Title: Batter R6Class Components
+Title: Battery R6Class Components
 Version: 0.1.0
 Author: Jakub T. Jankiewicz
 Maintainer: Jakub T. Jankiewicz <jakub.jankiewicz@contractors.roche.com>
-Description: R6Class based component architecture for Shiny apps
+Description: R6Class based component architecture for Shiny apps with ready to use mocks for testing components
 License: GNE license
-Imports: R6, shiny
+Imports: R6, shiny, uuid
+Suggests: testthat
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1

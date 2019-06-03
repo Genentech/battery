@@ -6,84 +6,129 @@
                           |___|
 ```
 
-Battery - R6Class based component architecture for Shiny apps with testing framework
+Battery - R6Class based component architecture for Shiny apps with testing framework.
+The components design is based on AngularJS that can emit event from root it it's children
+and broadcast events from child to parents. It give better structure of non trivial shiny apps,
+that need to have lots of differnt parts.
 
 # Components
 
-Components are based on R6Class to create new component you create new R6 class that inherit
-from battery::Component
+Components are based on R6Class. To create new component you should call `battery::component` function or use
+$extend method on any component. You can also create new R6 class that inherit from `battery::Component`
+but this should not be used because you will loose access to static variables inside R6Class methods
+(you will need to access them using `self$static`) and will not be able to use spy parameter to check
+method calls while testing your components.
+
 
 ```R
-Button <- R6Class("Button",
-  inherit = batter::Component,
-  public = list(
-    static = {
-      e <- env.new()
-      e$count <- 0
-      e
-    },
-    count = NULL,
-    ## constructor is artifical method so you don't need to call super
-    ## which you may forget to add
-    constructor = function(canEdit = TRUE) {
-      self$connect("click", self$ns("button"))
-      self$count <- 0
-      self$on("click", function(e = NULL, target = NULL) {
-        self$count <- self$count + 1
-      }, enabled = canEdit)
-      self$output[[self$ns("buttonOutput")]] <- renderUI({
-        self$events$click
+server <- function(input, output, session) {
+  Button <- battery::component(
+    classname = "Button",
+    public = list(
+      count = NULL,
+      label = NULL,
+      ## constructor is artifical method so you don't need to call super
+      ## which you may forget to add
+      constructor = function(label, canEdit = TRUE) {
+        self$label <- label
+        self$connect("click", self$ns("button"))
+        self$count <- 0
+        self$on("click", function(e = NULL, target = NULL) {
+          self$count <- self$count + 1
+        }, enabled = canEdit)
+        self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
+          self$events$click
+          tags$div(
+            tags$span(self$count),
+            actionButton(self$ns("button"), "click")
+          )
+        })
+      },
+      render = function() {
         tags$div(
-          tags$span(self$count),
-          actionButton(self$ns("button"), "click")
+          class = "button-component",
+          tags$p(class = "buton-label", self$label),
+          shiny::uiOutput(self$ns("buttonOutput"))
         )
-      })
-    },
-    render = function() {
-      tags$div(
-        class = "button-component",
-        uiOutput(self$ns("buttonOutput"))
-      )
-    }
+      }
+    )
   )
-)
 
-Panel <- R6Class("Panel",
-  inherit = batter::Component,
-  public = list(
-    static = {
-      e <- new.env()
-      e$count <- 0
-      e
-    },
-    constructor = function(title) {
-      self$title <- title
-      btn <- Button$new(parent = self)
-      self$appendChild("button", btn)
-      self$output[[self$ns("button")]] <- renderUI({
-        btn$render()
-      })
-    },
-    render = function() {
-      tags$div(
-        tags$h2(self$title),
-        tags$div(uiOutput(self$ns("button")))
-      )
-    }
+  HelloButton <- Button$extend(
+    classname = "HelloButton",
+    public = list(
+      constructor = function() {
+        super$constructor("hello")
+      }
+    )
   )
-)
+
+  Panel <- battery::Component$extend(
+    classname = "Panel",
+    public = list(
+      title = NULL,
+      constructor = function(title) {
+        self$title <- title
+        Button$new(label = "click Me", component.name = "btn1", parent = self)
+        HelloButton$new(component.name = "btn2", parent = self)
+        self$output[[self$ns("button")]] <- shiny::renderUI({
+          tags$div(
+            self$children$btn1$render(),
+            self$children$btn2$render()
+          )
+        })
+      },
+      render = function() {
+        tags$div(
+          tags$h2(self$title),
+          tags$div(shiny::uiOutput(self$ns("button")))
+        )
+      }
+    )
+  )
+
+  
+
+  
+  App <- battery::component(
+    classname = "App",
+    public = list(
+      constructor = function() {
+        ## for root node you don't need to use ns to create namespace but you can
+          a <- Panel$new(title = "A", component.name = "panelA", parent = self)
+          b <- Panel$new(title = "B", component.name = "panelB", parent = self)
+        self$output[[ self$ns("root") ]] <- shiny::renderUI({
+          tags$div(
+            a$render(),
+            b$render()
+          )
+        })
+      },
+      render = function() {
+        tags$div(
+          titlePanel('Shiny App using Battery R package'),
+          mainPanel(shiny::uiOutput(self$ns("root")))
+        )
+      }
+    )
+  )
+}
 ```
 
-Root component that don't have parent need to be called with input output and session.
-
+this is how you connect components to normal code, you can create one component
+App that will be added to single output using shiny::renderUI and the reset of the application
+can use components.
+  
 ```R
-root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
+## Root component that don't have parent need to be called with input output and session.
+app <- App$new(input = input, output = output, session = session)
 output$root <- renderUI({
-  root$render()
+  app$render()
 })
 ```
 
-Every other component only need parent attribute and you don't need to specify those parameters
+
+Every other component only need parent named argument and you don't need to specify those parameters
 in `constructor` because R6Class use `initialize` function as constructor and battery use handy
 `constructor` function so you don't need to remember to call super, and only use extra parameters
 you need when you create components.
@@ -102,7 +147,17 @@ Button$new(parent = self, component.name = "button")
 ```
 
 Second is shortcut. You need use either so you have proper tree of components so event propagaion
-work properly.
+will work properly.
+
+
+See example/shiny-app.R for simple shiny app that you can run to test battery R pacakge.
+
+
+## Events
+
+Nice feature of battery is that create structure for events, just like in AngularJS (which battery is inspired by) you
+can call `$emit` and `$broadcast` methods to send events to parets and to all children. Future versions may have notion of
+services but right now to send to siblings you need to emit the event to parent and in parent broadcast the event it all children.
 
 # Testing Components
 
@@ -113,6 +168,8 @@ Here is quick summary for how to use testing framework. See `./tests/` directory
 to tests you own components.
 
 ## Mocks
+
+You should never need to use mocks directly but here is examples how to use it, for testing components see next section
 
 creating empty input
 
@@ -208,3 +265,91 @@ input$foo <- 200
 print(input$foo) ## 200
 print(output$bar) ## 210
 ```
+
+## Testing components
+
+## Mock reactive shiny data
+
+when you're writing tests first you need to call
+
+
+```
+library(testthat)
+library(shiny)
+
+battery::useMocks()
+```
+
+At the root of the test. This will import testthat and shiny and `useMocks()` will patch the functions
+that came from shiny with proper mocks created by battery, Mocks give better way to test the active variables.
+You can inspect `output` and `input` without an any issue usually related to shiny apps (e.g. require of `isolate`).
+
+Also Battery have moks for input and output that you can use to test your components. Just create session
+(base battery component don't use it) `activeInput` and `activeOutput` and create instance of component
+using `battery::component` or `battery::Component$extend`.
+
+```
+test_that('it should work', {
+  session <- list()
+  input <- activeInput()
+  output <- activeOutput()
+  x <- Comp$new(input = input, output = output, session = session)
+})
+```
+
+if your component have more arguments pass them to the constructor.
+
+now if component call something like this:
+
+```R
+Comp <- battery::component(
+  public = list(
+    constructor = function() {
+      self$output[[self$ns("xxx")]] <- renderUI({
+        paste0("you typed: ", self$input$foo)
+      })
+    }
+  )
+)
+```
+
+you can call:
+
+```R
+output$new(x$ns("xxx"))
+```
+
+after constructor is called, so this renderUI can be in constructor (where they usually be created) same is with active input
+active property with `$new` can be created after component is created so you can get namespace id from component.
+
+```
+input$new("foo")
+```
+
+the order doesn't matter you can create input before output and vice versa.
+
+After this if you call:
+
+```R
+input$foo <- "hello"
+```
+
+the output will be updated and `output[[self$ns("xxx")]]` will have string `"you typed: hello"`.
+
+## Spies
+
+If you create your component with spy option set to `TRUE` it will spy on all the methods. Each time a method
+is called it will be in component$.calls named list, were each function will have list of argument lists
+
+e.g.
+
+```R
+t <- TestingComponent$new(input = input, output = output, session = session, spy = TRUE)
+
+t$foo(10)
+t$foo(x = 20)
+expect_that(t$.calls$foo, list(list(10), list(x = 20)))
+```
+
+constructor is also on the list of `.calls`, everything except of functions that are in base component R6 class (this may change in
+the future if will be needed).
