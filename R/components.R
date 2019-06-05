@@ -1,3 +1,7 @@
+#' Global varialbe added to base component that hold each classes and component list
+#' for getById method
+global <- list2env(list(components = list(), classes = list(), session.end = NULL))
+
 #' Component base class
 #'
 #' Button <- battery::component(
@@ -65,7 +69,7 @@ Component <- R6::R6Class(
     handlers = NULL,
     ..spying = NULL,
     observers = NULL,
-    global =  list2env(list(components = list())),
+    global = global,
     ## ---------------------------------------------------------------
     trigger = function(name, data) {
       if (name %in% ls(self$events)) {
@@ -97,7 +101,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          component.id = NULL, spy = FALSE, ...) {
+                          spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -129,17 +133,25 @@ Component <- R6::R6Class(
       ))
       self$parent <- parent
 
-      if (is.null(component.id)) {
-        self$id <- paste0(head(class(self), 1), self$static$count)
-      } else {
-        self$id <- component.id
-      }
+      self$id <- paste0(head(class(self), 1), self$static$count)
+
       self$children <- list()
       if (!is.null(self$constructor)) {
         self$constructor(...)
       }
       if (!is.null(component.name)) {
         parent$appendChild(component.name, self)
+      }
+      ## global reset component counter - execute once for session
+      if (!is.null(self$session) &&
+          is.function(self$session$onSessionEnded) &&
+          is.null(global$session.end)) {
+        global$session.end <- self$session$onSessionEnded(function() {
+          ## we need to clear the handler so it can be registerd again
+          ## on next session
+          global$session.end <- NULL
+          reset.counters()
+        })
       }
     },
     ## ---------------------------------------------------------------
@@ -374,8 +386,7 @@ component <- function(classname,
                       static = NULL,
                       inherit = battery::Component,
                       ...) {
-  static.env <- new.env()
-  static.env$count <- 0
+  static.env <- list2env(list(count = 0))
   if (!is.null(static)) {
     for (name in names(static)) {
       static.env[[name]] <- static[[name]]
@@ -397,6 +408,8 @@ component <- function(classname,
       }),
     ...
   )
+  class$static <- static.env
+  global$classes <- append(global$classes, list(class))
   class$set('public', 'static', static.env)
   r6.class.add(class, public)
   r6.class.add(class, private)
@@ -447,4 +460,15 @@ make.extend <- function(class) {
   }
 }
 
+## init extend on base battery component
 Component$extend <- make.extend(Component)
+
+#' Function used by base battery component to reset all the counters when components
+#' are created outside of server function (which should be most of the time) and
+#' if shiny sessions runs in same R process (this will not be needed for shiny in Docker,
+#' but it would not cause any harm)
+reset.counters <- function() {
+  for (class in global$classes) {
+    class$static$count <- 0
+  }
+}
