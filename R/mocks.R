@@ -11,9 +11,9 @@
 #'
 #' input <- activeInput(foo = function(value) {
 #'    if (missing(value)) {
-#'      self[["__foo"]]
+#'      self[['__foo']]
 #'    } else {
-#'      self[["__foo"]] <- value
+#'      self[['__foo']] <- value
 #'    }
 #' })
 #'
@@ -22,7 +22,7 @@
 #' input <- activeInput(foo = NULL)
 #'
 #' observeEvent(input$foo, {
-#'    print(paste0("value set to ", input$foo))
+#'    print(paste0('value set to ', input$foo))
 #' })
 #'
 #' observeEvent just call input$on and it will create listener for reactive value
@@ -31,17 +31,17 @@
 #' constructor with self$ns as name the you can ten get call self$ns on component to create
 #' actual biding after component is created)
 #'
-#' input$new("foo") ## this will create active binding with default setter/getter
+#' input$new('foo') ## this will create active binding with default setter/getter
 #'
-#' input$new(component$ns("save"))
+#' input$new(component$ns('save'))
 #'
 #' reactive value with that may have different logic here same code as default
 #'
-#' input$new("foo", function(value) {
+#' input$new('foo', function(value) {
 #'    if (missing(value)) {
-#'      self[["__foo"]]
+#'      self[['__foo']]
 #'    } else {
-#'      self[["__foo"]] <- value
+#'      self[['__foo']] <- value
 #'    }
 #' })
 #'
@@ -79,7 +79,7 @@ activeInput <- function(env = new.env(), ...) {
   input <- list(...)
   init.binding <- function() {
     for (name in names(input)) {
-      if (name == "self") {
+      if (name == 'self') {
         stop("You can't use self as name")
       }
       env$new(name, fn = input[[name]])
@@ -138,7 +138,7 @@ activeInput <- function(env = new.env(), ...) {
   }
   ## read only prop to test if this env is activeInput
   makeActiveBinding(
-    sym = "__reactive_input__",
+    sym = '__reactive_input__',
     fun = function(value) {
       if (missing(value)) {
         TRUE
@@ -150,9 +150,9 @@ activeInput <- function(env = new.env(), ...) {
   make.default.fn <- function(name) {
     function(value) {
       if (missing(value)) {
-        env[[paste0("__", name)]]
+        env[[paste0('__', name)]]
       } else {
-        env[[paste0("__", name)]] <- value
+        env[[paste0('__', name)]] <- value
       }
     }
   }
@@ -300,7 +300,7 @@ activeOutput <- function(...) {
   env <- new.env()
   env$.listeners <- list()
   makeActiveBinding(
-    sym = "__reactive_output__",
+    sym = '__reactive_output__',
     fun = function(value) {
       if (missing(value)) {
         TRUE
@@ -310,7 +310,7 @@ activeOutput <- function(...) {
   )
   env$.active.symbols = list()
   make.default.fn <- function(name) {
-    privateName <- paste0("__", name)
+    privateName <- paste0('__', name)
     function(value) {
       if (missing(value)) {
         env[[privateName]]
@@ -410,7 +410,7 @@ safe.get <- function(name, env) {
 #'
 is.function.call <- function(expr, env) {
   if (typeof(expr) == 'language' && is.symbol(expr[[1]]) && expr[[1]] != '{') {
-    re <- paste0("^", escapeRegex(expr[[1]]), "\\(")
+    re <- paste0('^', escapeRegex(expr[[1]]), '\\(')
 
     if (any(grepl(re, deparse(expr)))) {
       value <- safe.get(deparse(expr[[1]]), env)
@@ -429,7 +429,7 @@ is.function.call <- function(expr, env) {
 is.method.call <- function(expr) {
   typeof(expr) == 'language' && typeof(expr[[1]]) == 'language' &&
   expr[[1]][[1]] == '$' &&
-    grepl(paste0("^", escapeRegex(deparse(expr[[1]])), "\\("), deparse(expr))
+    grepl(paste0("'", escapeRegex(deparse(expr[[1]])), '\\('), deparse(expr))
 }
 
 # -----------------------------------------------------------------------------
@@ -543,8 +543,8 @@ is.dbbracket.variable <- is.variable('[[')
 #' @param item - substitute expression
 #' @param env - environment for this expression
 get.object <- function(item, env) {
-  ## substitute( self$x$input[["foo"]]$foo ) have this structure:
-  ## ["$",["[[",["$",["$","self","x"],"input"],"\"foo\""],"foo"] 
+  ## substitute( self$x$input[['foo']]$foo ) have this structure:
+  ## ['$',['[[',['$',['$','self','x'],'input'],'"foo"'],'foo']
   ## the function parses this nested expression structure
   if (typeof(item) == 'language' && length(item) == 3 &&
       deparse(item[[1]]) %in% c('[[', '$')) {
@@ -639,11 +639,10 @@ extractActiveNames <- function(arg) {
       if (length(item) > 1) {
         result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))
       }
-      
     } else if (length(item) > 1 && !isolate &&
                !(is.dolar.variable(item) || is.dbbracket.variable(item))) {
       result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))
-    } else if (typeof(item) == "language") {
+    } else if (typeof(item) == 'language') {
       if (is.dolar.variable(item) || is.dbbracket.variable(item)) {
         ## foo$bar... and foo[[]] ...
         object.data <- get.object(item, arg$env)
@@ -690,7 +689,7 @@ make.uiOutput <- function(env) {
     ## return same div as shiny
     shiny::tags$div(
       id = name,
-      class = "shiny-html-output",
+      class = 'shiny-html-output',
       env[[name]]
     )
   }
@@ -702,14 +701,14 @@ make.uiOutput <- function(env) {
 #' @export
 useMocks <- function() {
   observeEvent <- battery::observeEventMock
-  assignInNamespace("observeEvent", observeEvent, "battery")
-  assignInNamespace("observeEvent", observeEvent, "shiny")
+  assignInNamespace('observeEvent', observeEvent, 'battery')
+  assignInNamespace('observeEvent', observeEvent, 'shiny')
   isolate <- battery::isolate
-  assignInNamespace("isolate", isolate, "shiny")
+  assignInNamespace('isolate', isolate, 'shiny')
   makeReactiveBinding <- battery::makeReactiveBinding
-  assignInNamespace("makeReactiveBinding", makeReactiveBinding, "shiny")
+  assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
   renderUI <- battery::renderUI
-  assignInNamespace("renderUI", renderUI, "shiny")
+  assignInNamespace('renderUI', renderUI, 'shiny')
   ## we modify the parent frame so it update environment when function is called not the package
   env <- parent.frame()
   env$observeEvent <- observeEvent

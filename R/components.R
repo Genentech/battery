@@ -436,10 +436,10 @@ r6.class.add <- function(class, seq) {
         ## we don't overwrite function environment so
         ## you can nest one constructor in another constructor
         env <- new.env(parent = environment(fn))
-        env$self <- get("self", current)
-        env$static <- get("self", current)$static
-        env$super <- get("super", current)
-        env$private <- get("private", current)
+        env$self <- get('self', current)
+        env$static <- get('self', current)$static
+        env$super <- get('super', current)
+        env$private <- get('private', current)
         environment(fn) <- env
         if (env$private$..spying) {
           env$private$.spy(name = name, ...)

@@ -1,14 +1,14 @@
 library(shiny)
 
 observeEvent <- battery::observeEvent
-assignInNamespace("observeEvent", observeEvent, "shiny")
+assignInNamespace('observeEvent', observeEvent, 'shiny')
 
 ui <- fluidPage(
   uiOutput('output')
 )
 
 Button <- battery::component(
-  classname = "Button",
+  classname = 'Button',
   public = list(
     count = NULL,
     label = NULL,
@@ -16,47 +16,47 @@ Button <- battery::component(
     ## which you may forget to add
     constructor = function(label, canEdit = TRUE) {
       self$label <- label
-      self$connect("click", self$ns("button"))
+      self$connect('click', self$ns('button'))
       self$count <- 0
-      self$on("click", function(e = NULL, target = NULL) {
+      self$on('click', function(e = NULL, target = NULL) {
         self$count <- self$count + 1
       }, enabled = canEdit)
-      self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
+      self$output[[self$ns('buttonOutput')]] <- shiny::renderUI({
         self$events$click
         tags$div(
           tags$span(self$count),
-          actionButton(self$ns("button"), "click")
+          actionButton(self$ns('button'), 'click')
         )
       })
       },
       render = function() {
       tags$div(
-        class = "button-component",
-        tags$p(class = "buton-label", self$label),
-        shiny::uiOutput(self$ns("buttonOutput"))
+        class = 'button-component',
+        tags$p(class = 'buton-label', self$label),
+        shiny::uiOutput(self$ns('buttonOutput'))
       )
     }
   )
 )
 
 HelloButton <- Button$extend(
-  classname = "HelloButton",
+  classname = 'HelloButton',
   public = list(
     constructor = function() {
-      super$constructor("hello")
+      super$constructor('hello')
     }
   )
 )
 
 Panel <- battery::Component$extend(
-  classname = "Panel",
+  classname = 'Panel',
   public = list(
     title = NULL,
     constructor = function(title) {
       self$title <- title
-      Button$new(label = "click Me", component.name = "btn1", parent = self)
-      HelloButton$new(component.name = "btn2", parent = self)
-      self$output[[self$ns("button")]] <- shiny::renderUI({
+      Button$new(label = 'click Me', component.name = 'btn1', parent = self)
+      HelloButton$new(component.name = 'btn2', parent = self)
+      self$output[[self$ns('button')]] <- shiny::renderUI({
         tags$div(
           self$children$btn1$render(),
           self$children$btn2$render()
@@ -66,19 +66,19 @@ Panel <- battery::Component$extend(
     render = function() {
       tags$div(
         tags$h2(self$title),
-        tags$div(shiny::uiOutput(self$ns("button")))
+        tags$div(shiny::uiOutput(self$ns('button')))
       )
     }
   )
 )
 App <- battery::component(
-  classname = "App",
+  classname = 'App',
   public = list(
     constructor = function() {
       ## for root node you don't need to use ns to create namespace but you can
-      a <- Panel$new(title = "A", component.name = "panelA", parent = self)
-      b <- Panel$new(title = "B", component.name = "panelB", parent = self)
-      self$output[[ self$ns("root") ]] <- shiny::renderUI({
+      a <- Panel$new(title = 'A', component.name = 'panelA', parent = self)
+      b <- Panel$new(title = 'B', component.name = 'panelB', parent = self)
+      self$output[[ self$ns('root') ]] <- shiny::renderUI({
         tags$div(
           a$render(),
           b$render()
@@ -88,7 +88,7 @@ App <- battery::component(
     render = function() {
       tags$div(
         titlePanel('Shiny App using Battery R package'),
-        mainPanel(shiny::uiOutput(self$ns("root")))
+        mainPanel(shiny::uiOutput(self$ns('root')))
       )
     }
   )
