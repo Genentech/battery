@@ -413,7 +413,6 @@ component <- function(classname,
   class$set('public', 'static', static.env)
   r6.class.add(class, public)
   r6.class.add(class, private)
-  class$extend <- make.extend(class)
   class
 }
 
@@ -456,7 +455,9 @@ r6.class.add <- function(class, seq) {
 #' higher order function for creating extend static method on every battery::Component
 make.extend <- function(class) {
   function(...) {
-    component(inherit = class, ...)
+    child <- component(inherit = class, ...)
+    child$extend <- make.extend(child)
+    child
   }
 }
 
