@@ -1,13 +1,13 @@
 library(testthat)
 library(shiny)
 
-context("test_create")
+context('test_create')
 
 battery::useMocks()
 
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
-    classname = "A",
+    classname = 'A',
     inherit = Component,
     public = list(
       static = list2env(list(count = 0)),
@@ -18,22 +18,22 @@ test_that('it should create component using R6Class', {
         self$name <- name
       },
       render = function() {
-        shiny::tags$p(paste("component", self$name))
+        shiny::tags$p(paste('component', self$name))
       }
     )
   )
   session <- list()
   input <- activeInput()
   output <- activeOutput()
-  a <- A$new(value = 10, name = "hello", input = input, output = output, session = session)
+  a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
-  expect_equal(a$render(), shiny::tags$p("component hello"))
+  expect_equal(a$render(), shiny::tags$p('component hello'))
 })
 
 ## ----------------------------------------------------------------------------
 test_that('it should create component using component function', {
   A <- component(
-    classname = "A",
+    classname = 'A',
     public = list(
       value = NULL,
       name = NULL,
@@ -42,22 +42,22 @@ test_that('it should create component using component function', {
         self$name <- name
       },
       render = function() {
-        shiny::tags$p(paste("component", self$name))
+        shiny::tags$p(paste('component', self$name))
       }
     )
   )
   session <- list()
   input <- activeInput()
   output <- activeOutput()
-  a <- A$new(value = 10, name = "hello", input = input, output = output, session = session)
+  a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
-  expect_equal(a$render(), shiny::tags$p("component hello"))
+  expect_equal(a$render(), shiny::tags$p('component hello'))
 })
 
 ## ----------------------------------------------------------------------------
 test_that('it should extend base component using extend static method', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     public = list(
       value = NULL,
       name = NULL,
@@ -66,22 +66,22 @@ test_that('it should extend base component using extend static method', {
         self$name <- name
       },
       render = function() {
-        shiny::tags$p(paste("component", self$name))
+        shiny::tags$p(paste('component', self$name))
       }
     )
   )
   session <- list()
   input <- activeInput()
   output <- activeOutput()
-  a <- A$new(value = 10, name = "hello", input = input, output = output, session = session)
+  a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
-  expect_equal(a$render(), shiny::tags$p("component hello"))
+  expect_equal(a$render(), shiny::tags$p('component hello'))
 })
 
 ## ----------------------------------------------------------------------------
 test_that('it should create child component', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     public = list(
       value = NULL,
       name = NULL,
@@ -90,15 +90,15 @@ test_that('it should create child component', {
         self$name <- name
       },
       render = function() {
-        shiny::tags$p(paste("component", self$name))
+        shiny::tags$p(paste('component', self$name))
       }
     )
   )
   B <- A$extend(
-    classname = "B",
+    classname = 'B',
     public = list(
       constructor = function(value) {
-        super$constructor(value = value, name = "hi")
+        super$constructor(value = value, name = 'hi')
       }
     )
   )
@@ -107,13 +107,13 @@ test_that('it should create child component', {
   output <- activeOutput()
   b <- B$new(value = 10, input = input, output = output, session = session)
   expect_equal(b$value, 10)
-  expect_equal(b$render(), shiny::tags$p("component hi"))
+  expect_equal(b$render(), shiny::tags$p('component hi'))
 })
 
 ## ----------------------------------------------------------------------------
 test_that('it should create static fields', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     static = list(
       number = 10
     ),
@@ -140,11 +140,11 @@ test_that('it should create static fields', {
 ## ----------------------------------------------------------------------------
 test_that('it should call parent constructor if no constuctor in child component', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     public = list(
       name = NULL,
       constructor = function() {
-        self$name = "foo"
+        self$name = 'foo'
       }
     )
   )
@@ -152,20 +152,20 @@ test_that('it should call parent constructor if no constuctor in child component
   input <- activeInput()
   output <- activeOutput()
   B <- A$extend(
-    classname = "B",
+    classname = 'B',
     public = list(
       x = 10
     )
   )
   b <- B$new(input = input, output = output, session = session)
-  expect_equal(b$name, "foo")
+  expect_equal(b$name, 'foo')
   expect_equal(b$x, 10)
 })
 
 ## ----------------------------------------------------------------------------
 test_that('it should create new static field in child component', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     static = list(
       number = 10
     ),
@@ -176,7 +176,7 @@ test_that('it should create new static field in child component', {
     )
   )
   B <- A$extend(
-    classname = "B",
+    classname = 'B',
     static = list(
       number = 20
     ),
@@ -205,7 +205,7 @@ test_that('it should create new static field in child component', {
 ## ----------------------------------------------------------------------------
 test_that('it should update static field', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     static = list(
       number = 10,
       value = NULL
@@ -220,7 +220,7 @@ test_that('it should update static field', {
     )
   )
   B <- A$extend(
-    classname = "B",
+    classname = 'B',
     static = list(
       number = 20,
       value = NULL
@@ -253,7 +253,7 @@ test_that('it should update static field', {
 ## ----------------------------------------------------------------------------
 test_that('it should compose objects', {
   A <- Component$extend(
-    classname = "A",
+    classname = 'A',
     public = list(
       name = NULL,
       constructor = function(name) {
@@ -262,12 +262,12 @@ test_that('it should compose objects', {
     )
   )
   B <- Component$extend(
-    classname = "B",
+    classname = 'B',
     public = list(
       constructor = function() {
-        A$new(component.name = "a_1", name = "foo", parent = self)
-        A$new(component.name = "a_2", name = "bar", parent = self)
-        A$new(component.name = "a_3", name = "baz", parent = self)
+        A$new(component.name = 'a_1', name = 'foo', parent = self)
+        A$new(component.name = 'a_2', name = 'bar', parent = self)
+        A$new(component.name = 'a_3', name = 'baz', parent = self)
       }
     )
   )
@@ -275,13 +275,13 @@ test_that('it should compose objects', {
   input <- activeInput()
   output <- activeOutput()
   b <- B$new(input = input, output = output, session = session)
-  expect_equal(b$children$a_1$id, "A1")
-  expect_equal(b$children$a_2$id, "A2")
-  expect_equal(b$children$a_3$id, "A3")
-  expect_equal(b$children$a_1$ns("foo"), "A1_foo")
-  expect_equal(b$children$a_2$ns("foo"), "A2_foo")
-  expect_equal(b$children$a_3$ns("foo"), "A3_foo")
-  expect_equal(b$children$a_1$name, "foo")
-  expect_equal(b$children$a_2$name, "bar")
-  expect_equal(b$children$a_3$name, "baz")
+  expect_equal(b$children$a_1$id, 'A1')
+  expect_equal(b$children$a_2$id, 'A2')
+  expect_equal(b$children$a_3$id, 'A3')
+  expect_equal(b$children$a_1$ns('foo'), 'A1_foo')
+  expect_equal(b$children$a_2$ns('foo'), 'A2_foo')
+  expect_equal(b$children$a_3$ns('foo'), 'A3_foo')
+  expect_equal(b$children$a_1$name, 'foo')
+  expect_equal(b$children$a_2$name, 'bar')
+  expect_equal(b$children$a_3$name, 'baz')
 })

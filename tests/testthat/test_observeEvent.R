@@ -1,7 +1,7 @@
 library(testthat)
 library(shiny)
 
-context("test_observeEvent")
+context('test_observeEvent')
 
 battery::useMocks()
 

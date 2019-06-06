@@ -1,17 +1,17 @@
 library(testthat)
 library(shiny)
 
-context("test_events")
+context('test_events')
 
 battery::useMocks()
 
 test_that('it should emit event', {
   InputComponent <- battery::component(
-    classname = "InputComponent",
+    classname = 'InputComponent',
     public = list(
       constructor = function() {},
       run = function(arg) {
-        self$emit("foo", arg)
+        self$emit('foo', arg)
       },
       foo = function(x) {
 
@@ -20,11 +20,11 @@ test_that('it should emit event', {
   )
   args <- list()
   TestingComponent <- battery::component(
-    classname = "TestingComponent",
+    classname = 'TestingComponent',
     public = list(
       constructor = function() {
-        InputComponent$new(component.name = "c", parent = self, spy = TRUE)
-        self$on("foo", function(value, target) {
+        InputComponent$new(component.name = 'c', parent = self, spy = TRUE)
+        self$on('foo', function(value, target) {
           self$foo(value)
           args <<- list(value)
         })
@@ -47,29 +47,29 @@ test_that('it should emit event', {
 
 test_that('should emit events to parent of parent', {
   InputComponent <- battery::component(
-    classname = "InputComponent",
+    classname = 'InputComponent',
     public = list(
       constructor = function() {},
       run = function(arg) {
-        self$emit("foo", arg)
+        self$emit('foo', arg)
       }
     )
   )
   TestingComponent <- battery::component(
-    classname = "TestingComponent",
+    classname = 'TestingComponent',
     public = list(
       constructor = function() {
-        InputComponent$new(component.name = "c", parent = self)
+        InputComponent$new(component.name = 'c', parent = self)
       }
     )
   )
   args <- list()
   ParentTestingComponent <- battery::component(
-    classname = "TestingComponent",
+    classname = 'TestingComponent',
     public = list(
       constructor = function() {
-        TestingComponent$new(component.name = "tc", parent = self)
-        self$on("foo", function(value, target) {
+        TestingComponent$new(component.name = 'tc', parent = self)
+        self$on('foo', function(value, target) {
           self$foo(value)
           args <<- list(value)
         })
@@ -95,7 +95,7 @@ test_that('should emit events to parent of parent', {
 test_that('it should broadcast event', {
 
   NestedComponent <- battery::component(
-    classname = "NestedComponent",
+    classname = 'NestedComponent',
     private = list(
       x = NULL,
       foo = function(x) {
@@ -104,7 +104,7 @@ test_that('it should broadcast event', {
     ),
     public = list(
       constructor = function() {
-        self$on("foo", function(value, target) {
+        self$on('foo', function(value, target) {
           private$foo(value)
         })
       }
@@ -112,10 +112,10 @@ test_that('it should broadcast event', {
   )
 
   InputComponent <- battery::component(
-    classname = "InputComponent",
+    classname = 'InputComponent',
     public = list(
       run = function(arg) {
-        self$broadcast("foo", arg)
+        self$broadcast('foo', arg)
       }
     )
   )
@@ -125,9 +125,9 @@ test_that('it should broadcast event', {
   ic <- InputComponent$new(input = input, output = output, session = session)
   ## we create child component outside of InputComponent so it recieve broadcast event
   ## it's outside so it emulate component that is outside of tests (main testing component)
-  NestedComponent$new(component.name = "nc", parent = ic)
+  NestedComponent$new(component.name = 'nc', parent = ic)
   ic$run(100)
-  ic$run("foo")
-  args <- lapply(ic$children$nc$events$.calls$foo, function(x) { x[["new"]][["value"]] })
-  expect_equal(args, list(100, "foo"))
+  ic$run('foo')
+  args <- lapply(ic$children$nc$events$.calls$foo, function(x) { x[['new']][['value']] })
+  expect_equal(args, list(100, 'foo'))
 })
