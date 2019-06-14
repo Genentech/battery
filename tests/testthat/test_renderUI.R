@@ -3,6 +3,7 @@ library(shiny)
 
 context('test_renderUI')
 
+
 battery::useMocks()
 
 ## overwrite shiny function so we know that we have right injected function istead of shiny one
@@ -109,7 +110,7 @@ test_that('is should render output when uiOutput is in function', {
 })
 
 ## --------------------------------------------------------------------------------------
-test_that('is should render output when uiOutput is in other method', {
+test_that('it should render output when uiOutput is in other method', {
   session <- list()
   input <- activeInput()
   output <- activeOutput()

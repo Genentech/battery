@@ -206,7 +206,7 @@ Component <- R6::R6Class(
     createEvent = function(name, value = NULL) {
       if (!name %in% ls(self$events)) {
         shiny::makeReactiveBinding(name, env = self$events)
-        if (FALSE && is.null(value)) {
+        if (is.logical(value) && value) {
           self$events[[name]] <- TRUE
         } else {
           data <- list(
@@ -304,11 +304,11 @@ Component <- R6::R6Class(
           self$createEvent(event)
 
           battery::observeEvent(self$events[[event]], {
-            if (is.null(self$events[[event]])) {
+            data <- self$events[[event]]
+            if (is.null(data) || is.logical(data)) {
               handler()
             } else {
-              data <- self$events[[event]]
-              handler(data$value, data$target)
+              handler(data[["value"]], data[["target"]])
             }
           }, observerName = uuid, ignoreInit = !init, ...)
         }
@@ -332,7 +332,7 @@ Component <- R6::R6Class(
         lapply(private$handlers[[event]], function(e) {
           e$observer$destroy()
         })
-        private$handlers[[event]] <- NULL
+        private$handlers[event] <- NULL
       } else {
         flags <- sapply(private$handlers[[event]], function(e) {
           if (identical(e$handler, handler)) {
