@@ -128,12 +128,9 @@ activeInput <- function(env = new.env(), ...) {
     if (is.null(expr)) {
       env$.listeners[[event.name]] <- list()
     } else {
-      for (i in seq_along(env$.listeners[[event.name]])) {
-        listener <- env$.listeners[[event.name]][[i]]
-        if (listener$expr == expr || identical(observerName, listener$observerName)) {
-          env$.listeners[[event.name]][i] <- NULL
-        }
-      }
+      env$.listeners[[event.name]] <- Filter(function(listener) {
+        !(listener$expr == expr || identical(observerName, listener$observerName))
+      }, env$.listeners[[event.name]])
     }
   }
   ## read only prop to test if this env is activeInput
@@ -429,7 +426,7 @@ is.function.call <- function(expr, env) {
 is.method.call <- function(expr) {
   typeof(expr) == 'language' && typeof(expr[[1]]) == 'language' &&
   expr[[1]][[1]] == '$' &&
-    grepl(paste0("'", escapeRegex(deparse(expr[[1]])), '\\('), deparse(expr))
+    grepl(paste0('^', escapeRegex(deparse(expr[[1]])), '\\('), deparse(expr))
 }
 
 # -----------------------------------------------------------------------------
@@ -714,4 +711,5 @@ useMocks <- function() {
   env$observeEvent <- observeEvent
   env$isolate <- isolate
   env$renderUI <- renderUI
+  env$makeReactiveBinding <- makeReactiveBinding
 }
