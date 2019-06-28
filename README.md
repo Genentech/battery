@@ -3,7 +3,7 @@
 | __  |___| |_| |_ ___ ___ _ _
 | __ -| .'|  _|  _| -_|  _| | |
 |_____|__,|_| |_| |___|_| |_  |
-                          |___|
+                          |___| v 0.1.1
 ```
 
 Battery - R6Class based component architecture for Shiny apps with testing framework.
