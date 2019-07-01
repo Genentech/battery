@@ -168,6 +168,8 @@ activeInput <- function(env = new.env(), ...) {
         } else {
           old <- env[[event.name]]
           ret <- fn(value)
+          args <- list(old = old, new = value)
+          env$.calls[[event.name]] <- append(env$.calls[[event.name]], list(args))
           if (!is.null(env$.listeners[[event.name]])) {
             ## invoke listeners added by on and add args to list of args to check later
             for (i in seq_along(env$.listeners[[event.name]])) {
@@ -175,8 +177,6 @@ activeInput <- function(env = new.env(), ...) {
               if (!identical(old, value) &&
                   (listener$ignoreNULL && is.null(value) || !is.null(value))) {
                 listener$fn(old, value)
-                args <- list(old = old, new = value)
-                env$.calls[[event.name]] <- append(env$.calls[[event.name]], list(args))
                 ## case when observeEvent remove event (once option)
                 if (!is.null(env$.listeners[[event.name]][i][[1]])) {
                   env$.listeners[[event.name]][[i]]$calls <- append(listener$calls, list(args))
