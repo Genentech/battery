@@ -5,13 +5,16 @@ handleErrors <- function(expr, reactionsPerType = list()){
   withCallingHandlers(
     expr = expr,
     error = function(e){
-      callReaction(
-        type = "unexpected",
-        reactions = reactionsPerType,
-        message = e$message
-      )
-
-      stop(e)
+      if (!is(e, "shiny.silent.error")){
+        # Shiny produces silent error on falsy req()
+        callReaction(
+          type = "unexpected",
+          reactions = reactionsPerType,
+          message = e$message
+        )
+        
+        stop(e)
+      }
     },
     message = function(m){
       message <- strsplit(
