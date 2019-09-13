@@ -1,3 +1,4 @@
+
 library(shiny)
 
 observeEvent <- battery::observeEvent
@@ -28,8 +29,8 @@ Button <- battery::component(
           actionButton(self$ns('button'), 'click')
         )
       })
-      },
-      render = function() {
+    },
+    render = function() {
       tags$div(
         class = 'button-component',
         tags$p(class = 'buton-label', self$label),
@@ -47,6 +48,7 @@ HelloButton <- Button$extend(
     }
   )
 )
+
 
 Panel <- battery::Component$extend(
   classname = 'Panel',
@@ -71,6 +73,7 @@ Panel <- battery::Component$extend(
     }
   )
 )
+
 App <- battery::component(
   classname = 'App',
   public = list(
@@ -94,10 +97,8 @@ App <- battery::component(
   )
 )
 
-
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-
 
   ## Root component that don't have parent need to be called with input output and session.
   root <- App$new(input = input, output = output, session = session)

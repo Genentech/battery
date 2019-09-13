@@ -241,6 +241,7 @@ Component <- R6::R6Class(
       if (include.self) {
         private$trigger(name, list(value = value, target = target))
       }
+
       lapply(self$children, function(child) {
         child$broadcast(name, value, self$id, include.self = TRUE)
       })
@@ -413,6 +414,8 @@ component <- function(classname,
   class$set('public', 'static', static.env)
   r6.class.add(class, public)
   r6.class.add(class, private)
+  ## we also need extend when base class called without extend
+  class$extend <- make.extend(class)
   class
 }
 
