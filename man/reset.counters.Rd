@@ -3,15 +3,15 @@
 \name{reset.counters}
 \alias{reset.counters}
 \title{Function used by base battery component to reset all the counters when components
-are create outside of server function (which should be most of the time) and
-if sessions runs in same R process (this will not be needed for shiny in Docker,
-but it would not cause harm)}
+are created outside of server function (which should be most of the time) and
+if shiny sessions runs in same R process (this will not be needed for shiny in Docker,
+but it would not cause any harm)}
 \usage{
 reset.counters()
 }
 \description{
 Function used by base battery component to reset all the counters when components
-are create outside of server function (which should be most of the time) and
-if sessions runs in same R process (this will not be needed for shiny in Docker,
-but it would not cause harm)
+are created outside of server function (which should be most of the time) and
+if shiny sessions runs in same R process (this will not be needed for shiny in Docker,
+but it would not cause any harm)
 }
