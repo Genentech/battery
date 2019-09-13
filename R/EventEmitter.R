@@ -15,6 +15,7 @@
 #'
 #' e$emit("sessinCreated", list(name = "My Session"))
 #'
+#' @export
 EventEmitter <- R6::R6Class(
   "EventEmitter",
   private = list(
@@ -24,9 +25,20 @@ EventEmitter <- R6::R6Class(
     ## :: remove observe Event
     ## -------------------------------------------------------------------------
     unbind = function(event) {
-      private$handlers[event] <- NULL
-      private$observers[[event]]$observer$destroy()
-      private$observers[event] <- NULL
+      isolate({
+        private$observers[[event]]$observer$destroy()
+        private$handlers[event] <- NULL
+        private$observers[event] <- NULL
+      })
+    },
+    ## -------------------------------------------------------------------------
+    ## :: helper function that check how many arguments handler function accept
+    ## :: to prevent unuself argument error
+    ## -------------------------------------------------------------------------
+    invoke = function(event, value) {
+      lapply(private$handlers[[event]], function(handler) {
+        battery:::invoke(handler, value)
+      })
     },
     ## -------------------------------------------------------------------------
     ## :: add new observe Event
@@ -38,10 +50,12 @@ EventEmitter <- R6::R6Class(
       }
       if (is.null(private$observers[[event]])) {
         private$observers[[event]] <- battery::observeEvent(self$events[[event]], {
-          value <- self$events[[event]]
-          lapply(private$handlers[[event]], function(handler) {
-            handler(value, self)
-          })
+          data <- self$events[[event]]
+          if (is.null(data) || is.logical(data)) {
+            private$invoke(event, data)
+          } else {
+            private$invoke(event, data[["value"]])
+          }
         }, ...)
       }
     }
@@ -72,10 +86,21 @@ EventEmitter <- R6::R6Class(
     ## -------------------------------------------------------------------------
     emit = function(name, data = NULL) {
       if (is.null(data)) {
-        self$events[[name]] <- shiny::isolate(!self$events[[name]])
+        self$events[[name]] <- shiny::isolate({
+          if (is.null(self$events[[name]])) {
+            TRUE
+          } else {
+            !self$events[[name]]
+          }
+        })
       } else {
-        data$timestamp <- as.numeric(Sys.time())*1000
-        self$events[[name]] <- data
+        self$events[[name]] <- list(
+          value = data,
+          timestamp <- as.numeric(Sys.time()) * 1000
+        )
+      }
+      if (!(name %in% names(private$handlers))) {
+        print(sprintf("WARN: event `%s` ignored - no listeners", name))
       }
     },
     ## -------------------------------------------------------------------------
@@ -92,6 +117,12 @@ EventEmitter <- R6::R6Class(
           private$unbind(event)
         }
       }
+    },
+    ## -------------------------------------------------------------------------
+    finalize = function() {
+      lapply(names(private$handlers), function(event) {
+        private$unbind(event)
+      })
     }
   )
 )

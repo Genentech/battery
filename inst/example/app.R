@@ -19,7 +19,7 @@ Button <- battery::component(
       self$label <- label
       self$connect('click', self$ns('button'))
       self$count <- 0
-      self$on('click', function(e = NULL, target = NULL) {
+      self$on('click', function() {
         self$count <- self$count + 1
       }, enabled = canEdit)
       self$output[[self$ns('buttonOutput')]] <- shiny::renderUI({
@@ -45,6 +45,12 @@ HelloButton <- Button$extend(
   public = list(
     constructor = function() {
       super$constructor('hello')
+      n <- 0
+      self$on("click", function(target, value) {
+        n <<- n + 1
+        value <- paste(self$id, "click", n)
+        self$services$hello$emit("message", value)
+      })
     }
   )
 )
@@ -78,6 +84,11 @@ App <- battery::component(
   classname = 'App',
   public = list(
     constructor = function() {
+      self$service("hello", battery::EventEmitter$new())
+      ## global server listining on button hello
+      self$services$hello$on("message", function(message) {
+        print(message)
+      })
       ## for root node you don't need to use ns to create namespace but you can
       a <- Panel$new(title = 'A', component.name = 'panelA', parent = self)
       b <- Panel$new(title = 'B', component.name = 'panelB', parent = self)
@@ -101,7 +112,11 @@ App <- battery::component(
 server <- function(input, output, session) {
 
   ## Root component that don't have parent need to be called with input output and session.
-  root <- App$new(input = input, output = output, session = session)
+  root <- App$new(
+    input = input,
+    output = output,
+    session = session
+  )
 
   ## this is how you connect components to normal code, you can create one component
   ## App that will be added to single output using renderUI and whole application
