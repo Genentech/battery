@@ -71,7 +71,7 @@ global <- list2env(list(
 #' :: Services ::
 #'
 #' services are global object that are unique per appliction and every component
-#' can access then using self$services$name
+#' can access then using self$service$name
 #' they can be added using constructor using servies option or using service function
 #' that will add new service to the system. It may be usefull to create as service
 #' isntance of EventEmitter to share events across the appliction without the need
@@ -104,7 +104,7 @@ Component <- R6::R6Class(
     id = NULL,
     name = NULL,
     ## every component share same services
-    services = NULL,
+    service = NULL,
     events = NULL,
     parent = NULL,
     children = NULL,
@@ -120,7 +120,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          services = NULL, spy = FALSE, ...) {
+                          service = NULL, spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -155,10 +155,10 @@ Component <- R6::R6Class(
       self$id <- paste0(head(class(self), 1), self$static$count)
 
       self$children <- list()
-      self$services <- global$services
-      if (length(services) > 0) {
-        for (service in names(services)) {
-          self$service(service, services[[service]])
+      self$service <- global$services
+      if (length(service) > 0) {
+        for (serviceName in names(service)) {
+          self$addService(serviceName, service[[serviceName]])
         }
       }
 
@@ -182,7 +182,7 @@ Component <- R6::R6Class(
       }
       ## global reset of services
       self$session$onSessionEnded(function() {
-        self$services <- global$services
+        self$service <- global$services
       })
     },
     ## ---------------------------------------------------------------
@@ -335,7 +335,7 @@ Component <- R6::R6Class(
 
         observer <- if (input) {
           battery::observeEvent(self$input[[event]], {
-            handler(self$input[[event]], self)
+            battery:::invoke(handler, self$input[[event]], self)
           }, observerName = uuid, ignoreInit = !init, ...)
         } else {
           self$createEvent(event)
@@ -405,11 +405,11 @@ Component <- R6::R6Class(
     ## :: dynamically add service to battery component system
     ## :: it may be better to add services in constructor
     ## ---------------------------------------------------------------
-    service = function(name, service) {
-      if (name %in% names(self$services)) {
+    addService = function(name, service) {
+      if (name %in% names(self$service)) {
         stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
       }
-      self$services[[name]] <- service
+      self$service[[name]] <- service
     },
     ## ---------------------------------------------------------------
     ## :: Helper method that create HTML template with self as default
@@ -538,4 +538,8 @@ invoke <- function(fn, ...) {
   }
   count <- length(formals(fn))
   do.call(fn, head(list(...), count))
+}
+
+debug <- function(...) {
+  print(paste(list(...), collapse = " "))
 }

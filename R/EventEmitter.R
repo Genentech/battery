@@ -48,15 +48,20 @@ EventEmitter <- R6::R6Class(
       if (is.null(private$handlers[[event]])) {
         private$handlers[[event]] <- list()
       }
+
       if (is.null(private$observers[[event]])) {
+
+        uuid <- uuid::UUIDgenerate()
+
         private$observers[[event]] <- battery::observeEvent(self$events[[event]], {
           data <- self$events[[event]]
+
           if (is.null(data) || is.logical(data)) {
             private$invoke(event, data)
           } else {
             private$invoke(event, data[["value"]])
           }
-        }, ...)
+        }, observerName = uuid, ...)
       }
     }
   ),

@@ -3,7 +3,7 @@
 | __  |___| |_| |_ ___ ___ _ _
 | __ -| .'|  _|  _| -_|  _| | |
 |_____|__,|_| |_| |___|_| |_  |
-                          |___| v 0.1.1
+                          |___| v 0.2.0
 ```
 
 Battery - R6Class based component architecture for Shiny apps with testing framework.
@@ -150,14 +150,26 @@ Second is shortcut. You need use either so you have proper tree of components so
 will work properly.
 
 
-See example/shiny-app.R for simple shiny app that you can run to test battery R pacakge.
-
+See example/app.R for simple shiny app that you can run to test battery R pacakge.
 
 ## Events
 
 Nice feature of battery is that create structure for events, just like in AngularJS (which battery is inspired by) you
 can call `$emit` and `$broadcast` methods to send events to parets and to all children. Future versions may have notion of
 services but right now to send to siblings you need to emit the event to parent and in parent broadcast the event it all children.
+
+## EventEmitter and Services
+
+Event emitter R6Class with combination with services allow for communication between components,
+without the need to broadcast and emit events. This is especialy importent if you want to send
+message to component siblings. You can do that directly with event Emitter added as service.
+Service can be any object. That object will be accesible from each instance of battery component
+in self$sercies$name.
+
+To add service you can use function service inside any battery constructor (best is in root component
+so you don't accidentaly use it before it's created).
+
+See example/services.R for details how to use structure with services
 
 # Testing Components
 
