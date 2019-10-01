@@ -1,0 +1,10 @@
+## 0.2.0
+### Features
+* Event Emitters and services
+
+## 0.1.1
+### Bugfix
+* Small bug fix with error hanling
+
+## 0.1.0
+* First version
