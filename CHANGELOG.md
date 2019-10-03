@@ -1,6 +1,12 @@
-## 0.2.0
+## 0.3.0
 ### Features
 * Event Emitters and services
+
+## 0.2.0
+### Features
+* new function clearMocks
+### Bugfix
+* fix mocks used with testthat::test_file
 
 ## 0.1.1
 ### Bugfix
