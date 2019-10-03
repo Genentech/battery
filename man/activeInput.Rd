@@ -21,9 +21,9 @@ input with single ative binding
 
 input <- activeInput(foo = function(value) {
    if (missing(value)) {
-     self[["__foo"]]
+     self[['__foo']]
    } else {
-     self[["__foo"]] <- value
+     self[['__foo']] <- value
    }
 })
 
@@ -32,7 +32,7 @@ NULL will create default setter/getter and inital active binding
 input <- activeInput(foo = NULL)
 
 observeEvent(input$foo, {
-   print(paste0("value set to ", input$foo))
+   print(paste0('value set to ', input$foo))
 })
 
 observeEvent just call input$on and it will create listener for reactive value
@@ -41,17 +41,17 @@ don't know what the value is before observeEvent is called (can be called in com
 constructor with self$ns as name the you can ten get call self$ns on component to create
 actual biding after component is created)
 
-input$new("foo") ## this will create active binding with default setter/getter
+input$new('foo') ## this will create active binding with default setter/getter
 
-input$new(component$ns("save"))
+input$new(component$ns('save'))
 
 reactive value with that may have different logic here same code as default
 
-input$new("foo", function(value) {
+input$new('foo', function(value) {
    if (missing(value)) {
-     self[["__foo"]]
+     self[['__foo']]
    } else {
-     self[["__foo"]] <- value
+     self[['__foo']] <- value
    }
 })
 

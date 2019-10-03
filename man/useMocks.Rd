@@ -2,10 +2,14 @@
 % Please edit documentation in R/mocks.R
 \name{useMocks}
 \alias{useMocks}
-\title{Helper function to be used in test files that overwrite shiny functions}
+\title{Helper function to be used in test files that overwrite shiny functions (after test
+you should run clearMocks since they are global and if you run shiny application
+after test that use mocks it will break)}
 \usage{
 useMocks()
 }
 \description{
-Helper function to be used in test files that overwrite shiny functions
+Helper function to be used in test files that overwrite shiny functions (after test
+you should run clearMocks since they are global and if you run shiny application
+after test that use mocks it will break)
 }

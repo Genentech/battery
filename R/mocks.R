@@ -456,7 +456,7 @@ parse.function <- function(item, env) {
   fn <- NULL
   ## if value is foo() it's firt value is symbol
   ## with case of foo$bar() and foo[[name]] the first element is
-  ## structure with 3 elements 
+  ## structure with 3 elements
   ## eg. foo$bar(input$name) it have structure like this:
   ## list(list('$', 'foo', 'bar'), list('$', 'input', 'name'))
   if (is.symbol(item[[1]])) {
@@ -494,7 +494,7 @@ parse.function <- function(item, env) {
 }
 
 #' Helper function that create single environment from environments in arguments
-#' 
+#'
 merge.env <- function(...) {
   args <- list(...)
   if (length(args) > 1) {
@@ -503,7 +503,7 @@ merge.env <- function(...) {
 }
 
 #' Helper function used for debugging it convert nested expression structure tree to list
-#' 
+#'
 #' @param expr - substitute expression
 recur.list <- function(expr) {
   if (length(expr) == 1) {
@@ -516,7 +516,7 @@ recur.list <- function(expr) {
 }
 
 #' Higher order function for creating functions for checking if item is foo$bar or foo[[bar]]
-#' 
+#'
 #' @param chr - character to match as first item in expression
 is.variable <- function(chr) {
   function(item) {
@@ -525,18 +525,18 @@ is.variable <- function(chr) {
 }
 
 #' Function check if expression is foo$bar
-#' 
+#'
 #' @param item - substitute expression
 is.dolar.variable <- is.variable('$')
 
 #' Function check if argumnet is expression foo[[bar]]
-#' 
+#'
 #' @param item - substitute expression
 is.dbbracket.variable <- is.variable('[[')
 
 
 #' Recursive function that get nested object and prop name for give object access exression
-#' 
+#'
 #' @param item - substitute expression
 #' @param env - environment for this expression
 get.object <- function(item, env) {
@@ -596,7 +596,7 @@ extractActiveNames <- function(arg) {
     output = list()
   )
   isolate <- FALSE
-  
+
   for (i in seq_along(s)) {
     item <- s[[i]]
     ## detect isolate() or self$isolate used in components active values should be ignored
@@ -692,11 +692,23 @@ make.uiOutput <- function(env) {
   }
 }
 
+#' Env that store original functions from shiny that are ovewritten by mocks in
+#' useMocks and later can be restored using clearMocks.
+originals <- new.env()
 
-#' Helper function to be used in test files that overwrite shiny functions
-#' 
+#' Helper function to be used in test files that overwrite shiny functions (after test
+#' you should run clearMocks since they are global and if you run shiny application
+#' after test that use mocks it will break)
+#'
 #' @export
 useMocks <- function() {
+  ## backup originals
+  originals$battery_observeEvent <- battery::observeEvent
+  originals$shiny_observeEvent <- shiny::observeEvent
+  originals$isolate <- shiny::isolate
+  originals$renderUI <- shiny::renderUI
+  originals$makeReactiveBinding <- shiny::makeReactiveBinding
+
   observeEvent <- battery::observeEventMock
   assignInNamespace('observeEvent', observeEvent, 'battery')
   assignInNamespace('observeEvent', observeEvent, 'shiny')
@@ -706,10 +718,34 @@ useMocks <- function() {
   assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
   renderUI <- battery::renderUI
   assignInNamespace('renderUI', renderUI, 'shiny')
-  ## we modify the parent frame so it update environment when function is called not the package
-  env <- parent.frame()
+  ## we modify global environment so it update env when function is called not the package
+  env <- globalenv()
   env$observeEvent <- observeEvent
   env$isolate <- isolate
   env$renderUI <- renderUI
   env$makeReactiveBinding <- makeReactiveBinding
+}
+
+#' Helper function to be used at the end of test files (useful if same session is used
+#' to run test and application e.g. RStudio)
+#'
+#' @export
+clearMocks <- function() {
+  ## backup originals
+  originals$battery_observeEvent <- battery::observeEvent
+  originals$shiny_observeEvent <- shiny::observeEvent
+  originals$isolate <- shiny::isolate
+  originals$renderUI <- shiny::renderUI
+  originals$makeReactiveBinding <- shiny::makeReactiveBinding
+  assignInNamespace('observeEvent', originals$batter_observeEvent, 'battery')
+  assignInNamespace('observeEvent', originals$shiny_observeEvent, 'shiny')
+  assignInNamespace('isolate', originals$isolate, 'shiny')
+  assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
+  assignInNamespace('renderUI', originals$renderUI, 'shiny')
+  ## we modify global environment so it update env when function is called not the package
+  env <- globalenv()
+  env$observeEvent <- originals$battery_observeEvent
+  env$isolate <- originals$isolate
+  env$renderUI <- originals$renderUI
+  env$makeReactiveBinding <- originals$makeReactiveBinding
 }
