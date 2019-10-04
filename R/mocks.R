@@ -708,7 +708,7 @@ useMocks <- function() {
   renderUI <- battery::renderUI
   assignInNamespace('renderUI', renderUI, 'shiny')
   ## we modify global environment so it update env when function is called not the package
-  env <- globalenv()
+  env <- parent.frame()
   env$observeEvent <- observeEvent
   env$isolate <- isolate
   env$renderUI <- renderUI
@@ -724,7 +724,7 @@ clearMocks <- function() {
   assignInNamespace('observeEvent', originalObserveEvent, 'battery')
 
   ## we modify global environment so it update env when function is called not the package
-  env <- globalenv()
+  env <- parent.frame()
   env$observeEvent <- battery::observeEvent
   env$isolate <- shiny::isolate
   env$renderUI <- shiny::renderUI
