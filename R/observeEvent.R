@@ -323,3 +323,5 @@ observeEvent <- function(eventExpr, handlerExpr,
 observerExists <- function(observer, handlerBody) {
   !is.null(observer) && observer$handlerBody == handlerBody
 }
+
+originalObserveEvent <- observeEvent

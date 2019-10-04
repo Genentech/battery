@@ -692,23 +692,12 @@ make.uiOutput <- function(env) {
   }
 }
 
-#' Env that store original functions from shiny that are ovewritten by mocks in
-#' useMocks and later can be restored using clearMocks.
-originals <- new.env()
-
 #' Helper function to be used in test files that overwrite shiny functions (after test
 #' you should run clearMocks since they are global and if you run shiny application
 #' after test that use mocks it will break)
 #'
 #' @export
 useMocks <- function() {
-  ## backup originals
-  originals$battery_observeEvent <- battery::observeEvent
-  originals$shiny_observeEvent <- shiny::observeEvent
-  originals$isolate <- shiny::isolate
-  originals$renderUI <- shiny::renderUI
-  originals$makeReactiveBinding <- shiny::makeReactiveBinding
-
   observeEvent <- battery::observeEventMock
   assignInNamespace('observeEvent', observeEvent, 'battery')
   assignInNamespace('observeEvent', observeEvent, 'shiny')
@@ -731,21 +720,13 @@ useMocks <- function() {
 #'
 #' @export
 clearMocks <- function() {
-  ## backup originals
-  originals$battery_observeEvent <- battery::observeEvent
-  originals$shiny_observeEvent <- shiny::observeEvent
-  originals$isolate <- shiny::isolate
-  originals$renderUI <- shiny::renderUI
-  originals$makeReactiveBinding <- shiny::makeReactiveBinding
-  assignInNamespace('observeEvent', originals$batter_observeEvent, 'battery')
-  assignInNamespace('observeEvent', originals$shiny_observeEvent, 'shiny')
-  assignInNamespace('isolate', originals$isolate, 'shiny')
-  assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
-  assignInNamespace('renderUI', originals$renderUI, 'shiny')
+  detach("package:shiny", unload=TRUE)
+  assignInNamespace('observeEvent', originalObserveEvent, 'battery')
+
   ## we modify global environment so it update env when function is called not the package
   env <- globalenv()
-  env$observeEvent <- originals$battery_observeEvent
-  env$isolate <- originals$isolate
-  env$renderUI <- originals$renderUI
-  env$makeReactiveBinding <- originals$makeReactiveBinding
+  env$observeEvent <- battery::observeEvent
+  env$isolate <- shiny::isolate
+  env$renderUI <- shiny::renderUI
+  env$makeReactiveBinding <- shiny::makeReactiveBinding
 }
