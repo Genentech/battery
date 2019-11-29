@@ -1,5 +1,6 @@
 library(testthat)
 library(shiny)
+library(battery)
 
 context('test_connection')
 
@@ -207,3 +208,5 @@ test_that('it should allow to create active output after renderUI', {
   input$foo <- 20
   expect_equal(output$bar, 30)
 })
+
+battery::clearMocks()

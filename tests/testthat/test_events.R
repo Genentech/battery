@@ -131,3 +131,5 @@ test_that('it should broadcast event', {
   args <- lapply(ic$children$nc$events$.calls$foo, function(x) { x[['new']][['value']] })
   expect_equal(args, list(100, 'foo'))
 })
+
+battery::clearMocks()

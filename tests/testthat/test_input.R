@@ -1,5 +1,6 @@
 library(testthat)
 library(shiny)
+library(battery)
 
 context('test_input')
 
@@ -69,3 +70,5 @@ test_that('create proxy value', {
   expect_equal(input$foo, 20)
   expect_equal(input$`__x`, 20)
 })
+
+battery::clearMocks()

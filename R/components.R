@@ -170,20 +170,21 @@ Component <- R6::R6Class(
       }
       ## global reset component counter - execute once for session
       if (!is.null(self$session) &&
-          is.function(self$session$onSessionEnded) &&
-          is.null(global$session.end)) {
-        global$session.end <- self$session$onSessionEnded(function() {
-          ## we need to clear the handler so it can be registerd again
-          ## on next session (when R proccess keep running)
-          global$session.end <- NULL
-          reset.counters()
-          global$services <- new.env()
+          is.function(self$session$onSessionEnded)) {
+        if (is.null(global$session.end)) {
+          global$session.end <- self$session$onSessionEnded(function() {
+            ## we need to clear the handler so it can be registerd again
+            ## on next session (when R proccess keep running)
+            global$session.end <- NULL
+            reset.counters()
+            global$services <- new.env()
+          })
+        }
+        ## global reset of services
+        self$session$onSessionEnded(function() {
+          self$service <- global$services
         })
       }
-      ## global reset of services
-      self$session$onSessionEnded(function() {
-        self$service <- global$services
-      })
     },
     ## ---------------------------------------------------------------
     ## :: return component with specific id
@@ -529,17 +530,4 @@ reset.counters <- function() {
   for (class in global$classes) {
     class$static$count <- 0
   }
-}
-
-#' Function call function fn with the only arguments it accept
-invoke <- function(fn, ...) {
-  if (!is.function(fn)) {
-    stop("invoke: argument need to be a function")
-  }
-  count <- length(formals(fn))
-  do.call(fn, head(list(...), count))
-}
-
-debug <- function(...) {
-  print(paste(list(...), collapse = " "))
 }

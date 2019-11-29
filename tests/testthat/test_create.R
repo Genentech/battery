@@ -1,5 +1,6 @@
 library(testthat)
 library(shiny)
+library(battery)
 
 context('test_create')
 
@@ -8,7 +9,7 @@ battery::useMocks()
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
     classname = 'A',
-    inherit = Component,
+    inherit = battery::Component,
     public = list(
       static = list2env(list(count = 0)),
       value = NULL,
@@ -56,7 +57,7 @@ test_that('it should create component using component function', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should extend base component using extend static method', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -71,8 +72,8 @@ test_that('it should extend base component using extend static method', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
   expect_equal(a$render(), shiny::tags$p('component hello'))
@@ -80,7 +81,7 @@ test_that('it should extend base component using extend static method', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create child component', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -103,8 +104,8 @@ test_that('it should create child component', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   b <- B$new(value = 10, input = input, output = output, session = session)
   expect_equal(b$value, 10)
   expect_equal(b$render(), shiny::tags$p('component hi'))
@@ -285,3 +286,5 @@ test_that('it should compose objects', {
   expect_equal(b$children$a_2$name, 'bar')
   expect_equal(b$children$a_3$name, 'baz')
 })
+
+battery::clearMocks()

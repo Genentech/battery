@@ -367,3 +367,5 @@ test_that('it should render output with active input in method', {
     )
   )
 })
+
+battery::clearMocks()

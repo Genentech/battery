@@ -285,6 +285,13 @@ observeEventMock <- function(eventExpr,
       }
     }, observerName = observerName, expr = expr, ...)
   }
+  list(
+    observer = list(
+      destroy = function() {
+        activeEnv$off(name, expr, observerName = observerName)
+      }
+    )
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -718,12 +725,11 @@ useMocks <- function() {
   assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
   renderUI <- battery::renderUI
   assignInNamespace('renderUI', renderUI, 'shiny')
-  ## we modify global environment so it update env when function is called not the package
-  env <- globalenv()
-  env$observeEvent <- observeEvent
-  env$isolate <- isolate
-  env$renderUI <- renderUI
-  env$makeReactiveBinding <- makeReactiveBinding
+
+  set.frame(observeEvent, frame = 2)
+  set.frame(isolate, frame = 2)
+  set.frame(renderUI, frame = 2)
+  set.frame(makeReactiveBinding, frame = 2)
 }
 
 #' Helper function to be used at the end of test files (useful if same session is used
@@ -731,21 +737,45 @@ useMocks <- function() {
 #'
 #' @export
 clearMocks <- function() {
-  ## backup originals
-  originals$battery_observeEvent <- battery::observeEvent
-  originals$shiny_observeEvent <- shiny::observeEvent
-  originals$isolate <- shiny::isolate
-  originals$renderUI <- shiny::renderUI
   originals$makeReactiveBinding <- shiny::makeReactiveBinding
   assignInNamespace('observeEvent', originals$batter_observeEvent, 'battery')
   assignInNamespace('observeEvent', originals$shiny_observeEvent, 'shiny')
   assignInNamespace('isolate', originals$isolate, 'shiny')
   assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
   assignInNamespace('renderUI', originals$renderUI, 'shiny')
-  ## we modify global environment so it update env when function is called not the package
-  env <- globalenv()
-  env$observeEvent <- originals$battery_observeEvent
-  env$isolate <- originals$isolate
-  env$renderUI <- originals$renderUI
-  env$makeReactiveBinding <- originals$makeReactiveBinding
+
+  observeEvent <- originals$battery_observeEvent
+  isolate <- originals$isolate
+  renderUI <- originals$renderUI
+  makeReactiveBinding <- originals$makeReactiveBinding
+
+  set.frame(observeEvent, frame = 2)
+  set.frame(isolate, frame = 2)
+  set.frame(renderUI, frame = 2)
+  set.frame(makeReactiveBinding, frame = 2)
+}
+
+
+#' Function overwrite value in parent frame env
+#' It start searching for variable starting from frame parameter
+set.frame <- function(value, name = NULL, frame = 1) {
+  if (is.null(name)) {
+    s <- substitute(value)
+    if (class(s) == "name") {
+      name <- as.character(s)
+    } else {
+      stop("set.frame: variable or name required")
+    }
+  }
+  top <- globalenv()
+  repeat {
+    env <- parent.frame(n = frame)
+    if (name %in% names(env)) {
+      env[[name]] <- value
+    }
+    frame <- frame + 1
+    if (identical(top, env)) {
+      break;
+    }
+  }
 }

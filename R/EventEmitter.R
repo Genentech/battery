@@ -19,13 +19,25 @@
 EventEmitter <- R6::R6Class(
   "EventEmitter",
   private = list(
+    ..spying = FALSE,
     handlers = list(),
     observers = list(),
+    ## -------------------------------------------------------------------------
+    .spy = function(name, ...) {
+      if (private$..spying) {
+        if (is.null(self$.calls[[name]])) {
+          self$.calls[[name]] <- list()
+        }
+        args <- list(...)
+        self$.calls[[name]] <- c(self$.calls[[name]], list(args))
+      }
+    },
     ## -------------------------------------------------------------------------
     ## :: remove observe Event
     ## -------------------------------------------------------------------------
     unbind = function(event) {
-      isolate({
+      private$.spy("unbind", event)
+      shiny::isolate({
         private$observers[[event]]$observer$destroy()
         private$handlers[event] <- NULL
         private$observers[event] <- NULL
@@ -36,6 +48,7 @@ EventEmitter <- R6::R6Class(
     ## :: to prevent unuself argument error
     ## -------------------------------------------------------------------------
     invoke = function(event, value) {
+      private$.spy("invoke", event, value)
       lapply(private$handlers[[event]], function(handler) {
         battery:::invoke(handler, value)
       })
@@ -44,6 +57,7 @@ EventEmitter <- R6::R6Class(
     ## :: add new observe Event
     ## -------------------------------------------------------------------------
     bind = function(event, ...) {
+      private$.spy("bind", event, ...)
       ## this function is guarded outside, double sanity check
       if (is.null(private$handlers[[event]])) {
         private$handlers[[event]] <- list()
@@ -66,10 +80,15 @@ EventEmitter <- R6::R6Class(
     }
   ),
   public = list(
+    .calls = NULL,
     events = NULL,
     ## -------------------------------------------------------------------------
-    initialize = function() {
+    initialize = function(spy = FALSE) {
       self$events <- shiny::reactiveValues()
+      private$..spying <- spy
+      if (private$..spying) {
+        self$.calls <- list()
+      }
     },
     ## -------------------------------------------------------------------------
     ## :: create new observer if don't exists and add handler to the list
@@ -90,22 +109,27 @@ EventEmitter <- R6::R6Class(
     ## :: emit event add trigger all handlers added by on
     ## -------------------------------------------------------------------------
     emit = function(name, data = NULL) {
-      if (is.null(data)) {
-        self$events[[name]] <- shiny::isolate({
-          if (is.null(self$events[[name]])) {
-            TRUE
-          } else {
-            !self$events[[name]]
-          }
-        })
+      ## typecheck mainly to show proper error when name is missing
+      if (!is.character(name)) {
+        print("WARN(emit) name argument is not string")
       } else {
-        self$events[[name]] <- list(
-          value = data,
-          timestamp <- as.numeric(Sys.time()) * 1000
-        )
-      }
-      if (!(name %in% names(private$handlers))) {
-        print(sprintf("WARN: event `%s` ignored - no listeners", name))
+        if (is.null(data)) {
+          self$events[[name]] <- shiny::isolate({
+            if (is.null(self$events[[name]])) {
+              TRUE
+            } else {
+              !self$events[[name]]
+            }
+          })
+        } else {
+          self$events[[name]] <- list(
+            value = data,
+            timestamp <- as.numeric(Sys.time()) * 1000
+          )
+        }
+        if (!(name %in% names(private$handlers))) {
+          print(sprintf("WARN(emit): event `%s` ignored - no listeners", name))
+        }
       }
     },
     ## -------------------------------------------------------------------------
@@ -125,6 +149,7 @@ EventEmitter <- R6::R6Class(
     },
     ## -------------------------------------------------------------------------
     finalize = function() {
+      private$.spy("finalize")
       lapply(names(private$handlers), function(event) {
         private$unbind(event)
       })
