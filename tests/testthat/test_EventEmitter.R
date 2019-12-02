@@ -137,6 +137,7 @@ test_that('it should remove handlers all', {
 
   e$emit("test")
   e$off("test")
+  ## this will show warnings in console (that emitter have no listeners)
   e$emit("test")
   e$emit("test")
   e$emit("test")
