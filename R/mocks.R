@@ -698,6 +698,7 @@ make.uiOutput <- function(env) {
     )
   }
 }
+originals <- new.env()
 
 #' Helper function to be used in test files that overwrite shiny functions (after test
 #' you should run clearMocks since they are global and if you run shiny application
@@ -705,6 +706,11 @@ make.uiOutput <- function(env) {
 #'
 #' @export
 useMocks <- function() {
+  originals$battery_observeEvent <- observeEvent
+  originals$isolate <- isolate
+  originals$renderUI <- renderUI
+  originals$makeReactiveBinding <- makeReactiveBinding
+
   observeEvent <- battery::observeEventMock
   assignInNamespace('observeEvent', observeEvent, 'battery')
   assignInNamespace('observeEvent', observeEvent, 'shiny')
@@ -768,3 +774,23 @@ set.frame <- function(value, name = NULL, frame = 1) {
     }
   }
 }
+
+#' Mock for Session object, only some tests require this right now
+#' but more tests may require this session object in the future
+#' Right now only services need session$destroy() method to clear
+#' services so you can create same service in more then one test
+#' @export
+Session <- R6::R6Class(
+  classname = 'Session',
+  private = list(
+    .destroy = list()
+  ),
+  public = list(
+    destroy = function() {
+      invisible(lapply(private$.destroy, do.call, args = list()))
+    },
+    onSessionEnded = function(fn) {
+      private$.destroy <- append(private$.destroy, list(fn))
+    }
+  )
+)
