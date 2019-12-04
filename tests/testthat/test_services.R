@@ -33,12 +33,12 @@ test_that('should call init services from constructor', {
     input = input,
     output = output,
     session = session,
-    service = list(
+    services = list(
       foo = service
     )
   )
 
-  expect_true(identical(a$service$foo, service))
+  expect_true(identical(a$services$foo, service))
 
   session$destroy()
 })
@@ -76,7 +76,7 @@ test_that('should create service using method', {
   name <- "foo"
   a$addService(name, service)
 
-  expect_true(identical(a$service[[name]], service))
+  expect_true(identical(a$services[[name]], service))
 
   session$destroy()
 })
@@ -116,7 +116,7 @@ test_that('should call method on service', {
   name <- "foo"
   a$addService(name, service)
 
-  a$service[[name]]$test()
+  a$services[[name]]$test()
   expect_true(called)
 
   session$destroy()
@@ -176,7 +176,7 @@ test_that('should share service between components', {
     session = session,
     name = name
   )
-  c$service[[name]]$test()
+  c$services[[name]]$test()
   expect_true(called)
 
   session$destroy()
@@ -242,9 +242,9 @@ test_that('should allow to create multiple services', {
   )
   ## each constructor create it's own service
   ## and we can access them all in one component
-  expect_equal(c$service$foo$test(), "FOO")
-  expect_equal(c$service$bar$test(), "BAR")
-  expect_equal(c$service$baz$test(), "BAZ")
+  expect_equal(c$services$foo$test(), "FOO")
+  expect_equal(c$services$bar$test(), "BAR")
+  expect_equal(c$services$baz$test(), "BAZ")
 
   session$destroy()
 })
@@ -278,7 +278,7 @@ test_that('it should throw when duplicated service is added [constructor]', {
     input = input,
     output = output,
     session = session,
-    service = list(
+    services = list(
       foo = service
     )
   )
@@ -288,7 +288,7 @@ test_that('it should throw when duplicated service is added [constructor]', {
       input = input,
       output = output,
       session = session,
-      service = list(
+      services = list(
         foo = service
       )
     )

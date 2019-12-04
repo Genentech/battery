@@ -7,13 +7,13 @@
 #'
 #' example:
 #' e <- EventEmitter$new()
-#' e$on("sessinCreated", function(value, emitter) {
+#' e$on("sessionCreated", function(value, emitter) {
 #'   self$updateSessionComponent(value$name)
 #' })
 #'
 #' and in different part of the application
 #'
-#' e$emit("sessinCreated", list(name = "My Session"))
+#' e$emit("sessionCreated", list(name = "My Session"))
 #'
 #' @export
 EventEmitter <- R6::R6Class(

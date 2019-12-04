@@ -50,12 +50,12 @@ MainChild <- battery::component(
     constructor = function() {
       self$on(self$ns("fetch_button"), function() {
         print("click1")
-        html <- self$service$http$fetch("https://google.com")
-        self$service$notify$emit("httpContent", html)
+        html <- self$services$http$fetch("https://google.com")
+        self$services$notify$emit("httpContent", html)
       }, input = TRUE)
       self$on(self$ns("clear_button"), function() {
         print("click2")
-        self$service$notify$emit("clear")
+        self$services$notify$emit("clear")
       }, input = TRUE)
     },
     render = function() {
@@ -88,12 +88,12 @@ OtherChild <- battery::component(
     ),
     constructor = function() {
       self$reactive <- shiny::reactiveValues(html = NULL)
-      self$service$notify$on("httpContent", function(data) {
+      self$services$notify$on("httpContent", function(data) {
         print("http")
         ## when reactive value is changed it will trigger render because it's in renderUI
         self$reactive$html <- data
       })
-      self$service$notify$on("clear", function() {
+      self$services$notify$on("clear", function() {
         print("clear")
         self$reactive$html <- NULL
       })

@@ -104,7 +104,7 @@ Component <- R6::R6Class(
     id = NULL,
     name = NULL,
     ## every component share same services
-    service = NULL,
+    services = NULL,
     events = NULL,
     parent = NULL,
     children = NULL,
@@ -120,7 +120,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          service = NULL, spy = FALSE, ...) {
+                          services = NULL, spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -155,10 +155,10 @@ Component <- R6::R6Class(
       self$id <- paste0(head(class(self), 1), self$static$count)
 
       self$children <- list()
-      self$service <- global$services
-      if (length(service) > 0) {
-        for (serviceName in names(service)) {
-          self$addService(serviceName, service[[serviceName]])
+      self$services <- global$services
+      if (length(services) > 0) {
+        for (serviceName in names(services)) {
+          self$addService(serviceName, services[[serviceName]])
         }
       }
 
@@ -182,7 +182,7 @@ Component <- R6::R6Class(
         }
         ## global reset of services
         self$session$onSessionEnded(function() {
-          self$service <- global$services
+          self$services <- global$services
         })
       }
     },
@@ -407,10 +407,10 @@ Component <- R6::R6Class(
     ## :: it may be better to add services in constructor
     ## ---------------------------------------------------------------
     addService = function(name, service) {
-      if (name %in% names(self$service)) {
+      if (name %in% names(self$services)) {
         stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
       }
-      self$service[[name]] <- service
+      self$services[[name]] <- service
     },
     ## ---------------------------------------------------------------
     ## :: Helper method that create HTML template with self as default
@@ -440,7 +440,6 @@ component <- function(classname,
                       private = NULL,
                       static = NULL,
                       inherit = battery::Component,
-                      services = list(),
                       ...) {
   static.env <- list2env(list(count = 0))
   if (!is.null(static)) {
