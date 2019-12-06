@@ -733,7 +733,7 @@ useMocks <- function() {
 #' @export
 clearMocks <- function() {
   originals$makeReactiveBinding <- shiny::makeReactiveBinding
-  assignInNamespace('observeEvent', originals$batter_observeEvent, 'battery')
+  assignInNamespace('observeEvent', originals$battery_observeEvent, 'battery')
   assignInNamespace('observeEvent', originals$shiny_observeEvent, 'shiny')
   assignInNamespace('isolate', originals$isolate, 'shiny')
   assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')

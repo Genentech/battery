@@ -161,7 +161,6 @@ Component <- R6::R6Class(
           self$addService(serviceName, services[[serviceName]])
         }
       }
-
       if (!is.null(self$constructor)) {
         self$constructor(...)
       }

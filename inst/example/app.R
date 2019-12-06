@@ -49,7 +49,7 @@ HelloButton <- Button$extend(
       self$on("click", function(target, value) {
         n <<- n + 1
         value <- paste(self$id, "click", n)
-        self$service$hello$emit("message", value)
+        self$services$hello$emit("message", value)
       })
     }
   )
@@ -86,7 +86,7 @@ App <- battery::component(
     constructor = function() {
       self$addService("hello", battery::EventEmitter$new())
       ## global server listining on button hello
-      self$service$hello$on("message", function(message) {
+      self$services$hello$on("message", function(message) {
         print(message)
       })
       ## for root node you don't need to use ns to create namespace but you can
