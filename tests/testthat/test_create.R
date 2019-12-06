@@ -8,7 +8,7 @@ battery::useMocks()
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
     classname = 'A',
-    inherit = Component,
+    inherit = battery::Component,
     public = list(
       static = list2env(list(count = 0)),
       value = NULL,
@@ -23,8 +23,8 @@ test_that('it should create component using R6Class', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
   expect_equal(a$render(), shiny::tags$p('component hello'))
@@ -32,7 +32,7 @@ test_that('it should create component using R6Class', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create component using component function', {
-  A <- component(
+  A <- battery::component(
     classname = 'A',
     public = list(
       value = NULL,
@@ -47,8 +47,8 @@ test_that('it should create component using component function', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
   expect_equal(a$render(), shiny::tags$p('component hello'))
@@ -56,7 +56,7 @@ test_that('it should create component using component function', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should extend base component using extend static method', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -71,8 +71,8 @@ test_that('it should extend base component using extend static method', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a <- A$new(value = 10, name = 'hello', input = input, output = output, session = session)
   expect_equal(a$value, 10)
   expect_equal(a$render(), shiny::tags$p('component hello'))
@@ -80,7 +80,7 @@ test_that('it should extend base component using extend static method', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create child component', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -103,8 +103,8 @@ test_that('it should create child component', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   b <- B$new(value = 10, input = input, output = output, session = session)
   expect_equal(b$value, 10)
   expect_equal(b$render(), shiny::tags$p('component hi'))
@@ -112,7 +112,7 @@ test_that('it should create child component', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create static fields', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     static = list(
       number = 10
@@ -126,8 +126,8 @@ test_that('it should create static fields', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a <- A$new(input = input, output = output, session = session)
   expect_equal(a$static$number, 11)
   b <- A$new(input = input, output = output, session = session)
@@ -139,7 +139,7 @@ test_that('it should create static fields', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should call parent constructor if no constuctor in child component', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       name = NULL,
@@ -149,8 +149,8 @@ test_that('it should call parent constructor if no constuctor in child component
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   B <- A$extend(
     classname = 'B',
     public = list(
@@ -164,7 +164,7 @@ test_that('it should call parent constructor if no constuctor in child component
 
 ## ----------------------------------------------------------------------------
 test_that('it should create new static field in child component', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     static = list(
       number = 10
@@ -187,8 +187,8 @@ test_that('it should create new static field in child component', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a_1 <- A$new(input = input, output = output, session = session)
   expect_equal(a_1$static$number, 11)
   a_2 <- A$new(input = input, output = output, session = session)
@@ -204,7 +204,7 @@ test_that('it should create new static field in child component', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should update static field', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     static = list(
       number = 10,
@@ -227,8 +227,8 @@ test_that('it should update static field', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   a_1 <- A$new(input = input, output = output, session = session)
   a_1$inc()
   a_2 <- A$new(input = input, output = output, session = session)
@@ -252,7 +252,7 @@ test_that('it should update static field', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should compose objects', {
-  A <- Component$extend(
+  A <- battery::Component$extend(
     classname = 'A',
     public = list(
       name = NULL,
@@ -261,7 +261,7 @@ test_that('it should compose objects', {
       }
     )
   )
-  B <- Component$extend(
+  B <- battery::Component$extend(
     classname = 'B',
     public = list(
       constructor = function() {
@@ -272,8 +272,8 @@ test_that('it should compose objects', {
     )
   )
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
   b <- B$new(input = input, output = output, session = session)
   expect_equal(b$children$a_1$id, 'A1')
   expect_equal(b$children$a_2$id, 'A2')
@@ -285,3 +285,5 @@ test_that('it should compose objects', {
   expect_equal(b$children$a_2$name, 'bar')
   expect_equal(b$children$a_3$name, 'baz')
 })
+
+battery::clearMocks()

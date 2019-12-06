@@ -88,3 +88,5 @@ test_that('it should call on NULL value', {
   input$foo <- 30
   expect_equal(env$calls, list(NULL, 10, NULL, 30))
 })
+
+battery::clearMocks()

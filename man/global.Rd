@@ -5,7 +5,7 @@
 \alias{global}
 \title{Global varialbe added to base component that hold each classes and component list
 for getById method}
-\format{An object of class \code{environment} of length 3.}
+\format{An object of class \code{environment} of length 4.}
 \usage{
 global
 }
