@@ -152,6 +152,25 @@ Component <- R6::R6Class(
           self$session <- session
         }
       }
+      ## init component counter per session in same R process
+      if (is.null(global$sessions)) {
+        global$sessions <- list()
+      }
+      classname <- self$class()$classname
+      token <- self$session$token
+      ## token is null in unit tests
+      ## TODO: maybe we should tests this as well
+      if (!is.null(token)) {
+        if (!token %in% names(global$sessions)) {
+          global$sessions[[token]] <- list()
+        }
+        ## first class instance
+        if (is.null(global$sessions[[token]][[classname]])) {
+          global$sessions[[token]][[classname]] <- new.env()
+          self$static <- global$sessions[[token]][[classname]]
+          self$static$count <- 0
+        }
+      }
       self$parent <- parent
       ## create global object, one per root
       if (isTRUE(root)) {
@@ -174,7 +193,7 @@ Component <- R6::R6Class(
         self
       ))
 
-      self$id <- paste0(head(class(self), 1), self$static$count)
+      self$id <- paste0(classname, self$static$count)
 
       self$children <- list()
       self$services <- self$static$.global$services
@@ -411,6 +430,10 @@ Component <- R6::R6Class(
       cls <- self$class()
       if (!is.null(cls) && !is.null(cls$static) && !is.null(cls$static$.global)) {
         cls$static$.global$services <- new.env()
+      }
+      ## clear data for different users in one R process
+      if (!is.null(self$session$token)) {
+        global$sessions[[self$session$token]] <- NULL
       }
       for (handler in names(private$.observers)) {
         self$disconnect(handler)
