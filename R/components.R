@@ -156,10 +156,13 @@ Component <- R6::R6Class(
       if (is.null(global$sessions)) {
         global$sessions <- list()
       }
-      if (!self$session$token %in% names(global$sessions)) {
-        global$sessions[[self$session$token]] <- new.env()
-        self$static <- global$sessions[[self$session$token]]
-        self$static$count <- 0
+      ## token is null on tests
+      if (!is.null(self$session$token)) {
+        if (!self$session$token %in% names(global$sessions)) {
+          global$sessions[[self$session$token]] <- new.env()
+          self$static <- global$sessions[[self$session$token]]
+          self$static$count <- 0
+        }
       }
       self$parent <- parent
       ## create global object, one per root
