@@ -115,7 +115,8 @@ server <- function(input, output, session) {
   root <- App$new(
     input = input,
     output = output,
-    session = session
+    session = session,
+    root = TRUE
   )
 
   ## this is how you connect components to normal code, you can create one component

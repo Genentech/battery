@@ -1,13 +1,22 @@
+
+#' Global env generator function - is executed on every battery component or on each component that have
+#' root set to TRUE, so you can have two component trees that have different services with same name.
+#' This is usefull if you want to have shiny app and in same R process have two different shiny apps
+#' so you will have two instances of battery root components
+new.global.env <- function() {
+  list2env(list(
+    components = list(),
+    classes = list(),
+    session.end = NULL,
+    ## we need env inside env because we use it outside of global but we also need
+    ## a single reference so we can reset it
+    services = new.env()
+  ))
+}
+
 #' Global varialbe added to base component that hold each classes and component list
 #' for getById method
-global <- list2env(list(
-  components = list(),
-  classes = list(),
-  session.end = NULL,
-  ## we need env inside env because we use it outside of global but we also need
-  ## a single reference so we can reset it
-  services = new.env()
-))
+global <- new.global.env()
 
 #' Component base class
 #'
@@ -83,10 +92,10 @@ global <- list2env(list(
 Component <- R6::R6Class(
   classname = 'Component',
   private = list(
-    handlers = NULL,
-    ..spying = NULL,
-    observers = NULL,
-    global = global,
+    .handlers = NULL,
+    .spying = NULL,
+    .observers = NULL,
+    .global = NULL,
     ## ---------------------------------------------------------------
     trigger = function(name, data) {
       if (name %in% ls(self$events)) {
@@ -120,7 +129,8 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          services = NULL, spy = FALSE, ...) {
+                          services = NULL, root = NULL,
+                          spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -142,27 +152,36 @@ Component <- R6::R6Class(
           self$session <- session
         }
       }
-      private$..spying <- spy
-      private$handlers <- list()
-      private$observers <- list()
+      self$parent <- parent
+      ## create global object, one per root
+      if (isTRUE(root)) {
+        self$static$.global <- new.global.env()
+      } else {
+        root <- getRoot(self)
+        if (!is.null(root) && !identical(root, self)) {
+          self$static$.global <- root$class()$static$.global
+        } else {
+          self$static$.global <- global
+        }
+      }
+
+      private$.spying <- spy
+      private$.handlers <- list()
+      private$.observers <- list()
       self$static$count <- self$static$count + 1
       self$events <- new.env()
-      private$global$components <- append(private$global$components, list(
+      self$static$.global$components <- append(self$static$.global$components, list(
         self
       ))
-      self$parent <- parent
 
       self$id <- paste0(head(class(self), 1), self$static$count)
 
       self$children <- list()
-      self$services <- global$services
+      self$services <- self$static$.global$services
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
         }
-      }
-      if (!is.null(self$constructor)) {
-        self$constructor(...)
       }
       if (!is.null(component.name)) {
         parent$appendChild(component.name, self)
@@ -170,19 +189,12 @@ Component <- R6::R6Class(
       ## global reset component counter - execute once for session
       if (!is.null(self$session) &&
           is.function(self$session$onSessionEnded)) {
-        if (is.null(global$session.end)) {
-          global$session.end <- self$session$onSessionEnded(function() {
-            ## we need to clear the handler so it can be registerd again
-            ## on next session (when R proccess keep running)
-            global$session.end <- NULL
-            reset.counters()
-            global$services <- new.env()
-          })
-        }
-        ## global reset of services
         self$session$onSessionEnded(function() {
-          self$services <- global$services
+          self$destroy()
         })
+      }
+      if (!is.null(self$constructor)) {
+        self$constructor(...)
       }
     },
     ## ---------------------------------------------------------------
@@ -191,7 +203,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     getById = function(id) {
       ## components is one reference for every instance (static)
-      for (component in private$global$components) {
+      for (component in self$static$.global$components) {
         if (component$id == id) {
           return(component)
         }
@@ -290,7 +302,7 @@ Component <- R6::R6Class(
         self$emit(event, self$input[[elementId]], include.self = TRUE)
       }, observerName = uuid)
 
-      private$observers[[elementId]] <- list(
+      private$.observers[[elementId]] <- list(
         observer = observer,
         uuid = uuid
       )
@@ -299,7 +311,7 @@ Component <- R6::R6Class(
     ## :: remove binding between input element and compnents events
     ## ---------------------------------------------------------------
     disconnect = function(elementId) {
-      private$observers[[elementId]]$observer$observer$destroy()
+      private$.observers[[elementId]]$observer$observer$destroy()
     },
     ## ---------------------------------------------------------------
     ## :: add event listener to given internal event or native input
@@ -327,8 +339,8 @@ Component <- R6::R6Class(
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
         }
-        if (is.null(private$handlers[[event]])) {
-          private$handlers[[event]] <- list()
+        if (is.null(private$.handlers[[event]])) {
+          private$.handlers[[event]] <- list()
         }
 
         uuid <- uuid::UUIDgenerate()
@@ -351,7 +363,7 @@ Component <- R6::R6Class(
           }, observerName = uuid, ignoreInit = !init, ...)
         }
 
-        private$handlers[[event]] <- append(private$handlers[[event]], list(
+        private$.handlers[[event]] <- append(private$.handlers[[event]], list(
           list(
             handler = handler,
             uuid = uuid,
@@ -367,12 +379,12 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     off = function(event, handler = NULL) {
       if (is.null(handler)) {
-        lapply(private$handlers[[event]], function(e) {
+        lapply(private$.handlers[[event]], function(e) {
           e$observer$destroy()
         })
-        private$handlers[event] <- NULL
+        private$.handlers[event] <- NULL
       } else {
-        flags <- sapply(private$handlers[[event]], function(e) {
+        flags <- sapply(private$.handlers[[event]], function(e) {
           if (identical(e$handler, handler)) {
             e$observer$destroy()
             FALSE
@@ -380,17 +392,27 @@ Component <- R6::R6Class(
             TRUE
           }
         })
-        private$handlers[[event]] <- private$handlers[[event]][flags]
+        private$.handlers[[event]] <- private$.handlers[[event]][flags]
       }
+    },
+    ## ---------------------------------------------------------------
+    class = function() {
+      private$.class
     },
     ## ---------------------------------------------------------------
     ## :: Method remove all observers created for this component
     ## ---------------------------------------------------------------
     destroy = function() {
-      for (event in names(private$handlers)) {
+      for (event in names(private$.handlers)) {
         self$off(event)
       }
-      for (handler in names(private$observers)) {
+      self$static$count <- 0
+      ## case when componets are not proper tree
+      cls <- self$class()
+      if (!is.null(cls) && !is.null(cls$static) && !is.null(cls$static$.global)) {
+        cls$static$.global$services <- new.env()
+      }
+      for (handler in names(private$.observers)) {
         self$disconnect(handler)
       }
       if (!is.null(self$parent)) {
@@ -462,9 +484,10 @@ component <- function(classname,
       }),
     ...
   )
+
   class$static <- static.env
-  global$classes <- append(global$classes, list(class))
   class$set('public', 'static', static.env)
+  class$set('private', '.class', class)
   r6.class.add(class, public)
   r6.class.add(class, private)
   ## we also need extend when base class called without extend
@@ -496,7 +519,7 @@ r6.class.add <- function(class, seq) {
         env$super <- get('super', current)
         env$private <- get('private', current)
         environment(fn) <- env
-        if (env$private$..spying) {
+        if (env$private$.spying) {
           env$private$.spy(name = name, ...)
         }
         fn(...)
@@ -517,15 +540,14 @@ make.extend <- function(class) {
   }
 }
 
-## init extend on base battery component
-Component$extend <- make.extend(Component)
-
-#' Function used by base battery component to reset all the counters when components
-#' are created outside of server function (which should be most of the time) and
-#' if shiny sessions runs in same R process (this will not be needed for shiny in Docker,
-#' but it would not cause any harm)
-reset.counters <- function() {
-  for (class in global$classes) {
-    class$static$count <- 0
+#' helper recursive function that can't be written as method
+getRoot <- function(node) {
+  if (is.null(node$parent)) {
+    node
+  } else {
+    getRoot(node$parent)
   }
 }
+
+## init extend on base battery component
+Component$extend <- make.extend(Component)
