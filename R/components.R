@@ -152,6 +152,15 @@ Component <- R6::R6Class(
           self$session <- session
         }
       }
+      ## init component counter per session in same R process
+      if (is.null(global$sessions)) {
+        global$sessions <- list()
+      }
+      if (!self$session$token %in% names(global$sessions)) {
+        global$sessions[[self$session$token]] <- new.env()
+        self$static <- global$sessions[[self$session$token]]
+        self$static$count <- 0
+      }
       self$parent <- parent
       ## create global object, one per root
       if (isTRUE(root)) {
