@@ -224,8 +224,13 @@ Component <- R6::R6Class(
         ## with scope at the end
         tryCatch({
           self$constructor(...)
-        }, error = function(e) {
-          traceback()
+        }, error = function(cond) {
+          if (!inherits(cond, "shiny.silent.error")) {
+            message(paste0("throw in ", self$id, "::constructor"))
+            message(cond$message)
+            traceback(cond)
+            stop(cond)
+          }
         })
       }
     },
@@ -366,13 +371,10 @@ Component <- R6::R6Class(
     #' @param enabled - boolean that enable event to easy toggle event
     #' @param init - indicate if event should be triggered on init
     ## ---------------------------------------------------------------
-    on = function(event, handler, input = FALSE, enabled = TRUE, debounceMillis = NULL, init = FALSE, ...) {
+    on = function(event, handler, input = FALSE, enabled = TRUE, init = FALSE, ...) {
       if (enabled) {
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
-        }
-        if (!is.null(debounceMillis)) {
-          handler <- handler %>% shiny::debounce(debounceMillis)
         }
         if (is.null(private$.handlers[[event]])) {
           private$.handlers[[event]] <- list()
@@ -382,7 +384,16 @@ Component <- R6::R6Class(
 
         observer <- if (input) {
           battery::observeEvent(self$input[[event]], {
-            battery:::invoke(handler, self$input[[event]], self)
+            tryCatch({
+              battery:::invoke(handler, self$input[[event]], self)
+            }, error = function(cond) {
+              if (!inherits(cond, "shiny.silent.error")) {
+                message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
+                message(cond$message)
+                traceback(cond)
+                stop(cond)
+              }
+            })
           }, observerName = uuid, ignoreInit = !init, ...)
         } else {
           self$createEvent(event)
@@ -390,11 +401,20 @@ Component <- R6::R6Class(
           battery::observeEvent(self$events[[event]], {
             data <- self$events[[event]]
             ## invoke handler function with only argument it accept
-            if (is.null(data) || is.logical(data)) {
-              battery:::invoke(handler, NULL, NULL)
-            } else {
-              battery:::invoke(handler, data[["value"]], data[["target"]])
-            }
+            tryCatch({
+              if (is.null(data) || is.logical(data)) {
+                battery:::invoke(handler, NULL, NULL)
+              } else {
+                battery:::invoke(handler, data[["value"]], data[["target"]])
+              }
+            }, error = function(cond) {
+              if (!inherits(cond, "shiny.silent.error")) {
+                message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
+                message(cond$message)
+                traceback(cond)
+                stop(cond)
+              }
+            })
           }, observerName = uuid, ignoreInit = !init, ...)
         }
 
@@ -566,7 +586,16 @@ r6.class.add <- function(class, seq) {
         if (env$private$.spying) {
           env$private$.spy(name = name, ...)
         }
-        fn(...)
+        tryCatch({
+          fn(...)
+        }, error = function(cond) {
+          if (!inherits(cond, "shiny.silent.error")) {
+            message(paste0("throw in ", env$self$id, "::", name))
+            message(cond$message)
+            traceback(cond)
+            stop(cond)
+          }
+        })
       }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
     } else {
