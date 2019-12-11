@@ -7,7 +7,9 @@
 activeInput(env = new.env(), ...)
 }
 \arguments{
-\item{args}{- initial active names}
+\item{env}{- enviroment that will be turn into activeInput}
+
+\item{...}{- list of named inital values}
 }
 \description{
 usage:

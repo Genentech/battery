@@ -6,6 +6,9 @@
 \usage{
 make.extend(class)
 }
+\arguments{
+\item{class}{- battery component constructor}
+}
 \description{
 higher order function for creating extend static method on every battery::Component
 }

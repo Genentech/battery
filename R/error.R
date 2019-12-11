@@ -1,5 +1,8 @@
 #' Helper function used by observeEvent
-#' 
+#'
+#' @param expr - expression
+#' @param reactionsPerType - list of named callbacks
+#'
 #' @export
 handleErrors <- function(expr, reactionsPerType = list()){
   withCallingHandlers(
@@ -12,7 +15,6 @@ handleErrors <- function(expr, reactionsPerType = list()){
           reactions = reactionsPerType,
           message = e$message
         )
-        
         stop(e)
       }
     },
@@ -53,24 +55,32 @@ handleErrors <- function(expr, reactionsPerType = list()){
     }
   )
 }
-
+#' Function call callback function from list with argument message
+#'
+#' @param type - type of reaction
+#' @param reactions - list of named callback functions
+#' @param message - argument to call the function with
 callReaction <- function(type, reactions, message){
   if (type %in% names(reactions)){
     reactions[[type]](message)
   }
 }
 
+#' Function print message with type and optional stack trace
+#' @param msgData - list
+#' @param msgType - strings
+#' @param stackTrace
 #' @export
 logMessage <- function(msgData, msgType, stackTrace = NULL) {
   time <- Sys.time()
   msg <- msgData$message
   expr <- paste(trimws(deparse(msgData$call)), collapse = "")
-  
+
   if (msgType == "log"){
     message(sprintf("[%s] %s\n", time, msg))
   } else {
     message(sprintf("[%s] %s in:\n `%s`:\n%s\n", time, msgType, expr, msg))
-    
+
     if (!is.null(stackTrace)) {
       message("Traceback:\n")
       message(paste(shiny::formatStackTrace(stackTrace), collapse = "\n"))

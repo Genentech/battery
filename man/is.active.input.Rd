@@ -6,6 +6,9 @@
 \usage{
 is.active.input(obj)
 }
+\arguments{
+\item{obj}{- any objecct}
+}
 \description{
 Function for checking if object is actie input - used by extractActiveInputs
 }

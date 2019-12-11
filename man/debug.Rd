@@ -6,6 +6,9 @@
 \usage{
 debug(...)
 }
+\arguments{
+\item{...}{- arguments to print}
+}
 \description{
 helper that print args
 }

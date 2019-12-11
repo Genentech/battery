@@ -285,9 +285,7 @@ test_that('it should throw when duplicated service is added [constructor]', {
   throw <- FALSE
   tryCatch({
     b <- B$new(
-      input = input,
-      output = output,
-      session = session,
+      parent = a,
       services = list(
         foo = service
       )
@@ -338,9 +336,7 @@ test_that('it should throw when duplicated service is added [method]', {
   throw <- FALSE
   tryCatch({
     b <- B$new(
-      input = input,
-      output = output,
-      session = session
+      parent = a
     )
     b$addService(name, service)
   }, error = function(cond) {
@@ -390,9 +386,7 @@ test_that('it should throw when duplicated service is added [method + new instan
   throw <- FALSE
   tryCatch({
     b <- B$new(
-      input = input,
-      output = output,
-      session = session
+      parent = a
     )
     b$addService(name, Service$new())
   }, error = function(cond) {
@@ -400,7 +394,6 @@ test_that('it should throw when duplicated service is added [method + new instan
     ## we don't test this, since it may change randomly
     throw <<- TRUE
   })
-
   expect_true(throw)
 
   session$destroy()

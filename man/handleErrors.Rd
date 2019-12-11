@@ -6,6 +6,11 @@
 \usage{
 handleErrors(expr, reactionsPerType = list())
 }
+\arguments{
+\item{expr}{- expression}
+
+\item{reactionsPerType}{- list of named callbacks}
+}
 \description{
 Helper function used by observeEvent
 }
