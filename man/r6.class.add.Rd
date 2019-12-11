@@ -6,6 +6,11 @@
 \usage{
 r6.class.add(class, seq)
 }
+\arguments{
+\item{class}{- battery component constructor}
+
+\item{seq}{- named list of properties and functions methods}
+}
 \description{
 helper function for adding properties to R6Class
 }

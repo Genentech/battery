@@ -2,12 +2,19 @@
 % Please edit documentation in R/mocks.R
 \name{set.frame}
 \alias{set.frame}
-\title{Function overwrite value in parent frame env
+\title{Function overwrite value in parent frame enviroment
 It start searching for variable starting from frame parameter}
 \usage{
 set.frame(value, name = NULL, frame = 1)
 }
+\arguments{
+\item{value}{- value that will be added to enviroment}
+
+\item{name}{- name of the variable if not set it will use variable name from value}
+
+\item{frame}{- integer that indicate from which parent it should start searching for variable}
+}
 \description{
-Function overwrite value in parent frame env
+Function overwrite value in parent frame enviroment
 It start searching for variable starting from frame parameter
 }

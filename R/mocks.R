@@ -73,7 +73,8 @@
 
 #' Function create mock for shiny input
 #'
-#' @param args - initial active names
+#' @param env - enviroment that will be turn into activeInput
+#' @param ... - list of named inital values
 #' @export
 activeInput <- function(env = new.env(), ...) {
   input <- list(...)
@@ -197,11 +198,13 @@ activeInput <- function(env = new.env(), ...) {
 
 # -----------------------------------------------------------------------------
 #' name used only inside renderUI in substitute phase
+#' @param x - reactive value
 #' @export
 isolate <- function(x) x
 
 # -----------------------------------------------------------------------------
 #' Function for checking if object is actie input - used by extractActiveInputs
+#' @param obj - any objecct
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
@@ -216,6 +219,8 @@ is.active.input <- function(obj) {
 }
 
 # -----------------------------------------------------------------------------
+#' Function check if obj is enviroment that is result of activeOutput function
+#' @param obj - any object
 is.active.output <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
@@ -230,6 +235,9 @@ is.active.output <- function(obj) {
 }
 
 # -----------------------------------------------------------------------------
+#' Function check if name is active biding inside environment activeInput or Output
+#' @param name - string
+#' @param env - active environment to test
 is.active.binding <- function(name, env) {
   (is.active.input(env) || is.active.output(env)) && name %in% env$.active.symbols
 }
@@ -238,6 +246,12 @@ is.active.binding <- function(name, env) {
 #' Function used the same as battery::observeEvent (based on shiny::observeEvent)
 #' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
 #' destroy previous created observer, so there are no duplicates
+#' @param eventExpr - same as in shiny::observeEvent
+#' @param handlerExpr - same as in shiny::observeEvent
+#' @param handler.env - same as in shiny::observeEvent
+#' @param ignoreInit - same as in shiny::observeEvent
+#' @param ignoreNULL - same as in shiny::observeEvent
+#' @param observerName - name that will distinguish observers with same code
 #'
 #' @export
 observeEventMock <- function(eventExpr,
@@ -273,13 +287,13 @@ observeEventMock <- function(eventExpr,
   }
   initValue <- activeEnv[[name]]
   if (!ignoreInit && !(ignoreNULL && is.null(initValue))) {
-    eval(expr, env = handler.env)
+    eval(expr, envir = handler.env)
   }
 
   if (is.active.input(activeEnv)) {
     activeEnv$off(name, expr, observerName = observerName)
     activeEnv$on(name, function(old, value) {
-      eval(expr, env = handler.env)
+      eval(expr, envir = handler.env)
       if (once) {
         activeEnv$off(name, expr, observerName = observerName)
       }
@@ -297,7 +311,8 @@ observeEventMock <- function(eventExpr,
 # -----------------------------------------------------------------------------
 #' Function create active binding output mock to be used with renderUI mock
 #'
-#' @param args - named initial active inputs
+#' @param ... - named initial active inputs
+#'
 #' @export
 activeOutput <- function(...) {
   input <- list(...)
@@ -334,11 +349,11 @@ activeOutput <- function(...) {
           var$active$on(var$prop, function(oldInputVal, newInputVal) {
             ## store renderUI expression output in private variable (exposed)
             ## so you can get it using output[[name]]
-            env[[privateName]] <- eval(value$expr, env = value$env)
+            env[[privateName]] <- eval(value$expr, envir = value$env)
           }, expr = value$expr)
         })
         ## initial value
-        env[[privateName]] <- eval(value$expr, env = value$env)
+        env[[privateName]] <- eval(value$expr, envir = value$env)
       }
     }
   }
@@ -377,6 +392,7 @@ activeOutput <- function(...) {
 #' note: input can have different name for instance events in components
 #'
 #' @param expr - any expression
+#'
 #' @export
 renderUI <- function(expr) {
   list(
@@ -386,6 +402,10 @@ renderUI <- function(expr) {
 }
 
 # -----------------------------------------------------------------------------
+#' Merge two lists into desc list - destructive
+#'
+#' @param desc - detination list
+#' @param src - source lise
 merge.props <- function(desc, src) {
   lapply(names(src), function(name) {
     desc[[name]] <<- append(desc[[name]], src[[name]])
@@ -394,6 +414,11 @@ merge.props <- function(desc, src) {
 }
 
 # -----------------------------------------------------------------------------
+#' function saftly return name from enviroment(s) and don't throw error
+#' if name don't exists
+#'
+#' @param name - string
+#' @param env - environment or list of environments
 safe.get <- function(name, env) {
   if (is.environment(env)) {
     if (exists(name, env)) {
@@ -412,6 +437,8 @@ safe.get <- function(name, env) {
 # -----------------------------------------------------------------------------
 #' function check if expression from environment is function call
 #'
+#' @param expr - expression from substitute
+#' @param env - enviroment in which to check expression
 is.function.call <- function(expr, env) {
   if (typeof(expr) == 'language' && is.symbol(expr[[1]]) && expr[[1]] != '{') {
     re <- paste0('^', escapeRegex(expr[[1]]), '\\(')
@@ -588,7 +615,7 @@ get.object <- function(item, env) {
 #' Traverse substitute expressions and function invocation and extract all references to active elements
 #' created by activeInput and uiOutput
 #'
-#' @param data - named list: expr - substitute expr, env - parent env (value returned from renderUI)
+#' @param arg - named list: expr - substitute expr, env - parent env (value returned from battery::renderUI mock)
 extractActiveNames <- function(arg) {
   s <- arg$expr
   closure <- NULL
@@ -707,24 +734,29 @@ originals <- new.env()
 #' @export
 useMocks <- function() {
   originals$battery_observeEvent <- observeEvent
-  originals$isolate <- isolate
-  originals$renderUI <- renderUI
-  originals$makeReactiveBinding <- makeReactiveBinding
+  originals$observeEvent <- shiny::observeEvent
+  originals$isolate <- shiny::isolate
+  originals$renderUI <- shiny::renderUI
+  originals$makeReactiveBinding <- shiny::makeReactiveBinding
 
   observeEvent <- battery::observeEventMock
+  isolate <- battery::isolate
+  makeReactiveBinding <- battery::makeReactiveBinding
+  renderUI <- battery::renderUI
+
   assignInNamespace('observeEvent', observeEvent, 'battery')
   assignInNamespace('observeEvent', observeEvent, 'shiny')
-  isolate <- battery::isolate
   assignInNamespace('isolate', isolate, 'shiny')
-  makeReactiveBinding <- battery::makeReactiveBinding
   assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
-  renderUI <- battery::renderUI
   assignInNamespace('renderUI', renderUI, 'shiny')
 
-  set.frame(observeEvent, frame = 2)
-  set.frame(isolate, frame = 2)
-  set.frame(renderUI, frame = 2)
-  set.frame(makeReactiveBinding, frame = 2)
+  ## we modify global environment so it update env when function
+  ## is called outside of the package
+  env <- parent.frame()
+  env$observeEvent <- observeEvent
+  env$isolate <- isolate
+  env$renderUI <- renderUI
+  env$makeReactiveBinding <- makeReactiveBinding
 }
 
 #' Helper function to be used at the end of test files (useful if same session is used
@@ -732,27 +764,32 @@ useMocks <- function() {
 #'
 #' @export
 clearMocks <- function() {
-  originals$makeReactiveBinding <- shiny::makeReactiveBinding
   assignInNamespace('observeEvent', originals$battery_observeEvent, 'battery')
-  assignInNamespace('observeEvent', originals$shiny_observeEvent, 'shiny')
+  assignInNamespace('observeEvent', originals$observeEvent, 'shiny')
   assignInNamespace('isolate', originals$isolate, 'shiny')
   assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
   assignInNamespace('renderUI', originals$renderUI, 'shiny')
 
-  observeEvent <- originals$battery_observeEvent
+  observeEvent <- originals$observeEvent
   isolate <- originals$isolate
   renderUI <- originals$renderUI
   makeReactiveBinding <- originals$makeReactiveBinding
 
-  set.frame(observeEvent, frame = 2)
-  set.frame(isolate, frame = 2)
-  set.frame(renderUI, frame = 2)
-  set.frame(makeReactiveBinding, frame = 2)
+  ## we modify global environment so it update env when function
+  ## is called outside of the package
+  env <- parent.frame()
+  env$observeEvent <- battery::observeEvent
+  env$isolate <- shiny::isolate
+  env$renderUI <- shiny::renderUI
+  env$makeReactiveBinding <- shiny::makeReactiveBinding
 }
 
 
-#' Function overwrite value in parent frame env
+#' Function overwrite value in parent frame enviroment
 #' It start searching for variable starting from frame parameter
+#' @param value - value that will be added to enviroment
+#' @param name - name of the variable if not set it will use variable name from value
+#' @param frame - integer that indicate from which parent it should start searching for variable
 set.frame <- function(value, name = NULL, frame = 1) {
   if (is.null(name)) {
     s <- substitute(value)
@@ -765,11 +802,12 @@ set.frame <- function(value, name = NULL, frame = 1) {
   top <- globalenv()
   repeat {
     env <- parent.frame(n = frame)
-    if (name %in% names(env)) {
+    global <- identical(top, env)
+    if (name %in% names(env) || global) {
       env[[name]] <- value
     }
     frame <- frame + 1
-    if (identical(top, env)) {
+    if (global) {
       break;
     }
   }

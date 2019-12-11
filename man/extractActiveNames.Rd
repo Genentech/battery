@@ -8,7 +8,7 @@ created by activeInput and uiOutput}
 extractActiveNames(arg)
 }
 \arguments{
-\item{data}{- named list: expr - substitute expr, env - parent env (value returned from renderUI)}
+\item{arg}{- named list: expr - substitute expr, env - parent env (value returned from battery::renderUI mock)}
 }
 \description{
 Traverse substitute expressions and function invocation and extract all references to active elements

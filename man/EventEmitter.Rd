@@ -14,15 +14,22 @@ function}
 EventEmitter
 }
 \description{
-example:
+Event emitter is inspired by multiple implementation in JavaScript
+it can be used indepentely of battery events to send data from one component
+to different one, without the need to broadcast and emit events
+it can be used with services, in addition to can also be used as reactive
+values in shiny reactive context like renderUI or battery component render
+function
+}
+\examples{
 e <- EventEmitter$new()
-e$on("sessinCreated", function(value, emitter) {
+e$on("sessionCreated", function(value, emitter) {
   self$updateSessionComponent(value$name)
 })
-}
-\details{
+
 and in different part of the application
 
-e$emit("sessinCreated", list(name = "My Session"))
+e$emit("sessionCreated", list(name = "My Session"))
+
 }
 \keyword{datasets}

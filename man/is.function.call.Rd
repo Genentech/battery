@@ -6,6 +6,11 @@
 \usage{
 is.function.call(expr, env)
 }
+\arguments{
+\item{expr}{- expression from substitute}
+
+\item{env}{- enviroment in which to check expression}
+}
 \description{
 function check if expression from environment is function call
 }

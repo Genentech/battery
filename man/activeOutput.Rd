@@ -7,7 +7,7 @@
 activeOutput(...)
 }
 \arguments{
-\item{args}{- named initial active inputs}
+\item{...}{- named initial active inputs}
 }
 \description{
 Function create active binding output mock to be used with renderUI mock

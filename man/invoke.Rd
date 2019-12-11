@@ -6,6 +6,11 @@
 \usage{
 invoke(fn, ...)
 }
+\arguments{
+\item{fn}{- function to be called}
+
+\item{...}{- list of arguments}
+}
 \description{
 Function call function fn with the only arguments it accept
 }

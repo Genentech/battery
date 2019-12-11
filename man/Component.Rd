@@ -6,9 +6,11 @@
 so you don't confuse battery component with normal R6Class}
 \usage{
 component(classname, public = NULL, private = NULL, static = NULL,
-  inherit = battery::Component, services = list(), ...)
+  inherit = battery::Component, ...)
 }
 \arguments{
+\item{classname}{- name of the class as string}
+
 \item{public}{- list of public functions and properties}
 
 \item{private}{- list of private functions and properties}
@@ -16,6 +18,8 @@ component(classname, public = NULL, private = NULL, static = NULL,
 \item{static}{- list of fields that will stay the same for every instance of the component}
 
 \item{inherit}{- base class - if not specifed it will inherit from Base class (battery::Component)}
+
+\item{...}{- reset option passed to R6Class constructor}
 }
 \description{
 Helper function for defining components with additional static field. It can also be used

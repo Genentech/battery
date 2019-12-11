@@ -6,6 +6,9 @@
 \usage{
 isolate(x)
 }
+\arguments{
+\item{x}{- reactive value}
+}
 \description{
 name used only inside renderUI in substitute phase
 }

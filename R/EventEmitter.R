@@ -5,7 +5,7 @@
 #' values in shiny reactive context like renderUI or battery component render
 #' function
 #'
-#' example:
+#' @examples
 #' e <- EventEmitter$new()
 #' e$on("sessionCreated", function(value, emitter) {
 #'   self$updateSessionComponent(value$name)

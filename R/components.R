@@ -166,19 +166,24 @@ Component <- R6::R6Class(
         }
         ## first class instance
         if (is.null(global$sessions[[token]][[classname]])) {
-          global$sessions[[token]][[classname]] <- new.env()
+          e <- new.env()
+          global$sessions[[token]][[classname]] <- e
+          self$static <- e
+          c <- self$class()
+          c$static <- e
+          e$count <- 0
+        } else {
           self$static <- global$sessions[[token]][[classname]]
-          self$static$count <- 0
         }
       }
       self$parent <- parent
       ## create global object, one per root
-      if (isTRUE(root)) {
+      if (isTRUE(root) || is.null(parent)) {
         self$static$.global <- new.global.env()
       } else {
         root <- getRoot(self)
         if (!is.null(root) && !identical(root, self)) {
-          self$static$.global <- root$class()$static$.global
+          self$static$.global <- root$static$.global
         } else {
           self$static$.global <- global
         }
@@ -213,7 +218,15 @@ Component <- R6::R6Class(
         })
       }
       if (!is.null(self$constructor)) {
-        self$constructor(...)
+        ## TODO: improve stack trce in Battery and make it stable
+        ## this stimetimes prints no stack trace aviable
+        ## add to handlers ($on) and fn(...) in building method
+        ## with scope at the end
+        tryCatch({
+          self$constructor(...)
+        }, error = function(e) {
+          traceback()
+        })
       }
     },
     ## ---------------------------------------------------------------
@@ -353,10 +366,13 @@ Component <- R6::R6Class(
     #' @param enabled - boolean that enable event to easy toggle event
     #' @param init - indicate if event should be triggered on init
     ## ---------------------------------------------------------------
-    on = function(event, handler, input = FALSE, enabled = TRUE, init = FALSE, ...) {
+    on = function(event, handler, input = FALSE, enabled = TRUE, debounceMillis = NULL, init = FALSE, ...) {
       if (enabled) {
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
+        }
+        if (!is.null(debounceMillis)) {
+          handler <- handler %>% shiny::debounce(debounceMillis)
         }
         if (is.null(private$.handlers[[event]])) {
           private$.handlers[[event]] <- list()
@@ -473,10 +489,12 @@ Component <- R6::R6Class(
 #' Helper function for defining components with additional static field. It can also be used
 #' so you don't confuse battery component with normal R6Class
 #'
+#' @param classname - name of the class as string
 #' @param public - list of public functions and properties
 #' @param private - list of private functions and properties
 #' @param static - list of fields that will stay the same for every instance of the component
 #' @param inherit - base class - if not specifed it will inherit from Base class (battery::Component)
+#' @param ... - reset option passed to R6Class constructor
 #'
 #' @export
 component <- function(classname,
@@ -519,6 +537,9 @@ component <- function(classname,
 }
 
 #' helper function for adding properties to R6Class
+#' @param class - battery component constructor
+#' @param seq - named list of properties and functions methods
+#'
 r6.class.add <- function(class, seq) {
 
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
@@ -555,6 +576,7 @@ r6.class.add <- function(class, seq) {
 }
 
 #' higher order function for creating extend static method on every battery::Component
+#' @param class - battery component constructor
 make.extend <- function(class) {
   function(...) {
     child <- component(inherit = class, ...)
@@ -564,6 +586,7 @@ make.extend <- function(class) {
 }
 
 #' helper recursive function that can't be written as method
+#' @param node - battery component instance
 getRoot <- function(node) {
   if (is.null(node$parent)) {
     node

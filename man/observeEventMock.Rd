@@ -10,6 +10,19 @@ observeEventMock(eventExpr, handlerExpr, handler.env = parent.frame(),
   ignoreInit = FALSE, ignoreNULL = TRUE, observerName = NULL,
   once = FALSE, ...)
 }
+\arguments{
+\item{eventExpr}{- same as in shiny::observeEvent}
+
+\item{handlerExpr}{- same as in shiny::observeEvent}
+
+\item{handler.env}{- same as in shiny::observeEvent}
+
+\item{ignoreInit}{- same as in shiny::observeEvent}
+
+\item{ignoreNULL}{- same as in shiny::observeEvent}
+
+\item{observerName}{- name that will distinguish observers with same code}
+}
 \description{
 Function used the same as battery::observeEvent (based on shiny::observeEvent)
 that use active binding input mocks - the work almost the same as shiny::observeEvent but it
