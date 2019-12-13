@@ -69,7 +69,7 @@ callReaction <- function(type, reactions, message){
 #' Function print message with type and optional stack trace
 #' @param msgData - list
 #' @param msgType - strings
-#' @param stackTrace
+#' @param stackTrace - stack frames
 #' @export
 logMessage <- function(msgData, msgType, stackTrace = NULL) {
   time <- Sys.time()

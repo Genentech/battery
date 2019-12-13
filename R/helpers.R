@@ -6,7 +6,7 @@ invoke <- function(fn, ...) {
     stop("invoke: argument need to be a function")
   }
   count <- length(formals(fn))
-  do.call(fn, head(list(...), count))
+  do.call(fn, utils::head(list(...), count))
 }
 
 #' helper that print args

@@ -6,6 +6,9 @@
 \usage{
 is.internal.function(fn.body)
 }
+\arguments{
+\item{fn.body}{- body of the function}
+}
 \description{
 Function return true if function is internal - used to prevent infinite recursion
 }

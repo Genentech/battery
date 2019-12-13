@@ -22,6 +22,10 @@ observeEventMock(eventExpr, handlerExpr, handler.env = parent.frame(),
 \item{ignoreNULL}{- same as in shiny::observeEvent}
 
 \item{observerName}{- name that will distinguish observers with same code}
+
+\item{once}{- same as in shiny::observeEvent}
+
+\item{...}{- reset the params from shiny::observeEvent}
 }
 \description{
 Function used the same as battery::observeEvent (based on shiny::observeEvent)

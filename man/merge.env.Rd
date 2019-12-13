@@ -6,6 +6,9 @@
 \usage{
 \method{merge}{env}(...)
 }
+\arguments{
+\item{...}{- any number of  environments objects}
+}
 \description{
 Helper function that create single environment from environments in arguments
 }

@@ -10,6 +10,11 @@ as substitute so we can call extractActiveNames on body}
 \usage{
 parse.function(item, env)
 }
+\arguments{
+\item{item}{- deparse expression}
+
+\item{env}{- enviroment}
+}
 \description{
 Function is parsing code like `foo() + bar()` that have type of language
 and it also detect cases of `foo()`, `x$foo()` or `x[[name]]()`

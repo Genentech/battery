@@ -1,4 +1,3 @@
-
 #' Global env generator function - is executed on every battery component or on each component that have
 #' root set to TRUE, so you can have two component trees that have different services with same name.
 #' This is usefull if you want to have shiny app and in same R process have two different shiny apps
@@ -20,13 +19,53 @@ global <- new.global.env()
 
 #' Component base class
 #'
+#'
+#' Root component that don't have parent need to be called with input output and session
+#'
+#' app <- App$new(input = input, output = output, session = session)
+#' output$app <- renderUI({
+#'    app$render()
+#' })
+#'
+#' the code will invoke initialize R6 class constructor and call constructor method
+#' with remaining parameters added when creating new object
+#'
+#' :: Services ::
+#'
+#' services are global object that are unique per appliction and every component
+#' can access then using self$service$name
+#' they can be added using constructor using servies option or using service function
+#' that will add new service to the system. It may be usefull to create as service
+#' isntance of EventEmitter to share events across the appliction without the need
+#' to broadcast and emit if you want to send message to siblings. You can use any
+#' object as service.
+#'
+#' Base class for components
+#' @export
+#' @examples
+#' A <- R6::R6Class(
+#'    classname = "A",
+#'    inherit = battery::BaseComponent,
+#'    public = list(
+#'      x = NULL,
+#'      constructor = function(x) {
+#'         self$x <- x
+#'      }
+#'    )
+#' )
+#' i <- battery::activeInput()
+#' o <- battery::activeOutput()
+#' s <- list()
+#' a <- A$new(x = 10, input = i, output = o, session = s)
+#'
+#' ## proper use of components
 #' Button <- battery::component(
+#'   classname = "Button",
 #'   public = list(
 #'     count = NULL,
 #'     ## constructor is artifical method so you don't need to call super
 #'     ## which you may forget to add
 #'     constructor = function(canEdit = TRUE) {
-#'       super$initialize(input, output, parent)
 #'       self$connect('click', self$ns('button'))
 #'       self$count <- 0
 #'       self$on('click', function(e = NULL, target = NULL) {
@@ -49,10 +88,12 @@ global <- new.global.env()
 #'   )
 #' )
 #' Panel <- battery::component(
+#'   classname = "Panel",
 #'   public = list(
+#'     title = NULL,
 #'     constructor = function(title) {
 #'       self$title <- title
-#'       btn <- Button$new()
+#'       btn <- Button$new(parent = self)
 #'       self$appendChild('button', btn)
 #'       self$output[[self$ns('button')]] <- renderUI({
 #'         btn$render()
@@ -67,30 +108,15 @@ global <- new.global.env()
 #'   )
 #' )
 #'
-#' Root component that don't have parent need to be called with input output and session
+#' ## instead of mocks use objects from shiny server function
 #'
-#' root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
-#' output$root <- renderUI({
-#'    root$render()
-#' })
+#' i <- battery::activeInput()
+#' o <- battery::activeOutput()
+#' s <- list()
+#' panel <- Panel$new(title = "Hello", input = i, output = o, session = s)
 #'
-#' the code will invoke initialize R6 class constructor and call constructor method
-#' with remaining parameters added when creating new object
-#'
-#' :: Services ::
-#'
-#' services are global object that are unique per appliction and every component
-#' can access then using self$service$name
-#' they can be added using constructor using servies option or using service function
-#' that will add new service to the system. It may be usefull to create as service
-#' isntance of EventEmitter to share events across the appliction without the need
-#' to broadcast and emit if you want to send message to siblings. You can use any
-#' object as service.
-#'
-#' Base class for components
-#' @export
-Component <- R6::R6Class(
-  classname = 'Component',
+BaseComponent <- R6::R6Class(
+  classname = 'BaseComponent',
   private = list(
     .handlers = NULL,
     .spying = NULL,
@@ -129,8 +155,7 @@ Component <- R6::R6Class(
     ## ---------------------------------------------------------------
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          services = NULL, root = NULL,
-                          spy = FALSE, ...) {
+                          services = NULL, spy = FALSE, ...) {
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -164,7 +189,8 @@ Component <- R6::R6Class(
         if (!token %in% names(global$sessions)) {
           global$sessions[[token]] <- list()
         }
-        ## first class instance
+        ## static need to be added to self and to class
+        ## and saved for next instance
         if (is.null(global$sessions[[token]][[classname]])) {
           e <- new.env()
           global$sessions[[token]][[classname]] <- e
@@ -178,7 +204,7 @@ Component <- R6::R6Class(
       }
       self$parent <- parent
       ## create global object, one per root
-      if (isTRUE(root) || is.null(parent)) {
+      if (is.null(parent)) {
         self$static$.global <- new.global.env()
       } else {
         root <- getRoot(self)
@@ -194,9 +220,12 @@ Component <- R6::R6Class(
       private$.observers <- list()
       self$static$count <- self$static$count + 1
       self$events <- new.env()
-      self$static$.global$components <- append(self$static$.global$components, list(
-        self
-      ))
+      self$static$.global$components <- append(
+        self$static$.global$components,
+        list(
+          self
+        )
+      )
 
       self$id <- paste0(classname, self$static$count)
 
@@ -521,7 +550,7 @@ component <- function(classname,
                       public = NULL,
                       private = NULL,
                       static = NULL,
-                      inherit = battery::Component,
+                      inherit = battery::BaseComponent,
                       ...) {
   static.env <- list2env(list(count = 0))
   if (!is.null(static)) {
@@ -624,5 +653,5 @@ getRoot <- function(node) {
   }
 }
 
-## init extend on base battery component
-Component$extend <- make.extend(Component)
+#' init extend on base battery component
+BaseComponent$extend <- make.extend(BaseComponent)

@@ -252,6 +252,8 @@ is.active.binding <- function(name, env) {
 #' @param ignoreInit - same as in shiny::observeEvent
 #' @param ignoreNULL - same as in shiny::observeEvent
 #' @param observerName - name that will distinguish observers with same code
+#' @param once - same as in shiny::observeEvent
+#' @param ... - reset the params from shiny::observeEvent
 #'
 #' @export
 observeEventMock <- function(eventExpr,
@@ -465,6 +467,7 @@ is.method.call <- function(expr) {
 
 # -----------------------------------------------------------------------------
 #' function taken from Hmisc package source code (no need to whole package)
+#' @param string - string that will be escaped
 escapeRegex <- function(string) {
   gsub('([.|()\\^{}+$*?]|\\[|\\])', '\\\\\\1', string)
 }
@@ -472,6 +475,7 @@ escapeRegex <- function(string) {
 # -----------------------------------------------------------------------------
 #' Function return true if function is internal - used to prevent infinite recursion
 #'
+#' @param fn.body - body of the function
 is.internal.function <- function(fn.body) {
   length(fn.body) > 1 && fn.body[[1]] == '.Internal'
 }
@@ -482,6 +486,8 @@ is.internal.function <- function(fn.body) {
 #' We do this to find functions and methods calls and extract names
 #' from inside of the functions bodies - body return same data
 #' as substitute so we can call extractActiveNames on body
+#' @param item - deparse expression
+#' @param env - enviroment
 parse.function <- function(item, env) {
   result <- list(
     input = list(),
@@ -529,6 +535,7 @@ parse.function <- function(item, env) {
 
 #' Helper function that create single environment from environments in arguments
 #'
+#' @param ... - any number of  environments objects
 merge.env <- function(...) {
   args <- list(...)
   if (length(args) > 1) {
@@ -699,6 +706,8 @@ extractActiveNames <- function(arg) {
 #' Mock for shiny::makeReactiveBinding to be injected into components
 #' limiation it can't be called after value is added to environment (it will work in components)
 #'
+#' @param name - name of the binding
+#' @param env - enviroment that will be used to create a binding
 #' @export
 makeReactiveBinding <- function(name, env) {
   activeInput(env = env)
@@ -744,11 +753,11 @@ useMocks <- function() {
   makeReactiveBinding <- battery::makeReactiveBinding
   renderUI <- battery::renderUI
 
-  assignInNamespace('observeEvent', observeEvent, 'battery')
-  assignInNamespace('observeEvent', observeEvent, 'shiny')
-  assignInNamespace('isolate', isolate, 'shiny')
-  assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
-  assignInNamespace('renderUI', renderUI, 'shiny')
+  utils::assignInNamespace('observeEvent', observeEvent, 'battery')
+  utils::assignInNamespace('observeEvent', observeEvent, 'shiny')
+  utils::assignInNamespace('isolate', isolate, 'shiny')
+  utils::assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
+  utils::assignInNamespace('renderUI', renderUI, 'shiny')
 
   ## we modify global environment so it update env when function
   ## is called outside of the package
@@ -764,11 +773,11 @@ useMocks <- function() {
 #'
 #' @export
 clearMocks <- function() {
-  assignInNamespace('observeEvent', originals$battery_observeEvent, 'battery')
-  assignInNamespace('observeEvent', originals$observeEvent, 'shiny')
-  assignInNamespace('isolate', originals$isolate, 'shiny')
-  assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
-  assignInNamespace('renderUI', originals$renderUI, 'shiny')
+  utils::assignInNamespace('observeEvent', originals$battery_observeEvent, 'battery')
+  utils::assignInNamespace('observeEvent', originals$observeEvent, 'shiny')
+  utils::assignInNamespace('isolate', originals$isolate, 'shiny')
+  utils::assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
+  utils::assignInNamespace('renderUI', originals$renderUI, 'shiny')
 
   observeEvent <- originals$observeEvent
   isolate <- originals$isolate
