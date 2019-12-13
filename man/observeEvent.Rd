@@ -7,7 +7,7 @@
 observeEvent(eventExpr, handlerExpr, event.env = parent.frame(),
   event.quoted = FALSE, handler.env = parent.frame(),
   handler.quoted = FALSE, suspended = FALSE, priority = 0,
-  observerName = NULL, domain = getDefaultReactiveDomain(),
+  observerName = NULL, domain = shiny::getDefaultReactiveDomain(),
   autoDestroy = TRUE, ignoreNULL = TRUE, ignoreInit = FALSE,
   once = FALSE, debounceMillis = NULL, canRunIt = NULL)
 }

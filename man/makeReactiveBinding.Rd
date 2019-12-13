@@ -7,6 +7,11 @@ limiation it can't be called after value is added to environment (it will work i
 \usage{
 makeReactiveBinding(name, env)
 }
+\arguments{
+\item{name}{- name of the binding}
+
+\item{env}{- enviroment that will be used to create a binding}
+}
 \description{
 Mock for shiny::makeReactiveBinding to be injected into components
 limiation it can't be called after value is added to environment (it will work in components)

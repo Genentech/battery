@@ -22,12 +22,13 @@ values in shiny reactive context like renderUI or battery component render
 function
 }
 \examples{
+
 e <- EventEmitter$new()
 e$on("sessionCreated", function(value, emitter) {
-  self$updateSessionComponent(value$name)
+  print(value$name)
 })
 
-and in different part of the application
+## and in different part of the application
 
 e$emit("sessionCreated", list(name = "My Session"))
 

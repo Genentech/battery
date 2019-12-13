@@ -10,6 +10,8 @@ logMessage(msgData, msgType, stackTrace = NULL)
 \item{msgData}{- list}
 
 \item{msgType}{- strings}
+
+\item{stackTrace}{- stack framees}
 }
 \description{
 Function print message with type and optional stack trace

@@ -259,7 +259,8 @@ observeEvent <- function(eventExpr, handlerExpr,
                          event.env = parent.frame(), event.quoted = FALSE,
                          handler.env = parent.frame(), handler.quoted = FALSE,
                          suspended = FALSE, priority = 0, observerName = NULL,
-                         domain = getDefaultReactiveDomain(), autoDestroy = TRUE,
+                         domain = shiny::getDefaultReactiveDomain(),
+                         autoDestroy = TRUE,
                          ignoreNULL = TRUE, ignoreInit = FALSE, once = FALSE,
                          debounceMillis = NULL, canRunIt = NULL) {
 
@@ -320,6 +321,9 @@ observeEvent <- function(eventExpr, handlerExpr,
 
 }
 
+#' check if handler is exists
+#' @param observer - list returned from observeEvent
+#' @param handlerBody - expression
 observerExists <- function(observer, handlerBody) {
   !is.null(observer) && observer$handlerBody == handlerBody
 }

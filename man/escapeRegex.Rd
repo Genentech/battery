@@ -6,6 +6,9 @@
 \usage{
 escapeRegex(string)
 }
+\arguments{
+\item{string}{- string that will be escaped}
+}
 \description{
 function taken from Hmisc package source code (no need to whole package)
 }
