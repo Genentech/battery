@@ -117,8 +117,7 @@ server <- function(input, output, session) {
   root <- App$new(
     input = input,
     output = output,
-    session = session,
-    root = TRUE
+    session = session
   )
   output$output <- shiny::renderUI({
     root$render()
