@@ -56,7 +56,7 @@ HelloButton <- Button$extend(
 )
 
 
-Panel <- battery::Component$extend(
+Panel <- battery::BaseComponent$extend(
   classname = 'Panel',
   public = list(
     title = NULL,

@@ -1,7 +1,6 @@
-#' Global env generator function - is executed on every battery component or on each component that have
-#' root set to TRUE, so you can have two component trees that have different services with same name.
-#' This is usefull if you want to have shiny app and in same R process have two different shiny apps
-#' so you will have two instances of battery root components
+#' Global env generator function - it's added to each component one per root (component without parent)
+#' This env is used so you can share services for one tree of components. You can't send data between
+#' Two trees of components.
 new.global.env <- function() {
   list2env(list(
     components = list(),
@@ -13,9 +12,16 @@ new.global.env <- function() {
   ))
 }
 
+#' Helper where new static default values can be added
+#' this static env should be the same for each Component per shiny session
+new.static.env <- function() {
+  list2env(list(count = 0))
+}
+
 #' Global varialbe added to base component that hold each classes and component list
 #' for getById method
 global <- new.global.env()
+global$sessions <- list()
 
 #' Component base class
 #'
@@ -177,42 +183,27 @@ BaseComponent <- R6::R6Class(
           self$session <- session
         }
       }
-      ## init component counter per session in same R process
-      if (is.null(global$sessions)) {
-        global$sessions <- list()
-      }
+
+      self$parent <- parent
       classname <- self$class()$classname
       token <- self$session$token
-      ## token is null in unit tests
-      ## TODO: maybe we should tests this as well
+
+      ## init static env, one per shiny session per component
       if (!is.null(token)) {
         if (!token %in% names(global$sessions)) {
-          global$sessions[[token]] <- list()
+          global$sessions[[token]] <- new.env()
         }
-        ## static need to be added to self and to class
-        ## and saved for next instance
-        if (is.null(global$sessions[[token]][[classname]])) {
-          e <- new.env()
-          global$sessions[[token]][[classname]] <- e
-          self$static <- e
-          c <- self$class()
-          c$static <- e
-          e$count <- 0
-        } else {
-          self$static <- global$sessions[[token]][[classname]]
+        if (!classname %in% names(global$sessions[[token]])) {
+          global$sessions[[token]][[classname]] <- new.static.env()
         }
+        self$static <- global$sessions[[token]][[classname]]
       }
-      self$parent <- parent
-      ## create global object, one per root
+
+      ## init global env, used by services, one per root component
       if (is.null(parent)) {
         self$static$.global <- new.global.env()
       } else {
-        root <- getRoot(self)
-        if (!is.null(root) && !identical(root, self)) {
-          self$static$.global <- root$static$.global
-        } else {
-          self$static$.global <- global
-        }
+        self$static$.global <- self$parent$static$.global
       }
 
       private$.spying <- spy
@@ -552,7 +543,7 @@ component <- function(classname,
                       static = NULL,
                       inherit = battery::BaseComponent,
                       ...) {
-  static.env <- list2env(list(count = 0))
+  static.env <- new.static.env()
   if (!is.null(static)) {
     for (name in names(static)) {
       static.env[[name]] <- static[[name]]
