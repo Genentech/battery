@@ -23,9 +23,9 @@ BaseComponent
 Root component that don't have parent need to be called with input output and session
 }
 \details{
-root <- Root$new(input = input, output = output, session = session, canEdit = FALSE)
-output$root <- renderUI({
-   root$render()
+app <- App$new(input = input, output = output, session = session)
+output$app <- renderUI({
+   app$render()
 })
 
 the code will invoke initialize R6 class constructor and call constructor method

@@ -11,7 +11,7 @@ logMessage(msgData, msgType, stackTrace = NULL)
 
 \item{msgType}{- strings}
 
-\item{stackTrace}{- stack framees}
+\item{stackTrace}{- stack frames}
 }
 \description{
 Function print message with type and optional stack trace

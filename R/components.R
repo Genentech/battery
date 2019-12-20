@@ -634,15 +634,5 @@ make.extend <- function(class) {
   }
 }
 
-#' helper recursive function that can't be written as method
-#' @param node - battery component instance
-getRoot <- function(node) {
-  if (is.null(node$parent)) {
-    node
-  } else {
-    getRoot(node$parent)
-  }
-}
-
 #' init extend on base battery component
 BaseComponent$extend <- make.extend(BaseComponent)

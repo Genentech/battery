@@ -2,16 +2,14 @@
 % Please edit documentation in R/components.R
 \name{new.global.env}
 \alias{new.global.env}
-\title{Global env generator function - is executed on every battery component or on each component that have
-root set to TRUE, so you can have two component trees that have different services with same name.
-This is usefull if you want to have shiny app and in same R process have two different shiny apps
-so you will have two instances of battery root components}
+\title{Global env generator function - it's added to each component one per root (component without parent)
+This env is used so you can share services for one tree of components. You can't send data between
+Two trees of components.}
 \usage{
 new.global.env()
 }
 \description{
-Global env generator function - is executed on every battery component or on each component that have
-root set to TRUE, so you can have two component trees that have different services with same name.
-This is usefull if you want to have shiny app and in same R process have two different shiny apps
-so you will have two instances of battery root components
+Global env generator function - it's added to each component one per root (component without parent)
+This env is used so you can share services for one tree of components. You can't send data between
+Two trees of components.
 }
