@@ -56,7 +56,7 @@ HelloButton <- Button$extend(
 )
 
 
-Panel <- battery::Component$extend(
+Panel <- battery::BaseComponent$extend(
   classname = 'Panel',
   public = list(
     title = NULL,
@@ -115,8 +115,7 @@ server <- function(input, output, session) {
   root <- App$new(
     input = input,
     output = output,
-    session = session,
-    root = TRUE
+    session = session
   )
 
   ## this is how you connect components to normal code, you can create one component

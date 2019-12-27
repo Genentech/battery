@@ -1,19 +1,16 @@
 
-HttpService <- R6::R6Class(
-  "HttpService",
-  public = list(
-    fetch = function(url) {
-      req <- httr::GET(url)
-      httr::content(req, "text")
-    }
-  )
-)
+#' if service is simple amd don't need state you can use simple function
+#' if it require to have some state you will need to use reference objects like R6 class
+fetch <- function(url) {
+  req <- httr::GET(url)
+  httr::content(req, "text")
+}
 
 App <- battery::component(
   "App",
   public = list(
     constructor = function() {
-      self$addService("http", HttpService$new())
+      self$addService("fetch", fetch)
       self$addService("notify", battery::EventEmitter$new())
 
       MainChild$new(parent = self, component.name = "main")
@@ -50,7 +47,7 @@ MainChild <- battery::component(
     constructor = function() {
       self$on(self$ns("fetch_button"), function() {
         print("click1")
-        html <- self$services$http$fetch("https://google.com")
+        html <- self$services$fetch("https://google.com")
         self$services$notify$emit("httpContent", html)
       }, input = TRUE)
       self$on(self$ns("clear_button"), function() {
@@ -117,8 +114,7 @@ server <- function(input, output, session) {
   root <- App$new(
     input = input,
     output = output,
-    session = session,
-    root = TRUE
+    session = session
   )
   output$output <- shiny::renderUI({
     root$render()

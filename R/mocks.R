@@ -833,6 +833,10 @@ Session <- R6::R6Class(
     .destroy = list()
   ),
   public = list(
+    token = NULL,
+    initialize = function(token = NULL) {
+      self$token <- token
+    },
     destroy = function() {
       invisible(lapply(private$.destroy, do.call, args = list()))
     },
