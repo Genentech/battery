@@ -1,3 +1,7 @@
+## 0.3.1
+### Bugfix
+* refactor static services
+
 ## 0.3.0
 ### Features
 * Event Emitters and services
