@@ -127,9 +127,23 @@ BaseComponent <- R6::R6Class(
     .handlers = NULL,
     .spying = NULL,
     .observers = NULL,
+    .forceCallArgs = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    trigger = function(name, data) {
+    trigger = function(name, data, force = TRUE) {
+      if (FALSE && force && self$inObserver()) {
+        self$log("hack", name)
+        private$.forceCall(
+          "trigger",
+          args = list(
+            name = name,
+            data = data,
+            force = FALSE
+          ),
+          is.private = TRUE
+        )
+        return(NULL)
+      }
       if (name %in% ls(self$events)) {
         if (is.null(data)) {
           self$events[[name]] <- shiny::isolate(!self$events[[name]])
@@ -138,6 +152,29 @@ BaseComponent <- R6::R6Class(
           self$events[[name]] <- data
         }
       }
+    },
+    ## ---------------------------------------------------------------
+    .indent = function() {
+      if (self$static$.global$.indent > 0) {
+        paste(rep(" ", self$static$.global$.indent), collapse = "")
+      } else {
+        ""
+      }
+    },
+    ## ---------------------------------------------------------------
+    ## this is hack used to force trigger of reactive value inside
+    ## reactiveContenxt (observeEvent) inside observeEvent everything
+    ## is susspended like wrapped with isolate
+    ## ---------------------------------------------------------------
+    .forceCall = function(method, args = list(), is.private = FALSE) {
+      ## just in case shiny do something with args like serialize
+      ## R is one Thread so it's safe
+      private$.forceCallArgs <- args
+      self$session$manageInputs(
+        list(
+          ..inputTriggerHack = list(method = method, private = is.private)
+        )
+      )
     }
   ),
   ## -----------------------------------------------------------------
@@ -202,6 +239,7 @@ BaseComponent <- R6::R6Class(
       ## init global env, used by services, one per root component
       if (is.null(parent)) {
         self$static$.global <- new.global.env()
+        self$static$.global$.indent <- 0
       } else {
         self$static$.global <- self$parent$static$.global
       }
@@ -209,6 +247,7 @@ BaseComponent <- R6::R6Class(
       private$.spying <- spy
       private$.handlers <- list()
       private$.observers <- list()
+      private$.forceCallArgs <- list()
       self$static$count <- self$static$count + 1
       self$events <- new.env()
       self$static$.global$components <- append(
@@ -220,14 +259,21 @@ BaseComponent <- R6::R6Class(
 
       self$id <- paste0(classname, self$static$count)
 
+      ## TODO: Optimize children use env
       self$children <- list()
+
+      ## Services init
       self$services <- self$static$.global$services
+      ## logger
+      if (is.null(parent)) {
+        self$services$log <- EventEmitter$new()
+      }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
         }
       }
-      if (!is.null(component.name)) {
+      if (!is.null(component.name) && !is.null(parent)) {
         parent$appendChild(component.name, self)
       }
       ## global reset component counter - execute once for session
@@ -237,6 +283,13 @@ BaseComponent <- R6::R6Class(
           self$destroy()
         })
       }
+      self$on("..inputTriggerHack", function(value) {
+        if (value$private) {
+          do.call(private[[value$method]], private$.forceCallArgs)
+        } else {
+          do.call(self[[value$method]], private$.forceCallArgs)
+        }
+      })
       if (!is.null(self$constructor)) {
         ## TODO: improve stack trce in Battery and make it stable
         ## this stimetimes prints no stack trace aviable
@@ -249,7 +302,6 @@ BaseComponent <- R6::R6Class(
             message(paste0("throw in ", self$id, "::constructor"))
             message(cond$message)
             traceback(cond)
-            stop(cond)
           }
         })
       }
@@ -335,6 +387,7 @@ BaseComponent <- R6::R6Class(
     ## :: propagate events from parent to all children
     ## ---------------------------------------------------------------
     broadcast = function(name, value = NULL, target = NULL, include.self = FALSE) {
+      self$log("info", "broadcast", name = name, value = value, target = target)
       if (is.null(target)) {
         target <- self$id
       }
@@ -371,6 +424,17 @@ BaseComponent <- R6::R6Class(
       private$.observers[[elementId]]$observer$observer$destroy()
     },
     ## ---------------------------------------------------------------
+    ## :: function check if called from observeEvent
+    ## :: this is needed to fix reactive values not beeing invoked
+    ## ---------------------------------------------------------------
+    inObserver = function() {
+      observers <- Filter(function(x) {
+        typeof(x) == "language" && deparse(x[[1]]) == "observeEventHandler"
+      }, sys.calls())
+
+      length(observers) > 0
+    },
+    ## ---------------------------------------------------------------
     ## :: add event listener to given internal event or native input
     ## ::
     ## :: usage:
@@ -392,6 +456,7 @@ BaseComponent <- R6::R6Class(
     #' @param init - indicate if event should be triggered on init
     ## ---------------------------------------------------------------
     on = function(event, handler, input = FALSE, enabled = TRUE, init = FALSE, ...) {
+      self$log("battery", "on", event = event)
       if (enabled) {
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
@@ -405,13 +470,18 @@ BaseComponent <- R6::R6Class(
         observer <- if (input) {
           battery::observeEvent(self$input[[event]], {
             tryCatch({
+              space <- private$.indent()
+              self$log("info", paste0(space, "on::trigger::before(N)"),
+                event = event, input = input)
+              self$static$.global$.indent = self$static$.global$.indent + 1
               battery:::invoke(handler, self$input[[event]], self)
+              self$static$.global$.indent = self$static$.global$.indent - 1
+              self$log("info", paste0(space, "on::trigger::after(N)"), event = event, input = input)
             }, error = function(cond) {
               if (!inherits(cond, "shiny.silent.error")) {
                 message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                 message(cond$message)
                 traceback(cond)
-                stop(cond)
               }
             })
           }, observerName = uuid, ignoreInit = !init, ...)
@@ -422,17 +492,22 @@ BaseComponent <- R6::R6Class(
             data <- self$events[[event]]
             ## invoke handler function with only argument it accept
             tryCatch({
+              space <- private$.indent()
+              self$log("info", paste0(space, "on::trigger::before(B)"),
+                event = event, input = input)
+              self$static$.global$.indent = self$static$.global$.indent + 1
               if (is.null(data) || is.logical(data)) {
                 battery:::invoke(handler, NULL, NULL)
               } else {
                 battery:::invoke(handler, data[["value"]], data[["target"]])
               }
+              self$static$.global$.indent = self$static$.global$.indent - 1
+              self$log("info", paste0(space, "on::trigger::after(B)"), event = event, input = input)
             }, error = function(cond) {
               if (!inherits(cond, "shiny.silent.error")) {
                 message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                 message(cond$message)
                 traceback(cond)
-                stop(cond)
               }
             })
           }, observerName = uuid, ignoreInit = !init, ...)
@@ -453,6 +528,7 @@ BaseComponent <- R6::R6Class(
     ## :: event
     ## ---------------------------------------------------------------
     off = function(event, handler = NULL) {
+      self$log("battery", "off", event = event, handler = handler)
       if (is.null(handler)) {
         lapply(private$.handlers[[event]], function(e) {
           e$observer$destroy()
@@ -478,6 +554,7 @@ BaseComponent <- R6::R6Class(
     ## :: Method remove all observers created for this component
     ## ---------------------------------------------------------------
     destroy = function() {
+      self$log("info", "destroy")
       for (event in names(private$.handlers)) {
         self$off(event)
       }
@@ -507,6 +584,7 @@ BaseComponent <- R6::R6Class(
     ## :: it may be better to add services in constructor
     ## ---------------------------------------------------------------
     addService = function(name, service) {
+      self$log("info", "addService", name = name)
       if (name %in% names(self$services)) {
         stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
       }
@@ -518,6 +596,39 @@ BaseComponent <- R6::R6Class(
     ## ---------------------------------------------------------------
     template = function(filename, ...) {
       do.call(shiny::htmlTemplate, c(filename = filename, self = self, list(...)))
+    },
+    ## ---------------------------------------------------------------
+    ## :: return path to object
+    ## ---------------------------------------------------------------
+    path = function() {
+      path <- list(self$id)
+      node = self
+      while (!is.null(node$parent)) {
+        node <- node$parent
+        path <- append(list(node$id), list(self$id))
+      }
+      path
+    },
+    ## ---------------------------------------------------------------
+    ## :: log message that can be listen to, best way to add listener
+    ## :: is to use self$services$log$on in root component constructor
+    ## ---------------------------------------------------------------
+    log = function(level, message, type = "battery", ...) {
+      path <- paste(self$path(), collapse = "/")
+      data <- list(
+        id = self$id,
+        type = type,
+        path = path,
+        message = message,
+        args = list(...)
+      )
+      self$services$log$emit(level, data)
+    },
+    ## ---------------------------------------------------------------
+    ## :: shortcut function
+    ## ---------------------------------------------------------------
+    logger = function(level, fn) {
+      self$services$log$on(level, fn)
     },
     ## ---------------------------------------------------------------
     render = function() {
@@ -581,7 +692,6 @@ component <- function(classname,
 #' @param seq - named list of properties and functions methods
 #'
 r6.class.add <- function(class, seq) {
-
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
   lapply(names(seq), function(name) {
     if (is.function(seq[[name]])) {
@@ -607,13 +717,19 @@ r6.class.add <- function(class, seq) {
           env$private$.spy(name = name, ...)
         }
         tryCatch({
-          fn(...)
+          space <- env$private$.indent()
+          self$static$.global$.indent = self$static$.global$.indent + 1
+          env$self$log("info", paste0(space, name, "::before"), type = "method")
+          ret <- fn(...)
+          self$static$.global$.indent = self$static$.global$.indent - 1
+          env$self$log("info", paste0(space, name, "::after"), type = "method")
+          ret
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
             message(paste0("throw in ", env$self$id, "::", name))
             message(cond$message)
             traceback(cond)
-            stop(cond)
+            stop()
           }
         })
       }, list(fn.expr = seq[[name]], name = name)))

@@ -21,8 +21,10 @@ EventEmitter <- R6::R6Class(
   "EventEmitter",
   private = list(
     ..spying = FALSE,
-    handlers = list(),
-    observers = list(),
+    shiny = FALSE,
+    data = NULL,
+    handlers = NULL,
+    observers = NULL,
     ## -------------------------------------------------------------------------
     .spy = function(name, ...) {
       if (private$..spying) {
@@ -38,11 +40,15 @@ EventEmitter <- R6::R6Class(
     ## -------------------------------------------------------------------------
     unbind = function(event) {
       private$.spy("unbind", event)
-      shiny::isolate({
-        private$observers[[event]]$observer$destroy()
+      if (private$shiny) {
+        shiny::isolate({
+          private$observers[[event]]$observer$destroy()
+          private$handlers[event] <- NULL
+          private$observers[event] <- NULL
+        })
+      } else {
         private$handlers[event] <- NULL
-        private$observers[event] <- NULL
-      })
+      }
     },
     ## -------------------------------------------------------------------------
     ## :: helper function that check how many arguments handler function accept
@@ -55,6 +61,27 @@ EventEmitter <- R6::R6Class(
       })
     },
     ## -------------------------------------------------------------------------
+    ## :: function check if biding is active
+    ## -------------------------------------------------------------------------
+    bound = function(event) {
+      if (private$shiny) {
+        is.null(private$observers[[event]])
+      } else {
+        event %in% names(self$events) && bindingIsActive(event, self$events)
+      }
+    },
+    ## -------------------------------------------------------------------------
+    ## :: function used to set data in emit if there are no biding
+    ## :: it's also used when activeBiding is used outside of shiny
+    ## -------------------------------------------------------------------------
+    set = function(event, data) {
+      if (private$shiny) {
+        self$events[[event]] <- data
+      } else {
+        private$data[[event]] <- data
+      }
+    },
+    ## -------------------------------------------------------------------------
     ## :: add new observe Event
     ## -------------------------------------------------------------------------
     bind = function(event, ...) {
@@ -63,20 +90,37 @@ EventEmitter <- R6::R6Class(
       if (is.null(private$handlers[[event]])) {
         private$handlers[[event]] <- list()
       }
+      if (!private$bound(event)) {
+        if (private$shiny) {
+          if (is.null(private$observers[[event]])) {
 
-      if (is.null(private$observers[[event]])) {
+            uuid <- uuid::UUIDgenerate()
 
-        uuid <- uuid::UUIDgenerate()
+            private$observers[[event]] <- battery::observeEvent(self$events[[event]], {
+              data <- self$events[[event]]
 
-        private$observers[[event]] <- battery::observeEvent(self$events[[event]], {
-          data <- self$events[[event]]
-
-          if (is.null(data) || is.logical(data)) {
-            private$invoke(event, data)
-          } else {
-            private$invoke(event, data[["value"]])
+              if (is.null(data) || is.logical(data)) {
+                private$invoke(event, data)
+              } else {
+                private$invoke(event, data[["value"]])
+              }
+            }, observerName = uuid, ...)
           }
-        }, observerName = uuid, ...)
+        } else {
+          makeActiveBinding(event, env = self$events, fun = function(data) {
+            if (missing(data)) {
+              private$data[[event]]
+            } else {
+              if (is.null(data) || is.logical(data)) {
+                private$set(event, data)
+                private$invoke(event, data)
+              } else {
+                private$set(event, data[["value"]])
+                private$invoke(event, data[["value"]])
+              }
+            }
+          })
+        }
       }
     }
   ),
@@ -84,8 +128,17 @@ EventEmitter <- R6::R6Class(
     .calls = NULL,
     events = NULL,
     ## -------------------------------------------------------------------------
-    initialize = function(spy = FALSE) {
-      self$events <- shiny::reactiveValues()
+    ## if shiny is used it will create ReactiveBinding with hack
+    ## that will trigger in same cases the event (shiny bug)
+    ## -------------------------------------------------------------------------
+    initialize = function(spy = FALSE, shiny = FALSE) {
+      self$events <- new.env()
+      private$data <- new.env()
+      private$shiny <- shiny
+      if (shiny) {
+        private$observers <- list()
+      }
+      private$handlers <- list()
       private$..spying <- spy
       if (private$..spying) {
         self$.calls <- list()
@@ -97,7 +150,7 @@ EventEmitter <- R6::R6Class(
     ## :: on next handler on signle event, we keep it just in case it may be of use
     ## -------------------------------------------------------------------------
     on = function(event, handler, ...) {
-      if (is.null(private$handlers[[event]])) {
+      if (!private$bound(event)) {
         private$bind(event, ...)
       }
 
@@ -114,22 +167,24 @@ EventEmitter <- R6::R6Class(
       if (!is.character(name)) {
         print("WARN(emit) name argument is not string")
       } else {
-        if (is.null(data)) {
-          self$events[[name]] <- shiny::isolate({
-            if (is.null(self$events[[name]])) {
-              TRUE
-            } else {
-              !self$events[[name]]
-            }
-          })
+        if (!private$bound(name) && !private$shiny) {
+          private$set(name, data)
+        } else if (is.null(data)) {
+          value <- if (private$shiny) {
+            isolate(self$events[[name]])
+          } else {
+            self$events[[name]]
+          }
+          self$events[[name]] <- if (is.null(value) || !is.logical(value)) {
+            TRUE
+          } else {
+            !value
+          }
         } else {
           self$events[[name]] <- list(
             value = data,
             timestamp <- as.numeric(Sys.time()) * 1000
           )
-        }
-        if (!(name %in% names(private$handlers))) {
-          print(sprintf("WARN(emit): event `%s` ignored - no listeners", name))
         }
       }
     },

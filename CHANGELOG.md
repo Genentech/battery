@@ -1,3 +1,7 @@
+## 0.4.0
+### Features
+* eventEmitter based logging system
+
 ## 0.3.1
 ### Bugfix
 * refactor static services

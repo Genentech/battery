@@ -396,7 +396,7 @@ activeOutput <- function(...) {
 #' @param expr - any expression
 #'
 #' @export
-renderUI <- function(expr) {
+renderUIMock <- function(expr) {
   list(
     expr = substitute(expr),
     env =  parent.frame()
@@ -751,7 +751,7 @@ useMocks <- function() {
   observeEvent <- battery::observeEventMock
   isolate <- battery::isolate
   makeReactiveBinding <- battery::makeReactiveBinding
-  renderUI <- battery::renderUI
+  renderUI <- battery::renderUIMock
 
   utils::assignInNamespace('observeEvent', observeEvent, 'battery')
   utils::assignInNamespace('observeEvent', observeEvent, 'shiny')
