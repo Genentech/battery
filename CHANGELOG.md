@@ -8,7 +8,7 @@
 
 ## 0.3.0
 ### Features
-* Event Emitters and services
+* Event Emitters and static services
 
 ## 0.2.0
 ### Features
