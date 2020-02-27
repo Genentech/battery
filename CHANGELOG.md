@@ -1,6 +1,8 @@
 ## 0.4.0
 ### Features
-* load function
+* load function (for loading components in R files)
+### Bugfix
+* fix calling trigger without arg and with NULL after auto-creating event with `on`
 
 ## 0.3.1
 ### Bugfix

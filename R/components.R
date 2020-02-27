@@ -129,10 +129,18 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    trigger = function(name, data) {
+    trigger = function(name, data = NULL) {
       if (name %in% ls(self$events)) {
         if (is.null(data)) {
-          self$events[[name]] <- shiny::isolate(!self$events[[name]])
+          self$events[[name]] <- shiny::isolate({
+            if (is.logical(self$events[[name]])) {
+              !self$events[[name]]
+            } else if (is.null(self$events[[name]]$value)) {
+              TRUE
+            } else {
+              !self$events[[name]]$value
+            }
+          })
         } else {
           data$timestamp <- as.numeric(Sys.time())*1000
           self$events[[name]] <- data
