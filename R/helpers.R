@@ -15,39 +15,29 @@ debug <- function(...) {
   print(paste(list(...), collapse = " "))
 }
 
-#' renderUI wrapper with force argument (all params are the )
-#' @param expr - same as in shiny::renderUI
-#' @param env - same as in shiny::renderUI
-#' @param quoted  - same as in shiny::renderUI
-#' @param outputArgs - same as in shiny::renderUI
-#' @param force - it will always call renderUI on init, even if shiny think that it don't need to
+#' Function load all R file components from directory, component classes will be global
+#' @param path - path to directory
+#' @param pattern - pattern used to selected the files (default all R files)
+#' @param ignore - string or vector of strings with fillanme files that should be ignored
+#' @param recursive - if set to TRUE (default) loading of files will be recursive
 #' @export
-renderUI <- function(expr,
-                     env = parent.frame(),
-                     quoted = FALSE,
-                     outputArgs = list(),
-                     force = FALSE) {
-  if (!force) {
-    shiny::renderUI(
-      expr,
-      env = env,
-      quoted = quoted,
-      outputArgs = outputArgs
-    )
+load <- function(path, pattern = "*.R$", ignore = NULL, recursive = TRUE, ignore.case = TRUE) {
+  components <- list.files(
+    path = path,
+    pattern = pattern,
+    recursive = recursive,
+    ignore.case = ignore.case,
+    full.names = TRUE
+  )
+  if (is.null(ignore)) {
+    for (path in components) {
+      source(path, local = FALSE)
+    }
   } else {
-    fn <- shiny::installExprFunction(expr, "func", env, quoted)
-    ## reactive value should force to render even if expr
-    ## didn't changed
-    dummy.env <- new.env()
-    name <- paste0("force_", uuid::UUIDgenerate())
-    shiny::makeReactiveBinding(name, dummy.env)
-    env[[name]] <- TRUE
-    shiny::createRenderFunction(
-      function() {
-        dummy.env[[name]]
-        fn()
-      },
-      shiny::uiOutput, outputArgs
-    )
+    for (path in components) {
+      if (all(path != ignore)) {
+        source(path, local = FALSE)
+      }
+    }
   }
 }
