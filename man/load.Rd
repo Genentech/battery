@@ -2,9 +2,15 @@
 % Please edit documentation in R/helpers.R
 \name{load}
 \alias{load}
-\title{Function load all R file components from directory}
+\title{Function load all R file components from directory, component classes will be global}
 \usage{
-load(path, pattern = "*.R$", ignore = NULL, recursive = TRUE)
+load(
+  path,
+  pattern = "*.R$",
+  ignore = NULL,
+  recursive = TRUE,
+  ignore.case = TRUE
+)
 }
 \arguments{
 \item{path}{- path to directory}
@@ -16,5 +22,5 @@ load(path, pattern = "*.R$", ignore = NULL, recursive = TRUE)
 \item{recursive}{- if set to TRUE (default) loading of files will be recursive}
 }
 \description{
-Function load all R file components from directory
+Function load all R file components from directory, component classes will be global
 }

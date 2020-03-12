@@ -264,8 +264,18 @@ observeEventMock <- function(eventExpr,
                              observerName = NULL,
                              once = FALSE,
                              ...) {
-  sub <- substitute(eventExpr)
   expr <- substitute(handlerExpr)
+  sub <- substitute(eventExpr)
+  if (deparse(sub) == "NULL") {
+    if (!ignoreInit && !ignoreNULL) {
+      eval(expr, envir = handler.env)
+    }
+    return(list(
+      observer = list(
+        destroy = function() NULL
+      )
+    ))
+  }
   ## check if this is self$name - we don't check every corner case
   ## we will only use self$events (in components) and maybe
   ## just in case input$foo or input[[name]] with this mock
@@ -291,7 +301,6 @@ observeEventMock <- function(eventExpr,
   if (!ignoreInit && !(ignoreNULL && is.null(initValue))) {
     eval(expr, envir = handler.env)
   }
-
   if (is.active.input(activeEnv)) {
     activeEnv$off(name, expr, observerName = observerName)
     activeEnv$on(name, function(old, value) {
@@ -742,55 +751,36 @@ originals <- new.env()
 #'
 #' @export
 useMocks <- function() {
-  originals$battery_observeEvent <- observeEvent
-  originals$observeEvent <- shiny::observeEvent
-  originals$isolate <- shiny::isolate
-  originals$renderUI <- shiny::renderUI
-  originals$makeReactiveBinding <- shiny::makeReactiveBinding
-
-  observeEvent <- battery::observeEventMock
-  isolate <- battery::isolate
-  makeReactiveBinding <- battery::makeReactiveBinding
-  renderUI <- battery::renderUIMock
-
-  utils::assignInNamespace('observeEvent', observeEvent, 'battery')
-  utils::assignInNamespace('observeEvent', observeEvent, 'shiny')
-  utils::assignInNamespace('isolate', isolate, 'shiny')
-  utils::assignInNamespace('makeReactiveBinding', makeReactiveBinding, 'shiny')
-  utils::assignInNamespace('renderUI', renderUI, 'shiny')
-
-  ## we modify global environment so it update env when function
-  ## is called outside of the package
   env <- parent.frame()
-  env$observeEvent <- observeEvent
-  env$isolate <- isolate
-  env$renderUI <- renderUI
-  env$makeReactiveBinding <- makeReactiveBinding
+  mock('observeEvent', battery::observeEventMock, env)
+  mock('isolate', battery::isolate, env)
+  mock('makeReactiveBinding', battery::makeReactiveBinding, env)
+  mock('renderUI', battery::renderUIMock, env)
 }
+
+#' function create single mock for shiny function
+mock <- function(name, mock, env) {
+  originals[[name]] <- getFromNamespace(name, "shiny")
+  utils::assignInNamespace(name, mock, 'shiny')
+  env[[name]] <- mock
+}
+
+#' function restore original shiny function
+clearMock <- function(name, env) {
+  utils::assignInNamespace(name, originals[[name]], 'shiny')
+  env[[name]] <- originals[[name]]
+}
+
 
 #' Helper function to be used at the end of test files (useful if same session is used
 #' to run test and application e.g. RStudio)
 #'
 #' @export
 clearMocks <- function() {
-  utils::assignInNamespace('observeEvent', originals$battery_observeEvent, 'battery')
-  utils::assignInNamespace('observeEvent', originals$observeEvent, 'shiny')
-  utils::assignInNamespace('isolate', originals$isolate, 'shiny')
-  utils::assignInNamespace('makeReactiveBinding', originals$makeReactiveBinding, 'shiny')
-  utils::assignInNamespace('renderUI', originals$renderUI, 'shiny')
-
-  observeEvent <- originals$observeEvent
-  isolate <- originals$isolate
-  renderUI <- originals$renderUI
-  makeReactiveBinding <- originals$makeReactiveBinding
-
-  ## we modify global environment so it update env when function
-  ## is called outside of the package
   env <- parent.frame()
-  env$observeEvent <- battery::observeEvent
-  env$isolate <- shiny::isolate
-  env$renderUI <- shiny::renderUI
-  env$makeReactiveBinding <- shiny::makeReactiveBinding
+  for (name in c('observeEvent', 'isolate', 'makeReactiveBinding', 'renderUI')) {
+    clearMock(name, env)
+  }
 }
 
 

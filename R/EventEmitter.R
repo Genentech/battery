@@ -65,7 +65,7 @@ EventEmitter <- R6::R6Class(
     ## -------------------------------------------------------------------------
     bound = function(event) {
       if (private$shiny) {
-        is.null(private$observers[[event]])
+        !is.null(private$observers[[event]])
       } else {
         event %in% names(self$events) && bindingIsActive(event, self$events)
       }
@@ -93,10 +93,9 @@ EventEmitter <- R6::R6Class(
       if (!private$bound(event)) {
         if (private$shiny) {
           if (is.null(private$observers[[event]])) {
+            shiny::makeReactiveBinding(event, env = self$events)
 
-            uuid <- uuid::UUIDgenerate()
-
-            private$observers[[event]] <- battery::observeEvent(self$events[[event]], {
+            private$observers[[event]] <- shiny::observeEvent(self$events[[event]], {
               data <- self$events[[event]]
 
               if (is.null(data) || is.logical(data)) {
@@ -104,7 +103,7 @@ EventEmitter <- R6::R6Class(
               } else {
                 private$invoke(event, data[["value"]])
               }
-            }, observerName = uuid, ...)
+            }, ...)
           }
         } else {
           makeActiveBinding(event, env = self$events, fun = function(data) {
@@ -149,15 +148,17 @@ EventEmitter <- R6::R6Class(
     ## :: to that observer, we use single observer so ... will be of no use
     ## :: on next handler on signle event, we keep it just in case it may be of use
     ## -------------------------------------------------------------------------
-    on = function(event, handler, ...) {
-      if (!private$bound(event)) {
-        private$bind(event, ...)
-      }
+    on = function(events, handler, ...) {
+      for (event in events) {
+        if (!private$bound(event)) {
+          private$bind(event, ...)
+        }
 
-      private$handlers[[event]] <- append(
-        private$handlers[[event]],
-        handler
-      )
+        private$handlers[[event]] <- append(
+          private$handlers[[event]],
+          handler
+        )
+      }
     },
     ## -------------------------------------------------------------------------
     ## :: emit event add trigger all handlers added by on
@@ -165,26 +166,35 @@ EventEmitter <- R6::R6Class(
     emit = function(name, data = NULL) {
       ## typecheck mainly to show proper error when name is missing
       if (!is.character(name)) {
-        print("WARN(emit) name argument is not string")
+        print("WARN(EventEmitter::emit) name argument is not string")
       } else {
         if (!private$bound(name) && !private$shiny) {
           private$set(name, data)
-        } else if (is.null(data)) {
+          return()
+        }
+        if (is.null(data)) {
           value <- if (private$shiny) {
-            isolate(self$events[[name]])
+            shiny::isolate(self$events[[name]])
           } else {
             self$events[[name]]
           }
-          self$events[[name]] <- if (is.null(value) || !is.logical(value)) {
+          value <- if (is.null(value) || !is.logical(value)) {
             TRUE
           } else {
             !value
           }
         } else {
-          self$events[[name]] <- list(
+          value <- list(
             value = data,
             timestamp <- as.numeric(Sys.time()) * 1000
           )
+        }
+        if (private$shiny) {
+          battery:::force(function() {
+            self$events[[name]] <- value
+          })
+        } else {
+          self$events[[name]] <- value
         }
       }
     },
@@ -192,14 +202,16 @@ EventEmitter <- R6::R6Class(
     ## :: remove single handler or all handlers and observer
     ## :: if handler is used and it's last handler observer is also removed
     ## -------------------------------------------------------------------------
-    off = function(event, handler = NULL) {
-      if (is.null(handler)) {
-        private$unbind(event)
-      } else if (is.function(handler)) {
-        idx <- which(sapply(private$handlers[[event]], identical, handler))
-        private$handlers[[event]][idx] <- NULL
-        if (length(private$handlers[[event]]) == 0) {
+    off = function(events, handler = NULL) {
+      for (event in events) {
+        if (is.null(handler)) {
           private$unbind(event)
+        } else if (is.function(handler)) {
+          idx <- which(sapply(private$handlers[[event]], identical, handler))
+          private$handlers[[event]][idx] <- NULL
+          if (length(private$handlers[[event]]) == 0) {
+            private$unbind(event)
+          }
         }
       }
     },

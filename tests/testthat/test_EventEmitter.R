@@ -7,7 +7,7 @@ battery::useMocks()
 
 ## ----------------------------------------------------------------------------
 createEmitter <- function() {
-  e <- battery::EventEmitter$new(spy = TRUE)
+  e <- battery::EventEmitter$new(spy = TRUE, shiny = TRUE)
 
   ## mock reactiveBinding
   e$events <- battery::activeInput()

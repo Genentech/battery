@@ -6,9 +6,16 @@
 that use active binding input mocks - the work almost the same as shiny::observeEvent but it
 destroy previous created observer, so there are no duplicates}
 \usage{
-observeEventMock(eventExpr, handlerExpr, handler.env = parent.frame(),
-  ignoreInit = FALSE, ignoreNULL = TRUE, observerName = NULL,
-  once = FALSE, ...)
+observeEventMock(
+  eventExpr,
+  handlerExpr,
+  handler.env = parent.frame(),
+  ignoreInit = FALSE,
+  ignoreNULL = TRUE,
+  observerName = NULL,
+  once = FALSE,
+  ...
+)
 }
 \arguments{
 \item{eventExpr}{- same as in shiny::observeEvent}

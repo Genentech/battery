@@ -4,12 +4,24 @@
 \alias{observeEvent}
 \title{Event handler (modified shiny code to be used as replacement for shiny::observeEvent)}
 \usage{
-observeEvent(eventExpr, handlerExpr, event.env = parent.frame(),
-  event.quoted = FALSE, handler.env = parent.frame(),
-  handler.quoted = FALSE, suspended = FALSE, priority = 0,
-  observerName = NULL, domain = shiny::getDefaultReactiveDomain(),
-  autoDestroy = TRUE, ignoreNULL = TRUE, ignoreInit = FALSE,
-  once = FALSE, debounceMillis = NULL, canRunIt = NULL)
+observeEvent(
+  eventExpr,
+  handlerExpr,
+  event.env = parent.frame(),
+  event.quoted = FALSE,
+  handler.env = parent.frame(),
+  handler.quoted = FALSE,
+  suspended = FALSE,
+  priority = 0,
+  observerName = NULL,
+  domain = shiny::getDefaultReactiveDomain(),
+  autoDestroy = TRUE,
+  ignoreNULL = TRUE,
+  ignoreInit = FALSE,
+  once = FALSE,
+  debounceMillis = NULL,
+  canRunIt = NULL
+)
 }
 \arguments{
 \item{eventExpr}{A (quoted or unquoted) expression that represents the event;
@@ -200,7 +212,7 @@ if (interactive()) {
       # Take an action every time button is pressed;
       # here, we just print a message to the console
       observeEvent(input$button, {
-        cat("Showing", input$x, "rows\\n")
+        cat("Showing", input$x, "rows\n")
       })
       # Take a reactive dependency on input$button, but
       # not on any of the stuff inside the function

@@ -24,7 +24,7 @@ test_that('it should emit event', {
     public = list(
       constructor = function() {
         InputComponent$new(component.name = 'c', parent = self, spy = TRUE)
-        self$on('foo', function(value, target) {
+        self$on('foo', function(value) {
           self$foo(value)
           args <<- list(value)
         })
@@ -37,12 +37,12 @@ test_that('it should emit event', {
   output <- activeOutput()
   t <- TestingComponent$new(input = input, output = output, session = session,  spy = TRUE)
   t$children$c$run(100)
+  
   expect_equal(args, list(100))
   expect_equal(t$.calls$foo, list(list(100)))
   t$children$c$run(200)
   expect_equal(args, list(200))
   expect_equal(t$.calls$foo, list(list(100), list(200)))
-
 })
 
 test_that('should emit events to parent of parent', {
@@ -69,7 +69,7 @@ test_that('should emit events to parent of parent', {
     public = list(
       constructor = function() {
         TestingComponent$new(component.name = 'tc', parent = self)
-        self$on('foo', function(value, target) {
+        self$on('foo', function(value) {
           self$foo(value)
           args <<- list(value)
         })
@@ -104,7 +104,7 @@ test_that('it should broadcast event', {
     ),
     public = list(
       constructor = function() {
-        self$on('foo', function(value, target) {
+        self$on('foo', function(value) {
           private$foo(value)
         })
       }
