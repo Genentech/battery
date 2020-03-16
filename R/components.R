@@ -450,7 +450,7 @@ BaseComponent <- R6::R6Class(
     ## ---------------------------------------------------------------
     connect = function(event, elementId) {
 
-      self$log("battery", "connect", name = name, value = value, target = target)
+      self$log("battery", "connect", event = event)
 
       if (is.null(private$.observers[[elementId]])) {
         self$createEvent(event)
@@ -581,7 +581,7 @@ BaseComponent <- R6::R6Class(
             list(
               handler = handler,
               pending = 0,
-              observer = observer$observer
+              observer = observer
             )
           ))
         }

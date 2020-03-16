@@ -52,15 +52,11 @@ now <- function() {
 ## https://github.com/rstudio/shiny/issues/2488
 ## https://stackoverflow.com/q/60654485/387194
 force <- function(fn, session = getDefaultReactiveDomain()) {
-  if (battery:::isReactiveContext()) {
+  shinyHack <- shiny::isolate(session$input$battery_shinyHack)
+  shiny::observeEvent(session$input$battery_shinyHack, {
     fn()
-  } else {
-    shinyHack <- shiny::isolate(session$input$battery_shinyHack)
-    shiny::observeEvent(session$input$battery_shinyHack, {
-      fn()
-    }, once = TRUE)
-    session$manageInputs(list(battery_shinyHack = `if`(is.null(shinyHack), TRUE, !shinyHack)))
-  }
+  }, once = TRUE)
+  session$manageInputs(list(battery_shinyHack = `if`(is.null(shinyHack), TRUE, !shinyHack)))
 }
 
 #' function test if we are in shiny reactive context
