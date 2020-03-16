@@ -2,8 +2,10 @@
 ### Features
 * eventEmitter based logging system
 * load function (for loading components in R files)
+* two types of eventEmitter (one is reactive so it can be used to trigger render functions)
 ### Bugfix
 * fix calling trigger without arg and with NULL after auto-creating event with `on`
+* fix reactive values that is not calling reactive observer (probably shiny bug)
 
 ## 0.3.1
 ### Bugfix
