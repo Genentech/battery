@@ -1,14 +1,32 @@
 #' Event emitter is inspired by multiple implementation in JavaScript
+#'
+#' @description
 #' it can be used indepentely of battery events to send data from one component
 #' to different one, without the need to broadcast and emit events
 #' it can be used with services, in addition to can also be used as reactive
 #' values in shiny reactive context like renderUI or battery component render
 #' function
+#' @importFrom R6 R6Class
+#' @docType class
+#'
+#' @field .calls - if EventEmitter is created with \code{spy = TRUE} it will add method calls to this list
+#' @field events - environment with reactive objects if EventEmitter created wtih \code{shiny = TRUE},
+#'        otherwise it's normal environment but with R active bindings that can't be used in shiny render functions
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{Documentation}{For full documentation of each method go to https://stash.intranet.roche.com/stash/projects/DIVOS/repos/battery/browse}
+#'   \item{\code{EventEmitter$new(...)}}{This method is used to create EventEmitter}
+#'   \item{\code{on}}{Method add new handler for given event}
+#'   \item{\code{emit}}{Method emit event add trigger all handlers added by \code{on}}
+#'   \item{\code{off}}{Method removes single handler or all handlers and observer of no handler left}
+#'   \item{\code{finalize}}{Destructor - clean up the data}
+#' }
 #'
 #' @examples
 #'
 #' e <- EventEmitter$new()
-#' e$on("sessionCreated", function(value, emitter) {
+#' e$on("sessionCreated", function(value) {
 #'   print(value$name)
 #' })
 #'
@@ -26,6 +44,11 @@ EventEmitter <- R6::R6Class(
     handlers = NULL,
     observers = NULL,
     ## -------------------------------------------------------------------------
+    ## Internal method that logs emitter function calls if spy is used
+    ##
+    ## @param name - name of the method
+    ## @param ... - arguments of function call added
+    ## -------------------------------------------------------------------------
     .spy = function(name, ...) {
       if (private$..spying) {
         if (is.null(self$.calls[[name]])) {
@@ -36,7 +59,9 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: remove observe Event
+    ## Method removes observe Event if in shiny mode or just clean up the handler
+    ##
+    ## @param event - character string with name of the event
     ## -------------------------------------------------------------------------
     unbind = function(event) {
       private$.spy("unbind", event)
@@ -51,8 +76,10 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: helper function that check how many arguments handler function accept
-    ## :: to prevent unuself argument error
+    ## Helper method that invoke all the handler with optional argument
+    ##
+    ## @param event - name of the event
+    ## @param value - value that is used to call the handler
     ## -------------------------------------------------------------------------
     invoke = function(event, value) {
       private$.spy("invoke", event, value)
@@ -61,7 +88,9 @@ EventEmitter <- R6::R6Class(
       })
     },
     ## -------------------------------------------------------------------------
-    ## :: function check if biding is active
+    ## Method check if biding is active
+    ##
+    ## @param event - name of the event
     ## -------------------------------------------------------------------------
     bound = function(event) {
       if (private$shiny) {
@@ -71,8 +100,13 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: function used to set data in emit if there are no biding
-    ## :: it's also used when activeBiding is used outside of shiny
+    ## Method used to set data in emit if there are no biding
+    ##
+    ## @description
+    ## It's also used when activeBiding is used outside of shiny
+    ##
+    ## @param event - name of the event to set the value
+    ## @param data - any value that is assign to event
     ## -------------------------------------------------------------------------
     set = function(event, data) {
       if (private$shiny) {
@@ -82,7 +116,9 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: add new observe Event
+    ## Method add new observe Event or activeBinding depend on the mode
+    ## @param event - name of the event
+    ## @param ... - additional arguments passed to observeEvent
     ## -------------------------------------------------------------------------
     bind = function(event, ...) {
       private$.spy("bind", event, ...)
@@ -127,8 +163,14 @@ EventEmitter <- R6::R6Class(
     .calls = NULL,
     events = NULL,
     ## -------------------------------------------------------------------------
-    ## if shiny is used it will create ReactiveBinding with hack
-    ## that will trigger in same cases the event (shiny bug)
+    #' Constructor
+    #'
+    #' @description
+    #' if shiny option is used it will create ReactiveBinding with hack that always trigger
+    #' reactive context (the same cases the battery::component events - this is shiny bug)
+    #'
+    #' @param spy - if set to \code{TRUE} it will log all method calls - for debugging
+    #' @param shiny - use this option if you need reactive value to trigger render handlers in shiny
     ## -------------------------------------------------------------------------
     initialize = function(spy = FALSE, shiny = FALSE) {
       self$events <- new.env()
@@ -144,9 +186,16 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: create new observer if don't exists and add handler to the list
-    ## :: to that observer, we use single observer so ... will be of no use
-    ## :: on next handler on signle event, we keep it just in case it may be of use
+    #' Method add new handler for given event
+    #'
+    #' @description
+    #' create new observer if doesn't exists and add handler to the list
+    #' to that observer, we use single observer so ... will be of no use
+    #' on next handler on signle event, we keep it just in case it may be of use
+    #'
+    #' @param events - string or character vector with name of the events
+    #' @param handler - function used as handler for give event
+    #' @param ... - used only once for observeEvent if shiny mode is used
     ## -------------------------------------------------------------------------
     on = function(events, handler, ...) {
       for (event in events) {
@@ -161,7 +210,10 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: emit event add trigger all handlers added by on
+    #' Method emit event add trigger all handlers added by \code{on}
+    #'
+    #' @param name - character - name of the event to fire
+    #' @param data - optional data that can be accessed in handler
     ## -------------------------------------------------------------------------
     emit = function(name, data = NULL) {
       ## typecheck mainly to show proper error when name is missing
@@ -199,8 +251,10 @@ EventEmitter <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: remove single handler or all handlers and observer
-    ## :: if handler is used and it's last handler observer is also removed
+    #' Method removes single handler or all handlers and observer of no handler left
+    #'
+    #' @param events - string or character vector with name of the events to destroy
+    #' @param handler - optional handler if not NULL it will remove only given handler
     ## -------------------------------------------------------------------------
     off = function(events, handler = NULL) {
       for (event in events) {
@@ -215,6 +269,11 @@ EventEmitter <- R6::R6Class(
         }
       }
     },
+    ## -------------------------------------------------------------------------
+    #' Destructor
+    #'
+    #' @description
+    #' clean up event handlers
     ## -------------------------------------------------------------------------
     finalize = function() {
       private$.spy("finalize")

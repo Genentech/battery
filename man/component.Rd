@@ -41,23 +41,23 @@ Button <- battery::component(
     ## constructor is artifical method so you don't need to call super
     ## which you may forget to add
     constructor = function(canEdit = TRUE) {
-      self$connect('click', self$ns('button'))
+      self$connect("click", self$ns("button"))
       self$count <- 0
-      self$on('click', function(e = NULL, target = NULL) {
+      self$on("click", function(e = NULL, target = NULL) {
         self$count <- self$count + 1
       }, enabled = canEdit)
-      self$output[[self$ns('buttonOutput')]] <- renderUI({
+      self$output[[self$ns("buttonOutput")]] <- renderUI({
         self$events$click
         tags$div(
           tags$span(self$count),
-          actionButton(self$ns('button'), 'click')
+          actionButton(self$ns("button"), "click")
         )
       })
     },
     render = function() {
       tags$div(
-        class = 'button-component',
-        uiOutput(self$ns('buttonOutput'))
+        class = "button-component",
+        uiOutput(self$ns("buttonOutput"))
       )
     }
   )
@@ -69,15 +69,15 @@ Panel <- battery::component(
     constructor = function(title) {
       self$title <- title
       btn <- Button$new(parent = self)
-      self$appendChild('button', btn)
-      self$output[[self$ns('button')]] <- renderUI({
+      self$appendChild("button", btn)
+      self$output[[self$ns("button")]] <- renderUI({
         btn$render()
       })
     },
     render = function() {
       tags$div(
         tags$h2(self$title),
-        tags$div(uiOutput(self$ns('button')))
+        tags$div(uiOutput(self$ns("button")))
       )
     }
   )

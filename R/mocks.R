@@ -243,17 +243,18 @@ is.active.binding <- function(name, env) {
 }
 
 # -----------------------------------------------------------------------------
-#' Function used the same as battery::observeEvent (based on shiny::observeEvent)
-#' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+#' Function used the same as battery::observeEvent (based on \code{shiny::observeEvent})
+#' that use active binding input mocks - the work almost the same as \code{shiny::observeEvent} but it
 #' destroy previous created observer, so there are no duplicates
-#' @param eventExpr - same as in shiny::observeEvent
-#' @param handlerExpr - same as in shiny::observeEvent
-#' @param handler.env - same as in shiny::observeEvent
-#' @param ignoreInit - same as in shiny::observeEvent
-#' @param ignoreNULL - same as in shiny::observeEvent
+#' @param eventExpr - same as in \code{shiny::observeEvent}
+#' @param handlerExpr - same as in \code{shiny::observeEvent}
+#' @param handler.env - same as in \code{shiny::observeEvent}
+#' @param ignoreInit - same as in \code{shiny::observeEvent}
+#' @param ignoreNULL - same as in \code{shiny::observeEvent}
 #' @param observerName - name that will distinguish observers with same code
-#' @param once - same as in shiny::observeEvent
-#' @param ... - reset the params from shiny::observeEvent
+#' @param once - same as in \code{shiny::observeEvent}
+#' @param ... - reset the params from \code{shiny::observeEvent}
+#' @return list with destroy method - same as \code{shiny::observeEvent}
 #'
 #' @export
 observeEventMock <- function(eventExpr,
@@ -812,10 +813,23 @@ set.frame <- function(value, name = NULL, frame = 1) {
   }
 }
 
+#' Shiny Session Mock class
+#'
+#' @description
+#'
 #' Mock for Session object, only some tests require this right now
 #' but more tests may require this session object in the future
 #' Right now only services need session$destroy() method to clear
 #' services so you can create same service in more then one test
+#'
+#' @field token - string used by battery to distinguish users
+#' @examples
+#'
+#' session <- battery::Session$new()
+#' input <- activeInput()
+#' output <- activeOutput()
+#' component <- Component$new(input = input, output = output, session = session)
+#'
 #' @export
 Session <- R6::R6Class(
   classname = 'Session',
@@ -824,12 +838,28 @@ Session <- R6::R6Class(
   ),
   public = list(
     token = NULL,
+    ## -------------------------------------------------------------------------
+    #' Session mock constructor
+    #' @param token - optional token used for testing to create different
+    #'        users that should get different data for services and globals
+    ## -------------------------------------------------------------------------
     initialize = function(token = NULL) {
       self$token <- token
     },
+    ## -------------------------------------------------------------------------
+    #' Mock for destroy session
+    #'
+    #' @description
+    #' it will trigger handlers added by \link{\code{onSessionEnded}}
+    ## -------------------------------------------------------------------------
     destroy = function() {
       invisible(lapply(private$.destroy, do.call, args = list()))
     },
+    ## -------------------------------------------------------------------------
+    #' Mock for the function that add handler on session destroy
+    #' @param fn - function that will be called when \link{\code{destroy}}
+    #'        is called
+    ## -------------------------------------------------------------------------
     onSessionEnded = function(fn) {
       private$.destroy <- append(private$.destroy, list(fn))
     }

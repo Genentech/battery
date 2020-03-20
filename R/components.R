@@ -1,6 +1,10 @@
-#' Global env generator function - it's added to each component one per root (component without parent)
+#' Main file with base of battery components
+
+
+#' Global env generator function - added to each component one per root (component without parent)
 #' This env is used so you can share services for one tree of components. You can't send data between
 #' Two trees of components.
+#' @name new.global.env
 new.global.env <- function() {
   list2env(list(
     components = list(),
@@ -14,24 +18,25 @@ new.global.env <- function() {
 
 #' Helper where new static default values can be added
 #' this static env should be the same for each Component per shiny session
+#' @name new.static.env
 new.static.env <- function() {
   list2env(list(count = 0))
 }
 
 #' Global varialbe added to base component that hold each classes and component list
 #' for getById method
+#' @name global
 global <- new.global.env()
 global$sessions <- list()
 
-#' @name BaseComponent
-#' @title Component base class
+#' Root component that have no parent,
 #'
-#' Root component that don't have parent,
+#' @description
 #' need to be called with input, output and session. it should not be used directly,
 #' only using \code{\link{battery::component}} function.
 #'
+#' @name BaseComponent
 #' @importFrom R6 R6Class
-#' @docType class
 #' @keywords components, architecture, structure
 #'
 #' @field id - string that
@@ -51,8 +56,28 @@ global$sessions <- list()
 #' @section Methods:
 #' \describe{
 #'   \item{Documentation}{For full documentation of each method go to https://stash.intranet.roche.com/stash/projects/DIVOS/repos/battery/browse}
-#'   \item{\code{new(BaseComponent)}}{This method is used to create base battery object, it should never be created. Battery components should be created as inherited from this BaseComponent but this should be done only using \code{battery::component} function.}
-#'
+#'   \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{battery::component} function}
+#'   \item{\code{getById}}{Method return component with specific id}
+#'   \item{\code{appendChild}}{Method add battery component as child this current component}
+#'   \item{\code{removeChild}}{Method remove child component complementary to appendChild}
+#'   \item{\code{ns}}{Method used to create namespaced identifier}
+#'   \item{\code{createEvent}}{Method will create battery event}
+#'   \item{\code{emit}}{Propagate events from child to parent}
+#'   \item{\code{broadcast}}{Propagate events from parent to all children}
+#'   \item{\code{connect}}{Helper method that will create binding between input event from shiny and battery event}
+#'   \item{\code{disconnect}}{Method remove binding between input element and compnents events}
+#'   \item{\code{on}}{Add event listener to given internal event or native input}
+#'   \item{\code{off}}{Method removes event listener(s) added by \code{on}}
+#'   \item{\code{class}}{Method return name of this class - same as classname when crating the class}
+#'   \item{\code{destroy}}{Method remove all observers created for this component}
+#'   \item{\code{finalize}}{R6Class method that will be called when object is destroyed}
+#'   \item{\code{addService}}{Method dynamically add service to battery component system}
+#'   \item{\code{template}}{Helper method that create \code{shiny::htmlTemplate} with self and private as defaults variables}
+#'   \item{\code{path}}{Method return path to the object in battery components tree}
+#'   \item{\code{log}}{Method log messages that can be listen to with \code{logger} helper}
+#'   \item{\code{logger}}{Shortcut function to add listener to logger}
+#'   \item{\code{render}}{Function that should be overwritten in battery component}
+#' }
 BaseComponent <- R6::R6Class(
   classname = 'BaseComponent',
   private = list(
@@ -166,7 +191,7 @@ BaseComponent <- R6::R6Class(
   public = list(
     id = NULL,
     name = NULL,
-    ## every component share same services
+    ## every component in a tree share same services
     services = NULL,
     events = NULL,
     parent = NULL,
@@ -302,9 +327,10 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' Function return component with specific id
+    #' Method return component with specific id
     #'
     #' it will search the tree of components find name with specific id
+    #'
     #' @param id - string - id of the component to search
     #' @return Battery component
     ## ---------------------------------------------------------------
@@ -318,7 +344,24 @@ BaseComponent <- R6::R6Class(
       NULL
     },
     ## ---------------------------------------------------------------
-    #' method remove child component complementary to appendChild
+    #' Method add battery component as child this current component
+    #'
+    #' this function is called if you pass component.name to constructor
+    #' otherwise it should be called to create proper tree. This is required
+    #' so \code{component$broadcast} and \code{component$emit} work properly
+    #'
+    #' @param name - string to be used as name
+    #' @param child - battery component
+    ## ---------------------------------------------------------------
+    appendChild = function(name, child) {
+      if (!is.null(self$children[[name]])) {
+        stop(sprintf('Child with name `%s` already exists', name))
+      } else {
+        self$children[[name]] <- child
+      }
+    },
+    ## ---------------------------------------------------------------
+    #' Method remove child component complementary to appendChild
     #'
     #' it can be used with name or the component
     #'
@@ -338,49 +381,33 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' function add battery component as child this current component
-    #'
-    #' this function is called if you pass component.name to constructor
-    #' otherwise it should be called to create proper tree. This is required
-    #' so \code{component$broadcast} and \code{component$emit} work properly
-    #'
-    #' @param name - string to be used as name
-    #' @param child - battery component
-    ## ---------------------------------------------------------------
-    appendChild = function(name, child) {
-      if (!is.null(self$children[[name]])) {
-        stop(sprintf('Child with name `%s` already exists', name))
-      } else {
-        self$children[[name]] <- child
-      }
-    },
-    ## ---------------------------------------------------------------
-    #' function used to create namespaced identifier
+    #' Method used to create namespaced identifier
     #'
     #' @param name - name to be used inside shiny input or output
-    #'
     #' @examples
-    #' battery::component(
-    #'   classname = "Plot"
-    #'   public = list(
-    #'     constructor = function() {
-    #'        self$output[[self$ns("plot")]] <- renderPlot({
-    #'           ...
+    #'
+    #'  battery::component(
+    #'    classname = "Plot",
+    #'    public = list(
+    #'      constructor = function() {
+    #'        self$output[[ self$ns("plot") ]] <- renderPlot({
+    #'          ## ...
     #'        })
     #'     },
     #'     render = function() {
     #'       shiny::div(
-    #'          class = "container",
-    #'          plotOutput(self$ns("plot"))
+    #'         class = "container",
+    #'         plotOutput(self$ns("plot"))
     #'       )
     #'     }
     #'   )
     #' )
+    ## ---------------------------------------------------------------
     ns = function(name) {
       paste0(self$id, '_', name)
     },
     ## ---------------------------------------------------------------
-    #' Function will create battery event
+    #' Method will create battery event
     #'
     #' this event can be triggered from R code it can also be broadcasted
     #' this function is called automatically when using on to create observer
@@ -405,11 +432,11 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' propagate events from child to parent
+    #' Propagate events from child to parent
     #'
     #' it will recursivly walk whole tree, and trigger only events that
     #' have reactive values added with \code{createEvent} it will also trigger
-    #' all observers added with \code(on(name, function, input = FALSE}
+    #' all observers added with \code{on}
     #'
     #' @param name - name of the event to propagate
     #' @param value - optional value to to set on reactive values (it will be
@@ -421,7 +448,6 @@ BaseComponent <- R6::R6Class(
     #' @param .level - internal option for logger, that is used to created indent
     #'
     #' @examples
-    #'
     #' App <- battery::component(
     #'   classname = "App",
     #'   public = list(
@@ -430,7 +456,7 @@ BaseComponent <- R6::R6Class(
     #'         print("I need to update")
     #'       })
     #'       panel <- Panel$new(parent = self, component.name = "panel")
-    #'       self$outptu[[self$ns("panel"]] <- renderUI({
+    #'       self$outptu[[self$ns("panel")]] <- renderUI({
     #'          panel$render()
     #'       })
     #'     },
@@ -443,7 +469,7 @@ BaseComponent <- R6::R6Class(
     #'   )
     #' )
     #' Panel <- battery::component(
-    #'   classname = "Panel"
+    #'   classname = "Panel",
     #'   public = list(
     #'     constructor = function() {
     #'       self$on(self$ns("button"), function() {
@@ -491,6 +517,7 @@ BaseComponent <- R6::R6Class(
     #'
     #' @examples
     #'
+    #'
     #' App <- battery::component(
     #'   classname = "App",
     #'   public = list(
@@ -502,7 +529,7 @@ BaseComponent <- R6::R6Class(
     #'         self$broadcast("update", paste0("Update_number_", count))
     #'       }, input = TRUE)
     #'       counter <- Counter$new(parent = self, component.name = "counter")
-    #'       self$outptu[[self$ns("counter"]] <- renderUI({
+    #'       self$outptu[[self$ns("counter")]] <- renderUI({
     #'          panel$render()
     #'       })
     #'     },
@@ -511,14 +538,14 @@ BaseComponent <- R6::R6Class(
     #'     },
     #'     render = function() {
     #'       shiny::tags$div(
-    #'         actionButton(self$ns("button"), "Click Me")
+    #'         actionButton(self$ns("button"), "Click Me"),
     #'         uiOutput(self$ns("counter"))
     #'       )
     #'     }
     #'   )
     #' )
     #' Counter <- battery::component(
-    #'   classname = "Counter"
+    #'   classname = "Counter",
     #'   public = list(
     #'     counter = 0,
     #'     constructor = function() {
@@ -556,8 +583,9 @@ BaseComponent <- R6::R6Class(
         child$broadcast(name, value, self$id, include.self = TRUE, .level = .level + 1)
       })
     },
+
     ## ---------------------------------------------------------------
-    #' helper method that will create binding between input event from shiny and battery event
+    #' Helper method that will create binding between input event from shiny and battery event
     #'
     #' @param event - name of the event
     #' @param elementId - id of the HTML element (shiny input it should be value from \code{self$ns})
@@ -598,16 +626,16 @@ BaseComponent <- R6::R6Class(
     #' @param ... - any additional arguments are passed into shiny::observeEvent
     #' @examples
     #'
-    #' self$on(self$ns('inputValue'), function(value) {
+    #' self$on(self$ns("inputValue"), function(value) {
     #'    print(paste("Input value is ", value))
     #' }, input = TRUE)
     #'
-    #' self$on(self$ns('save'), function() {
+    #' self$on(self$ns("save"), function() {
     #'    print("user click save")
     #' }, input = TRUE)
     #'
     #'
-    #' self$on('event', function(value = NULL, target = NULL) {
+    #' self$on("event", function(value = NULL, target = NULL) {
     #'   ## this event can be fired with trigger/emit/broadcast
     #' })
     #'
@@ -728,7 +756,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' method removes event listener(s) added by \code{on}
+    #' Method removes event listener(s) added by \code{on}
     #'
     #' if handler is NULL it will remove all listeners for a given event name
     #'
@@ -769,14 +797,19 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' method return name of this class - same as classname when crating the class
+    #' Method return name of this class - same as classname when crating the class
     #'
+    #' @return string - class name
     ## ---------------------------------------------------------------
     class = function() {
       private$.class
     },
     ## ---------------------------------------------------------------
-    #' Method remove all observers created for this component
+    #' Method dfestroy component
+    #'
+    #' @description
+    #' It removes all observers created for this component also clear
+    #' it also use other clean ups.
     ## ---------------------------------------------------------------
     destroy = function() {
       self$log("battery", "destroy", type = "destroy")
@@ -801,7 +834,9 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' R6Class taht will be called when object is destroyed
+    #' R6Class method that will be called when object is destroyed
+    #' @description
+    #' it just calls \code{destroy}
     ## ---------------------------------------------------------------
     finalize = function() {
       self$destroy()
@@ -879,7 +914,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' shortcut function to add listener to logger
+    #' Shortcut function to add listener to logger
     #'
     #' @param level - character vector of elevels to listen or string
     #' @param fn - function handler
@@ -896,6 +931,7 @@ BaseComponent <- R6::R6Class(
     #' update of parent will rerender the children. The proper way is to use
     #' renderUI in constructor and renderUI in render function for the children.
     #'
+    #' @return - overwriten render by convention should return shiny tags
     ## ---------------------------------------------------------------
     render = function() {
       stop('render function need to be overwritten in child class')
@@ -923,23 +959,23 @@ BaseComponent <- R6::R6Class(
 #'     ## constructor is artifical method so you don't need to call super
 #'     ## which you may forget to add
 #'     constructor = function(canEdit = TRUE) {
-#'       self$connect('click', self$ns('button'))
+#'       self$connect("click", self$ns("button"))
 #'       self$count <- 0
-#'       self$on('click', function(e = NULL, target = NULL) {
+#'       self$on("click", function(e = NULL, target = NULL) {
 #'         self$count <- self$count + 1
 #'       }, enabled = canEdit)
-#'       self$output[[self$ns('buttonOutput')]] <- renderUI({
+#'       self$output[[self$ns("buttonOutput")]] <- renderUI({
 #'         self$events$click
 #'         tags$div(
 #'           tags$span(self$count),
-#'           actionButton(self$ns('button'), 'click')
+#'           actionButton(self$ns("button"), "click")
 #'         )
 #'       })
 #'     },
 #'     render = function() {
 #'       tags$div(
-#'         class = 'button-component',
-#'         uiOutput(self$ns('buttonOutput'))
+#'         class = "button-component",
+#'         uiOutput(self$ns("buttonOutput"))
 #'       )
 #'     }
 #'   )
@@ -951,15 +987,15 @@ BaseComponent <- R6::R6Class(
 #'     constructor = function(title) {
 #'       self$title <- title
 #'       btn <- Button$new(parent = self)
-#'       self$appendChild('button', btn)
-#'       self$output[[self$ns('button')]] <- renderUI({
+#'       self$appendChild("button", btn)
+#'       self$output[[self$ns("button")]] <- renderUI({
 #'         btn$render()
 #'       })
 #'     },
 #'     render = function() {
 #'       tags$div(
 #'         tags$h2(self$title),
-#'         tags$div(uiOutput(self$ns('button')))
+#'         tags$div(uiOutput(self$ns("button")))
 #'       )
 #'     }
 #'   )

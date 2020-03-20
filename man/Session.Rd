@@ -2,20 +2,27 @@
 % Please edit documentation in R/mocks.R
 \name{Session}
 \alias{Session}
-\title{Mock for Session object, only some tests require this right now
-but more tests may require this session object in the future
-Right now only services need session$destroy() method to clear
-services so you can create same service in more then one test}
+\title{Shiny Session Mock class}
 \description{
 Mock for Session object, only some tests require this right now
 but more tests may require this session object in the future
 Right now only services need session$destroy() method to clear
 services so you can create same service in more then one test
+}
+\examples{
 
-Mock for Session object, only some tests require this right now
-but more tests may require this session object in the future
-Right now only services need session$destroy() method to clear
-services so you can create same service in more then one test
+session <- battery::Session$new()
+input <- activeInput()
+output <- activeOutput()
+component <- Component$new(input = input, output = output, session = session)
+
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{token}}{- string used by battery to distinguish users}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -33,10 +40,21 @@ services so you can create same service in more then one test
 \if{html}{\out{<div class="r">}}\preformatted{Session$new(token = NULL)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{token}}{- optional token used for testing to create different
+       users that should get different data for services and globals
+Mock for destroy session}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-destroy"></a>}}
 \subsection{Method \code{destroy()}}{
+it will trigger handlers added by \link{\code{onSessionEnded}}
+Mock for the function that add handler on session destroy
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Session$destroy()}\if{html}{\out{</div>}}
 }
@@ -49,6 +67,14 @@ services so you can create same service in more then one test
 \if{html}{\out{<div class="r">}}\preformatted{Session$onSessionEnded(fn)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{fn}}{- function that will be called when \link{\code{destroy}}
+is called}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
