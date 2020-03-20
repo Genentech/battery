@@ -26,7 +26,7 @@ Button <- battery::component(
       self$label <- label
       self$connect("click", self$ns("button"))
       self$count <- 0
-      self$on("click", function(e = NULL, target = NULL) {
+      self$on("click", function() {
         self$count <- self$count + 1
       }, enabled = canEdit)
       self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
@@ -37,8 +37,8 @@ Button <- battery::component(
         )
       })
     },
-  render = function() {
-    tags$div(
+    render = function() {
+      tags$div(
         class = "button-component",
         tags$p(class = "buton-label", self$label),
         shiny::uiOutput(self$ns("buttonOutput"))
@@ -163,7 +163,7 @@ so you don't accidentaly use it before it's created).
 
 See example/services.R for details how to use services.
 
-# Testing Components
+## Testing Components
 
 when testing Components you can use this mocks instead of running whole shiny app. So you can
 test single component in isolation.
@@ -171,7 +171,7 @@ test single component in isolation.
 Here is quick summary for how to use testing framework. See `./tests/` directory to see how
 to tests you own components.
 
-## Mocks
+### Mocks
 
 You should never need to use mocks directly but here is examples how to use it, for testing components
 see next section.
@@ -272,9 +272,7 @@ print(input$foo) ## 200
 print(output$bar) ## 210
 ```
 
-## Testing components
-
-## Mock reactive shiny data
+### Mock reactive shiny data
 
 when you're writing tests first you need to call
 
@@ -344,7 +342,7 @@ input$foo <- "hello"
 
 the output will be updated and `output[[self$ns("xxx")]]` will have string `"you typed: hello"`.
 
-## Spies
+### Spies
 
 If you create your component with spy option set to `TRUE` it will spy on all the methods. Each time
 a method s called it will be in component$.calls named list, were each function will have list of
@@ -362,3 +360,7 @@ expect_that(t$.calls$foo, list(list(10), list(x = 20)))
 
 constructor is also on the list of `.calls`, everything except of functions that are in base
 component R6 class (this may change in the future if will be needed).
+
+## Contributors
+* Jakub Jankiewicz
+* Michał Jakubczak
