@@ -1,10 +1,4 @@
-```
- _____     _   _
-| __  |___| |_| |_ ___ ___ _ _
-| __ -| .'|  _|  _| -_|  _| | |
-|_____|__,|_| |_| |___|_| |_  |
-                          |___| v 0.2.0
-```
+![Battery Logo](inst/extra/battery-logo.svg)
 
 Battery - R6Class based component architecture for Shiny apps with testing framework.
 The components design is based on AngularJS that can emit event from root it it's children
