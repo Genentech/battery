@@ -196,7 +196,7 @@ panel <- Panel$new(title = "Hello", input = i, output = o, session = s)
   value = NULL,
   target = NULL,
   include.self = FALSE,
-  .log.indent = 0
+  .level = 0
 )}\if{html}{\out{</div>}}
 }
 
@@ -210,7 +210,7 @@ panel <- Panel$new(title = "Hello", input = i, output = o, session = s)
   value = NULL,
   target = NULL,
   include.self = FALSE,
-  .log.indent = 0
+  .level = 0
 )}\if{html}{\out{</div>}}
 }
 

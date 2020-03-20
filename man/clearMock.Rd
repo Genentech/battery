@@ -4,7 +4,7 @@
 \alias{clearMock}
 \title{function restore original shiny function}
 \usage{
-clearMock(name, env)
+clearMock(name, env, package = "shiny")
 }
 \description{
 function restore original shiny function

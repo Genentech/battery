@@ -4,7 +4,7 @@
 \alias{mock}
 \title{function create single mock for shiny function}
 \usage{
-mock(name, mock, env)
+mock(name, mock, env, package = "shiny")
 }
 \description{
 function create single mock for shiny function

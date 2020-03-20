@@ -129,16 +129,17 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    trigger = function(name, data = NULL, .force = TRUE, .log.indent = 0) {
+    trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
+      indent <- .level * 2
 
-      msg <- battery:::indent(.log.indent, "trigger")
+      msg <- battery:::indent(indent, "trigger")
       self$log("battery", msg, name = name, target = self$id,
         a = name %in% ls(self$events), b = name %in% names(self$events))
 
       if (name %in% ls(self$events)) {
         update <- if (is.null(data)) {
           function() {
-            msg <- battery:::indent(.log.indent, "trigger::force (NULL)")
+            msg <- battery:::indent(indent, "trigger::force (NULL)")
             self$log("battery", msg, name = name, target = self$id)
 
             self$events[[name]] <- shiny::isolate({
@@ -160,7 +161,7 @@ BaseComponent <- R6::R6Class(
         } else if (is.list(data)) {
           function() {
             data$timestamp <- battery:::now()
-            msg <- battery:::indent(.log.indent, "trigger::force (list)")
+            msg <- battery:::indent(indent, "trigger::force (list)")
             self$log("battery", msg, name = name, target = self$id)
             self$events[[name]] <- data
           }
@@ -185,6 +186,7 @@ BaseComponent <- R6::R6Class(
     ## :: setter/getter for pending counter for given event
     ## :: used to check if there was no pending events
     ## :: that was not triggered
+    ## :: this shouldn't be needed, it's just in case
     ## ---------------------------------------------------------------
     .pending = function(name, value = NULL, increment = NULL, fn = NULL) {
       if (!is.null(private$.handlers[[name]])) {
@@ -207,8 +209,8 @@ BaseComponent <- R6::R6Class(
     },
     ## ---------------------------------------------------------------
     .indent = function() {
-      if (self$static$.global$.indent > 0) {
-        battery:::str.repeat(self$static$.global$.indent, " ")
+      if (self$static$.global$.level > 0) {
+        strrep(" ", self$static$.global$.level * 2)
       } else {
         ""
       }
@@ -283,7 +285,7 @@ BaseComponent <- R6::R6Class(
       ## init global env, used by services, one per root component
       if (is.null(parent)) {
         self$static$.global <- new.global.env()
-        self$static$.global$.indent <- 0
+        self$static$.global$.level <- 0
       } else {
         self$static$.global <- self$parent$static$.global
       }
@@ -411,37 +413,37 @@ BaseComponent <- R6::R6Class(
     ## ---------------------------------------------------------------
     ## :: propagate evets from child to parent
     ## ---------------------------------------------------------------
-    emit = function(name, value = NULL, target = NULL, include.self = FALSE, .log.indent = 0) {
+    emit = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
       if (is.null(target)) {
         target <- self$id
       }
 
-      msg <- battery:::indent(.log.indent, "emit")
+      msg <- battery:::indent(.level * 2, "emit")
       self$log("battery", msg, name = name, value = value, target = target)
 
       if (include.self) {
-        private$trigger(name, list(value = value, target = target), .log.indent = .log.indent)
+        private$trigger(name, list(value = value, target = target), .level = .level)
       }
       if (!is.null(self$parent)) {
-        self$parent$emit(name, value, target = target, include.self = TRUE, .log.indent = .log.indent + 2)
+        self$parent$emit(name, value, target = target, include.self = TRUE, .level = .level + 1)
       }
     },
     ## ---------------------------------------------------------------
     ## :: propagate events from parent to all children
     ## ---------------------------------------------------------------
-    broadcast = function(name, value = NULL, target = NULL, include.self = FALSE, .log.indent = 0) {
+    broadcast = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
       if (is.null(target)) {
         target <- self$id
       }
 
-      msg <- battery:::indent(.log.indent, "broadcast")
+      msg <- battery:::indent(.level * 2, "broadcast")
       self$log("battery", msg, name = name, value = value, target = target)
 
       if (include.self) {
-        private$trigger(name, list(value = value, target = target), .log.indent = .log.indent)
+        private$trigger(name, list(value = value, target = target), .level = .level)
       }
       lapply(self$children, function(child) {
-        child$broadcast(name, value, self$id, include.self = TRUE, .log.indent = .log.indent + 2)
+        child$broadcast(name, value, self$id, include.self = TRUE, .level = .level + 1)
       })
     },
     ## ---------------------------------------------------------------
@@ -466,7 +468,7 @@ BaseComponent <- R6::R6Class(
     ## :: remove binding between input element and compnents events
     ## ---------------------------------------------------------------
     disconnect = function(elementId) {
-      private$.observers[[elementId]]$observer$destroy()
+      private$.observers[[elementId]]$destroy()
     },
     ## ---------------------------------------------------------------
     ## :: function check if called from observeEvent
@@ -534,10 +536,10 @@ BaseComponent <- R6::R6Class(
                 space <- private$.indent()
                 self$log(c("battery", "info"), paste0(space, "on::trigger::before(N)"),
                   event = event, input = input)
-                self$static$.global$.indent = self$static$.global$.indent + 1
+                self$static$.global$.level = self$static$.global$.level + 1
                 private$.pending(event, increment = -1, fn = handler)
                 battery:::invoke(handler, self$input[[event]], self)
-                self$static$.global$.indent = self$static$.global$.indent - 1
+                self$static$.global$.level = self$static$.global$.level - 1
                 self$log(c("battery", "info"), paste0(space, "on::trigger::after(N)"), event = event, input = input)
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
@@ -558,14 +560,14 @@ BaseComponent <- R6::R6Class(
                 space <- private$.indent()
                 self$log(c("battery", "info"), paste0(space, "on::trigger::before(B)"),
                   event = event, input = input)
-                self$static$.global$.indent = self$static$.global$.indent + 1
+                self$static$.global$.level = self$static$.global$.level + 1
                 private$.pending(event, increment = -1, fn = handler)
                 if (is.null(data) || is.logical(data)) {
                   battery:::invoke(handler, NULL, NULL)
                 } else {
                   battery:::invoke(handler, data[["value"]], data[["target"]])
                 }
-                self$static$.global$.indent = self$static$.global$.indent - 1
+                self$static$.global$.level = self$static$.global$.level - 1
                 self$log(c("battery", "info"), paste0(space, "on::trigger::after(B)"), event = event, input = input)
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
@@ -773,7 +775,6 @@ component <- function(classname,
 #' @param seq - named list of properties and functions methods
 #'
 r6.class.add <- function(class, seq) {
-  tryCatch({
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
   lapply(names(seq), function(name) {
     if (is.function(seq[[name]])) {
@@ -800,10 +801,10 @@ r6.class.add <- function(class, seq) {
         }
         tryCatch({
           space <- env$private$.indent()
-          self$static$.global$.indent = self$static$.global$.indent + 1
+          self$static$.global$.level = self$static$.global$.level + 1
           env$self$log("info", paste0(space, name, "::before"), type = "method")
           ret <- fn(...)
-          self$static$.global$.indent = self$static$.global$.indent - 1
+          self$static$.global$.level = self$static$.global$.level - 1
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
         }, error = function(cond) {
@@ -819,9 +820,6 @@ r6.class.add <- function(class, seq) {
     } else {
       class$set(prop.name, name, seq[[name]])
     }
-  })
-  }, error = function(e) {
-    browser()
   })
 }
 

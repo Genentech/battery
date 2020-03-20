@@ -42,7 +42,7 @@ EventEmitter <- R6::R6Class(
       private$.spy("unbind", event)
       if (private$shiny) {
         shiny::isolate({
-          private$observers[[event]]$observer$destroy()
+          private$observers[[event]]$destroy()
           private$handlers[event] <- NULL
           private$observers[event] <- NULL
         })

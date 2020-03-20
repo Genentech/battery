@@ -59,33 +59,8 @@ force <- function(fn, session = getDefaultReactiveDomain()) {
   session$manageInputs(list(battery_shinyHack = `if`(is.null(shinyHack), TRUE, !shinyHack)))
 }
 
-#' function test if we are in shiny reactive context
-isReactiveContext <- function() {
-  ## access of reactive value outside of reactive context will throw exception
-  tryCatch({
-    e <- new.env()
-    shiny::makeReactiveBinding("dummy", env = e)
-    e$dummy <- 10
-    e$test <- e$dummy + 10
-    TRUE
-  }, error = function() {
-    FALSE
-  })
-}
-
-#' create string with repeated input string
-str.repeat <- function(n, str) {
-  if (n == 0) {
-    ''
-  } else if (n == 1) {
-    str
-  } else {
-    paste(rep(str, n), collapse = "")
-  }
-}
-
 #' add spaces before the string
 indent <- function(n, string) {
-  spaces <- battery:::str.repeat(n, " ")
+  spaces <- strrep(" ", n)
   paste0(spaces, string)
 }

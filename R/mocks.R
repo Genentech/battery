@@ -311,11 +311,9 @@ observeEventMock <- function(eventExpr,
     }, observerName = observerName, expr = expr, ...)
   }
   list(
-    observer = list(
-      destroy = function() {
-        activeEnv$off(name, expr, observerName = observerName)
-      }
-    )
+    destroy = function() {
+      activeEnv$off(name, expr, observerName = observerName)
+    }
   )
 }
 
@@ -756,18 +754,19 @@ useMocks <- function() {
   mock('isolate', battery::isolate, env)
   mock('makeReactiveBinding', battery::makeReactiveBinding, env)
   mock('renderUI', battery::renderUIMock, env)
+  mock('force', function(x) x(), env, package = 'battery')
 }
 
 #' function create single mock for shiny function
-mock <- function(name, mock, env) {
-  originals[[name]] <- getFromNamespace(name, "shiny")
-  utils::assignInNamespace(name, mock, 'shiny')
+mock <- function(name, mock, env, package = 'shiny') {
+  originals[[name]] <- getFromNamespace(name, package)
+  utils::assignInNamespace(name, mock, package)
   env[[name]] <- mock
 }
 
 #' function restore original shiny function
-clearMock <- function(name, env) {
-  utils::assignInNamespace(name, originals[[name]], 'shiny')
+clearMock <- function(name, env, package = 'shiny') {
+  utils::assignInNamespace(name, originals[[name]], package)
   env[[name]] <- originals[[name]]
 }
 
@@ -781,6 +780,7 @@ clearMocks <- function() {
   for (name in c('observeEvent', 'isolate', 'makeReactiveBinding', 'renderUI')) {
     clearMock(name, env)
   }
+  clearMock('force', env, package = 'battery')
 }
 
 
