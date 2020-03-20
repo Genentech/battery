@@ -161,6 +161,9 @@ BaseComponent <- R6::R6Class(
         } else if (is.list(data)) {
           function() {
             data$timestamp <- battery:::now()
+            if (is.null(data$target)) {
+              data$target <- self$id
+            }
             msg <- battery:::indent(indent, "trigger::force (list)")
             self$log("battery", msg, name = name, target = self$id)
             self$events[[name]] <- data
