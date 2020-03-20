@@ -17,6 +17,9 @@ output <- activeOutput()
 component <- Component$new(input = input, output = output, session = session)
 
 }
+\keyword{mock}
+\keyword{testing}
+\keyword{unittests}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{

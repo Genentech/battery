@@ -2,7 +2,7 @@
 % Please edit documentation in R/components.R
 \name{r6.class.add}
 \alias{r6.class.add}
-\title{helper function for adding properties to R6Class}
+\title{Helper function for adding properties to R6Class}
 \usage{
 r6.class.add(class, seq)
 }
@@ -12,5 +12,5 @@ r6.class.add(class, seq)
 \item{seq}{- named list of properties and functions methods}
 }
 \description{
-helper function for adding properties to R6Class
+Helper function for adding properties to R6Class
 }

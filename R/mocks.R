@@ -823,6 +823,9 @@ set.frame <- function(value, name = NULL, frame = 1) {
 #' services so you can create same service in more then one test
 #'
 #' @field token - string used by battery to distinguish users
+#' @importFrom R6 R6Class
+#' @keywords mock testing unittests
+#' @name Session
 #' @examples
 #'
 #' session <- battery::Session$new()

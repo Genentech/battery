@@ -196,8 +196,8 @@ Method removes event listener(s) added by \code{on}
 if handler is NULL it will remove all listeners for a given event name
 
 }
-\keyword{architecture,}
-\keyword{components,}
+\keyword{architecture}
+\keyword{components}
 \keyword{structure}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

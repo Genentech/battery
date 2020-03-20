@@ -32,12 +32,13 @@ global$sessions <- list()
 #' Root component that have no parent,
 #'
 #' @description
+#'
 #' need to be called with input, output and session. it should not be used directly,
 #' only using \code{\link{battery::component}} function.
 #'
 #' @name BaseComponent
 #' @importFrom R6 R6Class
-#' @keywords components, architecture, structure
+#' @keywords components architecture structure
 #'
 #' @field id - string that
 #' @field name - component instance name, set using \code{parent$appendChild(name)} or
@@ -1049,7 +1050,7 @@ component <- function(classname,
   class
 }
 
-#' helper function for adding properties to R6Class
+#' Helper function for adding properties to R6Class
 #' @param class - battery component constructor
 #' @param seq - named list of properties and functions methods
 #'
@@ -1112,5 +1113,5 @@ make.extend <- function(class) {
   }
 }
 
-#' init extend on base battery component
+## init extend on base battery component
 BaseComponent$extend <- make.extend(BaseComponent)
