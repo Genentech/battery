@@ -9,7 +9,7 @@ component(
   public = NULL,
   private = NULL,
   static = NULL,
-  inherit = battery::BaseComponent,
+  inherit = battery:::BaseComponent,
   ...
 )
 }
@@ -22,17 +22,18 @@ component(
 
 \item{static}{- list of fields that will stay the same for every instance of the component}
 
-\item{inherit}{- base class - if not specifed it will inherit from Base class (battery::Component)}
+\item{inherit}{- base class - if not specifed it will inherit from Base class \code{\link{BaseComponent}}}
 
-\item{...}{- reset option passed to R6Class constructor}
+\item{...}{- reset option passed to \code{\link{R6Class}} constructor}
 }
 \value{
-Object of \code{\link{R6Class}} with battery specific methods
+\code{\link{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
 }
 \description{
 Use this function to create new battery class object.
 }
 \examples{
+\dontrun{
 
 Button <- battery::component(
   classname = "Button",
@@ -90,5 +91,5 @@ server <- function(input, output, session) {
        root$render()
    })
 }
-
+}
 }

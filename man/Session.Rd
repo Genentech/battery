@@ -11,11 +11,18 @@ services so you can create same service in more then one test
 }
 \examples{
 
-session <- battery::Session$new()
+TestComponent <- battery::component(
+  "TestComponent",
+  public = list(
+    constructor = function() {
+       print(self$session$token)
+    }
+  )
+)
+session <- battery::Session$new("Test")
 input <- activeInput()
 output <- activeOutput()
-component <- Component$new(input = input, output = output, session = session)
-
+component <- TestComponent$new(input = input, output = output, session = session)
 }
 \keyword{mock}
 \keyword{testing}
@@ -39,6 +46,7 @@ component <- Component$new(input = input, output = output, session = session)
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
 \subsection{Method \code{new()}}{
+Session mock constructor
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Session$new(token = NULL)}\if{html}{\out{</div>}}
 }
@@ -47,8 +55,7 @@ component <- Component$new(input = input, output = output, session = session)
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{token}}{- optional token used for testing to create different
-       users that should get different data for services and globals
-Mock for destroy session}
+users that should get different data for services and globals}
 }
 \if{html}{\out{</div>}}
 }
@@ -56,8 +63,9 @@ Mock for destroy session}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-destroy"></a>}}
 \subsection{Method \code{destroy()}}{
-it will trigger handlers added by \link{\code{onSessionEnded}}
-Mock for the function that add handler on session destroy
+Mock for destroy session
+
+it will trigger handlers added by \code{onSessionEnded}
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Session$destroy()}\if{html}{\out{</div>}}
 }
@@ -66,6 +74,7 @@ Mock for the function that add handler on session destroy
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-onSessionEnded"></a>}}
 \subsection{Method \code{onSessionEnded()}}{
+Mock for the function that add handler on session destroy
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Session$onSessionEnded(fn)}\if{html}{\out{</div>}}
 }
@@ -73,7 +82,7 @@ Mock for the function that add handler on session destroy
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{fn}}{- function that will be called when \link{\code{destroy}}
+\item{\code{fn}}{- function that will be called when \code{destroy}
 is called}
 }
 \if{html}{\out{</div>}}

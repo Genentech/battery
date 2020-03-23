@@ -4,7 +4,12 @@
 \alias{force}
 \title{Force of reactive value trigger}
 \usage{
-force(fn, session = getDefaultReactiveDomain())
+force(fn, session = shiny::getDefaultReactiveDomain())
+}
+\arguments{
+\item{fn}{- function that can have reactive value asignment that will alway invalidate reactive context}
+
+\item{session}{- session object - in battery there is only one session object}
 }
 \description{
 Force of reactive value trigger

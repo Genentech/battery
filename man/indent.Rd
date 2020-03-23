@@ -6,6 +6,11 @@
 \usage{
 indent(n, string)
 }
+\arguments{
+\item{n}{- number of spaces}
+
+\item{string}{- string that will be added after spaces}
+}
 \description{
 add spaces before the string
 }

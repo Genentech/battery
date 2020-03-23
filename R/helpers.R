@@ -57,11 +57,15 @@ now <- function() {
   format(as.numeric(Sys.time())*1000, scientific = FALSE)
 }
 
+
 #' Force of reactive value trigger
+#' @param fn - function that can have reactive value asignment that will alway invalidate reactive context
+#' @param session - session object - in battery there is only one session object
+#'
 ## TODO: waiting for better solution (reply on SO or GitHub)
 ## https://github.com/rstudio/shiny/issues/2488
 ## https://stackoverflow.com/q/60654485/387194
-force <- function(fn, session = getDefaultReactiveDomain()) {
+force <- function(fn, session = shiny::getDefaultReactiveDomain()) {
   shinyHack <- shiny::isolate(session$input$battery_shinyHack)
   shiny::observeEvent(session$input$battery_shinyHack, {
     fn()
@@ -70,6 +74,8 @@ force <- function(fn, session = getDefaultReactiveDomain()) {
 }
 
 #' add spaces before the string
+#' @param n - number of spaces
+#' @param string - string that will be added after spaces
 indent <- function(n, string) {
   spaces <- strrep(" ", n)
   paste0(spaces, string)

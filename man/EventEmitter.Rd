@@ -59,8 +59,9 @@ otherwise it's normal environment but with R active bindings that can't be used 
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
 \subsection{Method \code{new()}}{
-if shiny option is used it will create ReactiveBinding with hack that always trigger
-reactive context (the same cases the battery::component events - this is shiny bug)
+R6Class Constructor. If shiny option is used it will create ReactiveBinding
+with hack that always trigger reactive context (the same cases the
+\code{\link{component}} events - this is shiny bug)
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{EventEmitter$new(spy = FALSE, shiny = FALSE)}\if{html}{\out{</div>}}
 }
@@ -70,8 +71,7 @@ reactive context (the same cases the battery::component events - this is shiny b
 \describe{
 \item{\code{spy}}{- if set to \code{TRUE} it will log all method calls - for debugging}
 
-\item{\code{shiny}}{- use this option if you need reactive value to trigger render handlers in shiny
-Method add new handler for given event}
+\item{\code{shiny}}{- use this option if you need reactive value to trigger render handlers in shiny}
 }
 \if{html}{\out{</div>}}
 }
@@ -79,6 +79,8 @@ Method add new handler for given event}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-on"></a>}}
 \subsection{Method \code{on()}}{
+Method add new handler for given event
+
 create new observer if doesn't exists and add handler to the list
 to that observer, we use single observer so ... will be of no use
 on next handler on signle event, we keep it just in case it may be of use
@@ -93,8 +95,7 @@ on next handler on signle event, we keep it just in case it may be of use
 
 \item{\code{handler}}{- function used as handler for give event}
 
-\item{\code{...}}{- used only once for observeEvent if shiny mode is used
-Method emit event add trigger all handlers added by \code{on}}
+\item{\code{...}}{- used only once for observeEvent if shiny mode is used}
 }
 \if{html}{\out{</div>}}
 }
@@ -102,6 +103,7 @@ Method emit event add trigger all handlers added by \code{on}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-emit"></a>}}
 \subsection{Method \code{emit()}}{
+Method emit event add trigger all handlers added by \code{on}
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{EventEmitter$emit(name, data = NULL)}\if{html}{\out{</div>}}
 }
@@ -111,8 +113,7 @@ Method emit event add trigger all handlers added by \code{on}}
 \describe{
 \item{\code{name}}{- character - name of the event to fire}
 
-\item{\code{data}}{- optional data that can be accessed in handler
-Method removes single handler or all handlers and observer of no handler left}
+\item{\code{data}}{- optional data that can be accessed in handler}
 }
 \if{html}{\out{</div>}}
 }
@@ -120,6 +121,7 @@ Method removes single handler or all handlers and observer of no handler left}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-off"></a>}}
 \subsection{Method \code{off()}}{
+Method removes single handler or all handlers and observer of no handler left
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{EventEmitter$off(events, handler = NULL)}\if{html}{\out{</div>}}
 }
@@ -129,8 +131,7 @@ Method removes single handler or all handlers and observer of no handler left}
 \describe{
 \item{\code{events}}{- string or character vector with name of the events to destroy}
 
-\item{\code{handler}}{- optional handler if not NULL it will remove only given handler
-Destructor}
+\item{\code{handler}}{- optional handler if not NULL it will remove only given handler}
 }
 \if{html}{\out{</div>}}
 }
@@ -138,7 +139,7 @@ Destructor}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-finalize"></a>}}
 \subsection{Method \code{finalize()}}{
-clean up event handlers
+R6Class destructor. Cleans up event handlers
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{EventEmitter$finalize()}\if{html}{\out{</div>}}
 }

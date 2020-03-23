@@ -34,7 +34,7 @@ global$sessions <- list()
 #' @description
 #'
 #' need to be called with input, output and session. it should not be used directly,
-#' only using \code{\link{battery::component}} function.
+#' only using \code{\link{component}} function.
 #'
 #' @name BaseComponent
 #' @importFrom R6 R6Class
@@ -57,7 +57,7 @@ global$sessions <- list()
 #' @section Methods:
 #' \describe{
 #'   \item{Documentation}{For full documentation of each method go to https://stash.intranet.roche.com/stash/projects/DIVOS/repos/battery/browse}
-#'   \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{battery::component} function}
+#'   \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{component} function}
 #'   \item{\code{getById}}{Method return component with specific id}
 #'   \item{\code{appendChild}}{Method add battery component as child this current component}
 #'   \item{\code{removeChild}}{Method remove child component complementary to appendChild}
@@ -87,13 +87,13 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    #' Method will trigger the event
-    #'
-    #' It call every observer and invalidate every reactive context
-    #'
-    #' @param name - name of the event to fire
-    #' @param data - data to be used to trigger the event if function use
-    #' @param .level - internal option for logger, that is used to created indent
+    ## @description
+    ## Method will trigger the event. It call every observer and invalidate
+    ## every reactive context
+    ##
+    ## @param name - name of the event to fire
+    ## @param data - data to be used to trigger the event if function use
+    ## @param .level - internal option for logger, that is used to created indent
     ## ---------------------------------------------------------------
     trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
       indent <- .level * 2
@@ -386,7 +386,7 @@ BaseComponent <- R6::R6Class(
     #'
     #' @param name - name to be used inside shiny input or output
     #' @examples
-    #'
+    #' \dontrun{
     #'  battery::component(
     #'    classname = "Plot",
     #'    public = list(
@@ -403,11 +403,13 @@ BaseComponent <- R6::R6Class(
     #'     }
     #'   )
     #' )
+    #' }
     ## ---------------------------------------------------------------
     ns = function(name) {
       paste0(self$id, '_', name)
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method will create battery event
     #'
     #' this event can be triggered from R code it can also be broadcasted
@@ -433,6 +435,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Propagate events from child to parent
     #'
     #' it will recursivly walk whole tree, and trigger only events that
@@ -449,6 +452,7 @@ BaseComponent <- R6::R6Class(
     #' @param .level - internal option for logger, that is used to created indent
     #'
     #' @examples
+    #' \dontrun{
     #' App <- battery::component(
     #'   classname = "App",
     #'   public = list(
@@ -486,6 +490,7 @@ BaseComponent <- R6::R6Class(
     #'   )
     #' )
     #' ## clicking on button will emit the event to the parent and print the message
+    #' }
     ## ---------------------------------------------------------------
     emit = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
       if (is.null(target)) {
@@ -503,6 +508,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Propagate events from parent to all children
     #'
     #' methods similar to \code{emit} but it propagete event to children
@@ -517,8 +523,7 @@ BaseComponent <- R6::R6Class(
     #' @param .level - internal option for logger, that is used to created indent
     #'
     #' @examples
-    #'
-    #'
+    #' \dontrun{
     #' App <- battery::component(
     #'   classname = "App",
     #'   public = list(
@@ -568,6 +573,7 @@ BaseComponent <- R6::R6Class(
     #' ## so it will display "Counter 2" and "Update_number_2"
     #' ##
     #' ## child render will be called twice and event handler on button once
+    #' }
     ## ---------------------------------------------------------------
     broadcast = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
       if (is.null(target)) {
@@ -586,6 +592,7 @@ BaseComponent <- R6::R6Class(
     },
 
     ## ---------------------------------------------------------------
+    #' @description
     #' Helper method that will create binding between input event from shiny and battery event
     #'
     #' @param event - name of the event
@@ -606,6 +613,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method remove binding between input element and compnents events
     #'
     #' complementary to connect
@@ -616,6 +624,7 @@ BaseComponent <- R6::R6Class(
       private$.observers[[elementId]]$destroy()
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Add event listener to given internal event or native input
     #'
     #' @param events - character or character vector of internal event or input id
@@ -626,6 +635,7 @@ BaseComponent <- R6::R6Class(
     #' @param init - indicate if event should be triggered on init
     #' @param ... - any additional arguments are passed into shiny::observeEvent
     #' @examples
+    #' \dontrun{
     #'
     #' self$on(self$ns("inputValue"), function(value) {
     #'    print(paste("Input value is ", value))
@@ -639,7 +649,7 @@ BaseComponent <- R6::R6Class(
     #' self$on("event", function(value = NULL, target = NULL) {
     #'   ## this event can be fired with trigger/emit/broadcast
     #' })
-    #'
+    #' }
     ## ---------------------------------------------------------------
     on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
       for (event in events) {
@@ -757,6 +767,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method removes event listener(s) added by \code{on}
     #'
     #' if handler is NULL it will remove all listeners for a given event name
@@ -798,6 +809,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method return name of this class - same as classname when crating the class
     #'
     #' @return string - class name
@@ -806,9 +818,9 @@ BaseComponent <- R6::R6Class(
       private$.class
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method dfestroy component
     #'
-    #' @description
     #' It removes all observers created for this component also clear
     #' it also use other clean ups.
     ## ---------------------------------------------------------------
@@ -835,14 +847,15 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    #' R6Class method that will be called when object is destroyed
     #' @description
+    #' R6Class method that will be called when object is destroyed
     #' it just calls \code{destroy}
     ## ---------------------------------------------------------------
     finalize = function() {
       self$destroy()
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method dynamically add service to battery component system
     #'
     #' only one service with giben name can be added to the tree
@@ -861,6 +874,7 @@ BaseComponent <- R6::R6Class(
       self$services[[name]] <- service
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Helper method that create \code{shiny::htmlTemplate}
     #' with self and private as defaults variables to be used in html (inside {{ }})
     #'
@@ -876,6 +890,7 @@ BaseComponent <- R6::R6Class(
         list(...)))
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method return path to the object in battery components tree
     #'
     #' @return vector of strings of id of the components in the tree
@@ -890,6 +905,7 @@ BaseComponent <- R6::R6Class(
       path
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Method log message that can be listen to, best way to add listener
     #' is to use self$logger("name", fn) in root component constructor
     #' each event is triggered with list(id, type, path, message, args)
@@ -915,6 +931,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Shortcut function to add listener to logger
     #'
     #' @param level - character vector of elevels to listen or string
@@ -924,6 +941,7 @@ BaseComponent <- R6::R6Class(
       self$services$.log$on(level, fn)
     },
     ## ---------------------------------------------------------------
+    #' @description
     #' Function that should be overwritten in battery component
     #'
     #' this is convention that this function should return HTML (shiny tags)
@@ -932,7 +950,7 @@ BaseComponent <- R6::R6Class(
     #' update of parent will rerender the children. The proper way is to use
     #' renderUI in constructor and renderUI in render function for the children.
     #'
-    #' @return - overwriten render by convention should return shiny tags
+    #' @return overwriten render by convention should return shiny tags
     ## ---------------------------------------------------------------
     render = function() {
       stop('render function need to be overwritten in child class')
@@ -942,16 +960,18 @@ BaseComponent <- R6::R6Class(
 
 #' Basic function to create battery components.
 #'
-#' Use this function to create new battery class object.
+#' @description Use this function to create new battery class object.
 #'
+#' @return \code{\link{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
 #' @param classname - name of the class as string
 #' @param public - list of public functions and properties
 #' @param private - list of private functions and properties
 #' @param static - list of fields that will stay the same for every instance of the component
-#' @param inherit - base class - if not specifed it will inherit from Base class (battery::Component)
-#' @param ... - reset option passed to R6Class constructor
-#' @return Object of \code{\link{R6Class}} with battery specific methods
+#' @param inherit - base class - if not specifed it will inherit from Base class \code{\link{BaseComponent}}
+#' @param ... - reset option passed to \code{\link{R6Class}} constructor
+#' @export
 #' @examples
+#' \dontrun{
 #'
 #' Button <- battery::component(
 #'   classname = "Button",
@@ -1009,13 +1029,12 @@ BaseComponent <- R6::R6Class(
 #'        root$render()
 #'    })
 #' }
-#'
-#' @export
+#' }
 component <- function(classname,
                       public = NULL,
                       private = NULL,
                       static = NULL,
-                      inherit = battery::BaseComponent,
+                      inherit = battery:::BaseComponent,
                       ...) {
   static.env <- new.static.env()
   if (!is.null(static)) {
@@ -1105,6 +1124,7 @@ r6.class.add <- function(class, seq) {
 
 #' higher order function for creating extend static method on every battery::Component
 #' @param class - battery component constructor
+#' @return function
 make.extend <- function(class) {
   function(...) {
     child <- component(inherit = class, ...)

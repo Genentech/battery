@@ -5,13 +5,13 @@
 \title{Root component that have no parent,}
 \description{
 need to be called with input, output and session. it should not be used directly,
-only using \code{\link{battery::component}} function.
+only using \code{\link{component}} function.
 }
 \section{Methods}{
 
 \describe{
   \item{Documentation}{For full documentation of each method go to https://stash.intranet.roche.com/stash/projects/DIVOS/repos/battery/browse}
-  \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{battery::component} function}
+  \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{component} function}
   \item{\code{getById}}{Method return component with specific id}
   \item{\code{appendChild}}{Method add battery component as child this current component}
   \item{\code{removeChild}}{Method remove child component complementary to appendChild}
@@ -33,9 +33,10 @@ only using \code{\link{battery::component}} function.
   \item{\code{logger}}{Shortcut function to add listener to logger}
   \item{\code{render}}{Function that should be overwritten in battery component}
 }
-Method will trigger the event
+native R6 class constructor
 
-It call every observer and invalidate every reactive context
+this should never be overwriten by child components, they should only
+overwrite constructor that is not as problematic when not called super
 }
 
 \examples{
@@ -44,7 +45,7 @@ It call every observer and invalidate every reactive context
 ## Method `BaseComponent$ns`
 ## ------------------------------------------------
 
-
+\dontrun{
  battery::component(
    classname = "Plot",
    public = list(
@@ -61,16 +62,13 @@ It call every observer and invalidate every reactive context
     }
   )
 )
-Method will create battery event
-
-this event can be triggered from R code it can also be broadcasted
-this function is called automatically when using on to create observer
-
+}
 
 ## ------------------------------------------------
 ## Method `BaseComponent$emit`
 ## ------------------------------------------------
 
+\dontrun{
 App <- battery::component(
   classname = "App",
   public = list(
@@ -108,19 +106,13 @@ Panel <- battery::component(
   )
 )
 ## clicking on button will emit the event to the parent and print the message
-Propagate events from parent to all children
-
-methods similar to \code{emit} but it propagete event to children
-if called on root component it will send message to all components
-inside the tree.
-
+}
 
 ## ------------------------------------------------
 ## Method `BaseComponent$broadcast`
 ## ------------------------------------------------
 
-
-
+\dontrun{
 App <- battery::component(
   classname = "App",
   public = list(
@@ -170,13 +162,13 @@ Counter <- battery::component(
 ## so it will display "Counter 2" and "Update_number_2"
 ##
 ## child render will be called twice and event handler on button once
-Helper method that will create binding between input event from shiny and battery event
-
+}
 
 ## ------------------------------------------------
 ## Method `BaseComponent$on`
 ## ------------------------------------------------
 
+\dontrun{
 
 self$on(self$ns("inputValue"), function(value) {
    print(paste("Input value is ", value))
@@ -190,11 +182,7 @@ self$on(self$ns("save"), function() {
 self$on("event", function(value = NULL, target = NULL) {
   ## this event can be fired with trigger/emit/broadcast
 })
-
-Method removes event listener(s) added by \code{on}
-
-if handler is NULL it will remove all listeners for a given event name
-
+}
 }
 \keyword{architecture}
 \keyword{components}
@@ -294,16 +282,6 @@ with all instances of same battery component.}
 Method return component with specific id
 
 it will search the tree of components find name with specific id}
-
-\item{\code{name}}{- name of the event to fire}
-
-\item{\code{data}}{- data to be used to trigger the event if function use}
-
-\item{\code{.level}}{- internal option for logger, that is used to created indent
-native R6 class constructor
-
-this should never be overwriten by child components, they should only
-overwrite constructor that is not as problematic when not called super}
 }
 \if{html}{\out{</div>}}
 }
@@ -385,7 +363,7 @@ Method used to create namespaced identifier}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{
+\preformatted{\dontrun{
  battery::component(
    classname = "Plot",
    public = list(
@@ -402,11 +380,7 @@ Method used to create namespaced identifier}
     }
   )
 )
-Method will create battery event
-
-this event can be triggered from R code it can also be broadcasted
-this function is called automatically when using on to create observer
-
+}
 }
 \if{html}{\out{</div>}}
 
@@ -416,6 +390,10 @@ this function is called automatically when using on to create observer
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-createEvent"></a>}}
 \subsection{Method \code{createEvent()}}{
+Method will create battery event
+
+this event can be triggered from R code it can also be broadcasted
+this function is called automatically when using on to create observer
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$createEvent(name, value = NULL)}\if{html}{\out{</div>}}
 }
@@ -425,12 +403,7 @@ this function is called automatically when using on to create observer
 \describe{
 \item{\code{name}}{- string, name of the event}
 
-\item{\code{value}}{- initial value of the event reactive variable
-Propagate events from child to parent
-
-it will recursivly walk whole tree, and trigger only events that
-have reactive values added with \code{createEvent} it will also trigger
-all observers added with \code{on}}
+\item{\code{value}}{- initial value of the event reactive variable}
 }
 \if{html}{\out{</div>}}
 }
@@ -438,6 +411,11 @@ all observers added with \code{on}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-emit"></a>}}
 \subsection{Method \code{emit()}}{
+Propagate events from child to parent
+
+it will recursivly walk whole tree, and trigger only events that
+have reactive values added with \code{createEvent} it will also trigger
+all observers added with \code{on}
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$emit(
   name,
@@ -468,7 +446,8 @@ on children}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{App <- battery::component(
+\preformatted{\dontrun{
+App <- battery::component(
   classname = "App",
   public = list(
     constructor = function() {
@@ -505,12 +484,7 @@ Panel <- battery::component(
   )
 )
 ## clicking on button will emit the event to the parent and print the message
-Propagate events from parent to all children
-
-methods similar to \code{emit} but it propagete event to children
-if called on root component it will send message to all components
-inside the tree.
-
+}
 }
 \if{html}{\out{</div>}}
 
@@ -520,6 +494,11 @@ inside the tree.
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-broadcast"></a>}}
 \subsection{Method \code{broadcast()}}{
+Propagate events from parent to all children
+
+methods similar to \code{emit} but it propagete event to children
+if called on root component it will send message to all components
+inside the tree.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$broadcast(
   name,
@@ -548,8 +527,7 @@ it can be omited if so it will use same object that called the method}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{
-
+\preformatted{\dontrun{
 App <- battery::component(
   classname = "App",
   public = list(
@@ -599,8 +577,7 @@ Counter <- battery::component(
 ## so it will display "Counter 2" and "Update_number_2"
 ##
 ## child render will be called twice and event handler on button once
-Helper method that will create binding between input event from shiny and battery event
-
+}
 }
 \if{html}{\out{</div>}}
 
@@ -610,6 +587,7 @@ Helper method that will create binding between input event from shiny and batter
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-connect"></a>}}
 \subsection{Method \code{connect()}}{
+Helper method that will create binding between input event from shiny and battery event
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$connect(event, elementId)}\if{html}{\out{</div>}}
 }
@@ -619,10 +597,7 @@ Helper method that will create binding between input event from shiny and batter
 \describe{
 \item{\code{event}}{- name of the event}
 
-\item{\code{elementId}}{- id of the HTML element (shiny input it should be value from \code{self$ns})
-Method remove binding between input element and compnents events
-
-complementary to connect}
+\item{\code{elementId}}{- id of the HTML element (shiny input it should be value from \code{self$ns})}
 }
 \if{html}{\out{</div>}}
 }
@@ -630,6 +605,9 @@ complementary to connect}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-disconnect"></a>}}
 \subsection{Method \code{disconnect()}}{
+Method remove binding between input element and compnents events
+
+complementary to connect
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$disconnect(elementId)}\if{html}{\out{</div>}}
 }
@@ -637,8 +615,7 @@ complementary to connect}
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{elementId}}{- it of the input element
-Add event listener to given internal event or native input}
+\item{\code{elementId}}{- it of the input element}
 }
 \if{html}{\out{</div>}}
 }
@@ -646,6 +623,7 @@ Add event listener to given internal event or native input}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-on"></a>}}
 \subsection{Method \code{on()}}{
+Add event listener to given internal event or native input
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$on(
   events,
@@ -679,7 +657,8 @@ Add event listener to given internal event or native input}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{
+\preformatted{\dontrun{
+
 self$on(self$ns("inputValue"), function(value) {
    print(paste("Input value is ", value))
 }, input = TRUE)
@@ -692,11 +671,7 @@ self$on(self$ns("save"), function() {
 self$on("event", function(value = NULL, target = NULL) {
   ## this event can be fired with trigger/emit/broadcast
 })
-
-Method removes event listener(s) added by \code{on}
-
-if handler is NULL it will remove all listeners for a given event name
-
+}
 }
 \if{html}{\out{</div>}}
 
@@ -706,6 +681,9 @@ if handler is NULL it will remove all listeners for a given event name
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-off"></a>}}
 \subsection{Method \code{off()}}{
+Method removes event listener(s) added by \code{on}
+
+if handler is NULL it will remove all listeners for a given event name
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$off(events, handler = NULL)}\if{html}{\out{</div>}}
 }
@@ -715,8 +693,7 @@ if handler is NULL it will remove all listeners for a given event name
 \describe{
 \item{\code{events}}{- vector or string with names of events to remove}
 
-\item{\code{handler}}{- optional event handler
-Method return name of this class - same as classname when crating the class}
+\item{\code{handler}}{- optional event handler}
 }
 \if{html}{\out{</div>}}
 }
@@ -724,21 +701,22 @@ Method return name of this class - same as classname when crating the class}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-class"></a>}}
 \subsection{Method \code{class()}}{
+Method return name of this class - same as classname when crating the class
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$class()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
 string - class name
-Method dfestroy component
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-destroy"></a>}}
 \subsection{Method \code{destroy()}}{
+Method dfestroy component
+
 It removes all observers created for this component also clear
 it also use other clean ups.
-R6Class method that will be called when object is destroyed
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$destroy()}\if{html}{\out{</div>}}
 }
@@ -747,12 +725,8 @@ R6Class method that will be called when object is destroyed
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-finalize"></a>}}
 \subsection{Method \code{finalize()}}{
+R6Class method that will be called when object is destroyed
 it just calls \code{destroy}
-Method dynamically add service to battery component system
-
-only one service with giben name can be added to the tree
-same object will be accessed in every component in the tree.
-there is one default service logger that is \code{EventEmitter}
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$finalize()}\if{html}{\out{</div>}}
 }
@@ -761,6 +735,11 @@ there is one default service logger that is \code{EventEmitter}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addService"></a>}}
 \subsection{Method \code{addService()}}{
+Method dynamically add service to battery component system
+
+only one service with giben name can be added to the tree
+same object will be accessed in every component in the tree.
+there is one default service logger that is \code{EventEmitter}
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$addService(name, service)}\if{html}{\out{</div>}}
 }
@@ -771,9 +750,7 @@ there is one default service logger that is \code{EventEmitter}
 \item{\code{name}}{- name of the service by which you access the service
 e.g. self$service$foo}
 
-\item{\code{service}}{- object used as service - it can be any object
-Helper method that create \code{shiny::htmlTemplate}
-with self and private as defaults variables to be used in html (inside {{ }})}
+\item{\code{service}}{- object used as service - it can be any object}
 }
 \if{html}{\out{</div>}}
 }
@@ -781,6 +758,8 @@ with self and private as defaults variables to be used in html (inside {{ }})}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-template"></a>}}
 \subsection{Method \code{template()}}{
+Helper method that create \code{shiny::htmlTemplate}
+with self and private as defaults variables to be used in html (inside {{ }})
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$template(filename, ...)}\if{html}{\out{</div>}}
 }
@@ -791,8 +770,7 @@ with self and private as defaults variables to be used in html (inside {{ }})}
 \item{\code{filename}}{- name of the template}
 
 \item{\code{...}}{- any number of arguments that will be accessible in
-       template
-Method return path to the object in battery components tree}
+template}
 }
 \if{html}{\out{</div>}}
 }
@@ -800,20 +778,21 @@ Method return path to the object in battery components tree}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-path"></a>}}
 \subsection{Method \code{path()}}{
+Method return path to the object in battery components tree
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$path()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
 vector of strings of id of the components in the tree
-Method log message that can be listen to, best way to add listener
-is to use self$logger("name", fn) in root component constructor
-each event is triggered with list(id, type, path, message, args)
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-log"></a>}}
 \subsection{Method \code{log()}}{
+Method log message that can be listen to, best way to add listener
+is to use self$logger("name", fn) in root component constructor
+each event is triggered with list(id, type, path, message, args)
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$log(levels, message, type = "battery", ...)}\if{html}{\out{</div>}}
 }
@@ -829,8 +808,7 @@ are "battery" and "info"}
 \item{\code{type}}{- default battery - additional value to distinguish the message
 in battery type is name of the method - or "method" inside user method}
 
-\item{\code{...}}{- any arguments are added into args property
-Shortcut function to add listener to logger}
+\item{\code{...}}{- any arguments are added into args property}
 }
 \if{html}{\out{</div>}}
 }
@@ -838,6 +816,7 @@ Shortcut function to add listener to logger}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-logger"></a>}}
 \subsection{Method \code{logger()}}{
+Shortcut function to add listener to logger
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$logger(level, fn)}\if{html}{\out{</div>}}
 }
@@ -847,14 +826,7 @@ Shortcut function to add listener to logger}
 \describe{
 \item{\code{level}}{- character vector of elevels to listen or string}
 
-\item{\code{fn}}{- function handler
-Function that should be overwritten in battery component
-
-this is convention that this function should return HTML (shiny tags)
-this function can have reactive value self$events.
-render function should not have children render if possible becasue
-update of parent will rerender the children. The proper way is to use
-renderUI in constructor and renderUI in render function for the children.}
+\item{\code{fn}}{- function handler}
 }
 \if{html}{\out{</div>}}
 }
@@ -862,12 +834,19 @@ renderUI in constructor and renderUI in render function for the children.}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-render"></a>}}
 \subsection{Method \code{render()}}{
+Function that should be overwritten in battery component
+
+this is convention that this function should return HTML (shiny tags)
+this function can have reactive value self$events.
+render function should not have children render if possible becasue
+update of parent will rerender the children. The proper way is to use
+renderUI in constructor and renderUI in render function for the children.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$render()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
-- overwriten render by convention should return shiny tags
+overwriten render by convention should return shiny tags
 }
 }
 \if{html}{\out{<hr>}}
