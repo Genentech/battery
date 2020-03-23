@@ -190,7 +190,7 @@ EventEmitter <- R6::R6Class(
     #'
     #' create new observer if doesn't exists and add handler to the list
     #' to that observer, we use single observer so ... will be of no use
-    #' on next handler on signle event, we keep it just in case it may be of use
+    #' on next handler on single event, we keep it just in case it may be of use
     #'
     #' @param events - string or character vector with name of the events
     #' @param handler - function used as handler for give event

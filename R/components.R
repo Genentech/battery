@@ -910,8 +910,8 @@ BaseComponent <- R6::R6Class(
     #' is to use self$logger("name", fn) in root component constructor
     #' each event is triggered with list(id, type, path, message, args)
     #'
-    #' @param levels - vector of characters to losten (default names in battery
-    #'        are "battery" and "info"
+    #' @param levels - vector of characters to listen (default names in battery
+    #'        are "battery" and "info")
     #' @param message - message to log
     #' @param type - default battery - additional value to distinguish the message
     #'        in battery type is name of the method - or "method" inside user method
@@ -934,7 +934,7 @@ BaseComponent <- R6::R6Class(
     #' @description
     #' Shortcut function to add listener to logger
     #'
-    #' @param level - character vector of elevels to listen or string
+    #' @param level - character vector or character of log levels to listen
     #' @param fn - function handler
     ## ---------------------------------------------------------------
     logger = function(level, fn) {
