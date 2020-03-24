@@ -83,7 +83,7 @@ Method add new handler for given event
 
 create new observer if doesn't exists and add handler to the list
 to that observer, we use single observer so ... will be of no use
-on next handler on signle event, we keep it just in case it may be of use
+on next handler on single event, we keep it just in case it may be of use
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{EventEmitter$on(events, handler, ...)}\if{html}{\out{</div>}}
 }

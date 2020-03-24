@@ -225,6 +225,7 @@ with all instances of same battery component.}
 \item \href{#method-removeChild}{\code{BaseComponent$removeChild()}}
 \item \href{#method-ns}{\code{BaseComponent$ns()}}
 \item \href{#method-createEvent}{\code{BaseComponent$createEvent()}}
+\item \href{#method-trigger}{\code{BaseComponent$trigger()}}
 \item \href{#method-emit}{\code{BaseComponent$emit()}}
 \item \href{#method-broadcast}{\code{BaseComponent$broadcast()}}
 \item \href{#method-connect}{\code{BaseComponent$connect()}}
@@ -404,6 +405,27 @@ this function is called automatically when using on to create observer
 \item{\code{name}}{- string, name of the event}
 
 \item{\code{value}}{- initial value of the event reactive variable}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-trigger"></a>}}
+\subsection{Method \code{trigger()}}{
+Method will trigger the event. It call every observer and invalidate
+every reactive context
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{BaseComponent$trigger(name, data = NULL, .force = TRUE, .level = 0)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{- name of the event to fire}
+
+\item{\code{data}}{- data to be used to trigger the event if function use}
+
+\item{\code{.level}}{- internal option for logger, that is used to created indent}
 }
 \if{html}{\out{</div>}}
 }
@@ -643,7 +665,8 @@ Add event listener to given internal event or native input
 
 \item{\code{handler}}{- function that can have value and target parameters (optional)}
 
-\item{\code{input}}{- boolean that's indicate if event should be added to input}
+\item{\code{input}}{- boolean that's indicate if event should be added to input
+otherwise it's internal battery event}
 
 \item{\code{enabled}}{- boolean that enable event to easy toggle event}
 
@@ -800,8 +823,8 @@ each event is triggered with list(id, type, path, message, args)
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{levels}}{- vector of characters to losten (default names in battery
-are "battery" and "info"}
+\item{\code{levels}}{- vector of characters to listen (default names in battery
+are "battery" and "info")}
 
 \item{\code{message}}{- message to log}
 
@@ -824,7 +847,7 @@ Shortcut function to add listener to logger
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{level}}{- character vector of elevels to listen or string}
+\item{\code{level}}{- character vector or character of log levels to listen}
 
 \item{\code{fn}}{- function handler}
 }
