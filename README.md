@@ -158,10 +158,45 @@ message to component siblings. You can do that directly with Event Emitter added
 Service can be any object. That object will be accessible from each instance of battery component
 in self$services$name.
 
-To add service you can use function service inside any battery constructor (best is in root component
-so you don't accidentaly use it before it's created).
+To add service you can use function `addService("name", obj)` inside any battery constructor (best
+is in root component so you don't accidentaly use it before it's created). After adding the service
+it's accessed in every component inside the tree (using `self$services$name`. If you have two trees
+(two instances of root component) you will have different instances of the service, so they can have
+state. You can't add two services with same name, it will give error.
+
+You can use services for examples to create helpers (objects or functions) that is shared acorss the
+tree, or use it to store a model, that will hold the state of the appliction.
 
 See example/services.R for details how to use services.
+
+## Logger
+
+There is one default service (accesible in every component), it's logger, which is just event emitter
+instance. There interface for this logger in form of two methods:
+
+```R
+self$log(level, message, type = "battery", ...)
+```
+
+Battery is using this logger internaly so you can check what and when is called. e.g. to check how
+broadcast work you can use this code in your root component constructor:
+
+```R
+self$logger('battery', function(data) {
+   if (data$type == "broadcast") {
+      print(paste(data$message, data$args$name, data$path))
+   }
+})
+```
+
+Inside battery type is method name message inside broadcast and emit have indent (spaces in from),
+so you can see how events are propagated.
+
+Inside your application you can call log function to log messages use different level (which is just
+event name in EventEmitter) and you can toggle display of this messages in root constructor,
+e.g. when you pass specific option to your app or use specific query string when running the app.
+You can use this to have diagnostic on production when you have reproducible case but can't use
+`browser()`. Also localy sometimes is easier to debug your code, when you see the logs then using `browser()`.
 
 ## Testing Components
 
@@ -362,5 +397,5 @@ constructor is also on the list of `.calls`, everything except of functions that
 component R6 class (this may change in the future if will be needed).
 
 ## Contributors
-* Jakub Jankiewicz
+* Jakub T. Jankiewicz
 * Michał Jakubczak
