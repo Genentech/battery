@@ -1,75 +1,75 @@
-#'
-#' shiny: input, output observeEvent and renderUI mocks with active binding and exosed data
-#'
-#' usage:
-#'
-#' empty input
-#'
-#' input <- activeInput()
-#'
-#' input with single ative binding
-#'
-#' input <- activeInput(foo = function(value) {
-#'    if (missing(value)) {
-#'      self[['__foo']]
-#'    } else {
-#'      self[['__foo']] <- value
-#'    }
-#' })
-#'
-#' NULL will create default setter/getter and inital active binding
-#'
-#' input <- activeInput(foo = NULL)
-#'
-#' observeEvent(input$foo, {
-#'    print(paste0('value set to ', input$foo))
-#' })
-#'
-#' observeEvent just call input$on and it will create listener for reactive value
-#' it will not create active binding so you need to call new first just in case you
-#' don't know what the value is before observeEvent is called (can be called in component
-#' constructor with self$ns as name the you can ten get call self$ns on component to create
-#' actual biding after component is created)
-#'
-#' input$new('foo') ## this will create active binding with default setter/getter
-#'
-#' input$new(component$ns('save'))
-#'
-#' reactive value with that may have different logic here same code as default
-#'
-#' input$new('foo', function(value) {
-#'    if (missing(value)) {
-#'      self[['__foo']]
-#'    } else {
-#'      self[['__foo']] <- value
-#'    }
-#' })
-#'
-#' if you set the value
-#'
-#' input$foo <- 10
-#'
-#' observer expression will be avaluated also input$.listeners will have data for each listener
-#' that will have data about each call to each listener with old and new values
-#'
-#' usually there will be single listener for single active value
-#' TODO: remove old listener after same expression is called again
-#'
-#' Output and connection between input and output can be explained using this example code
-#'
-#' ##
-#'
-#' input$foo <- 100
-#'
-#' output <- activeOutput(bar = NULL)
-#'
-#' output$bar <- renderUI({ input$foo + 10 })
-#'
-#' print(output$bar) ## 110
-#' input$foo <- 200
-#' print(input$foo) ## 200
-#' print(output$bar) ## 210
-#'
+##
+## shiny: input, output observeEvent and renderUI mocks with active binding and exosed data
+##
+## usage
+##
+## # empty input
+##
+## input <- activeInput()
+##
+## input with single ative binding
+##
+## input <- activeInput(foo = function(value) {
+##    if (missing(value)) {
+##      self[['__foo']]
+##    } else {
+##      self[['__foo']] <- value
+##    }
+## })
+##
+## # NULL will create default setter/getter and inital active binding
+##
+## input <- activeInput(foo = NULL)
+##
+## observeEvent(input$foo, {
+##    print(paste0('value set to ', input$foo))
+## })
+##
+## # observeEvent just call input$on and it will create listener for reactive value
+## # it will not create active binding so you need to call new first just in case you
+## # don't know what the value is before observeEvent is called (can be called in component
+## # constructor with self$ns as name the you can ten get call self$ns on component to create
+## # actual biding after component is created)
+##
+## input$new('foo') ## this will create active binding with default setter/getter
+##
+## input$new(component$ns('save'))
+##
+## # reactive value with that may have different logic here same code as default
+##
+## input$new('foo', function(value) {
+##    if (missing(value)) {
+##      self[['__foo']]
+##    } else {
+##      self[['__foo']] <- value
+##    }
+## })
+##
+## # if you set the value
+##
+## input$foo <- 10
+##
+## # observer expression will be avaluated also input$.listeners will have data for each listener
+## # that will have data about each call to each listener with old and new values
+##
+## # usually there will be single listener for single active value
+## # TODO: remove old listener after same expression is called again
+##
+## # Output and connection between input and output can be explained using this example code
+##
+## ##
+##
+## input$foo <- 100
+##
+## output <- activeOutput(bar = NULL)
+##
+## output$bar <- renderUI({ input$foo + 10 })
+##
+## print(output$bar) ## 110
+## input$foo <- 200
+## print(input$foo) ## 200
+## print(output$bar) ## 210
+##
 
 #' Function create mock for shiny input
 #'
@@ -205,6 +205,7 @@ isolate <- function(x) x
 # -----------------------------------------------------------------------------
 #' Function for checking if object is actie input - used by extractActiveInputs
 #' @param obj - any objecct
+#' @export
 is.active.input <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
@@ -221,6 +222,7 @@ is.active.input <- function(obj) {
 # -----------------------------------------------------------------------------
 #' Function check if obj is enviroment that is result of activeOutput function
 #' @param obj - any object
+#' @export
 is.active.output <- function(obj) {
   if (is.environment(obj)) {
     ## test read only prop to be sure
@@ -235,25 +237,27 @@ is.active.output <- function(obj) {
 }
 
 # -----------------------------------------------------------------------------
-#' Function check if name is active biding inside environment activeInput or Output
+#' Function check if name is active biding inside environment activeInput or activeOutput
 #' @param name - string
 #' @param env - active environment to test
+#' @export
 is.active.binding <- function(name, env) {
   (is.active.input(env) || is.active.output(env)) && name %in% env$.active.symbols
 }
 
 # -----------------------------------------------------------------------------
-#' Function used the same as battery::observeEvent (based on shiny::observeEvent)
-#' that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+#' Function used the same as battery::observeEvent (based on \code{shiny::observeEvent})
+#' that use active binding input mocks - the work almost the same as \code{shiny::observeEvent} but it
 #' destroy previous created observer, so there are no duplicates
-#' @param eventExpr - same as in shiny::observeEvent
-#' @param handlerExpr - same as in shiny::observeEvent
-#' @param handler.env - same as in shiny::observeEvent
-#' @param ignoreInit - same as in shiny::observeEvent
-#' @param ignoreNULL - same as in shiny::observeEvent
+#' @param eventExpr - same as in \code{shiny::observeEvent}
+#' @param handlerExpr - same as in \code{shiny::observeEvent}
+#' @param handler.env - same as in \code{shiny::observeEvent}
+#' @param ignoreInit - same as in \code{shiny::observeEvent}
+#' @param ignoreNULL - same as in \code{shiny::observeEvent}
 #' @param observerName - name that will distinguish observers with same code
-#' @param once - same as in shiny::observeEvent
-#' @param ... - reset the params from shiny::observeEvent
+#' @param once - same as in \code{shiny::observeEvent}
+#' @param ... - reset the params from \code{shiny::observeEvent}
+#' @return list with destroy method - same as \code{shiny::observeEvent}
 #'
 #' @export
 observeEventMock <- function(eventExpr,
@@ -758,13 +762,20 @@ useMocks <- function() {
 }
 
 #' function create single mock for shiny function
+#' @param name - string with name of the function
+#' @param mock - function used as mock for name in package
+#' @param env - additional environment that is also updated
+#' @param package - name of the package
 mock <- function(name, mock, env, package = 'shiny') {
-  originals[[name]] <- getFromNamespace(name, package)
+  originals[[name]] <- utils::getFromNamespace(name, package)
   utils::assignInNamespace(name, mock, package)
   env[[name]] <- mock
 }
 
 #' function restore original shiny function
+#' @param name - name of the function
+#' @param env - environment used
+#' @param package - string with name of the pacakge
 clearMock <- function(name, env, package = 'shiny') {
   utils::assignInNamespace(name, originals[[name]], package)
   env[[name]] <- originals[[name]]
@@ -812,11 +823,34 @@ set.frame <- function(value, name = NULL, frame = 1) {
   }
 }
 
+#' Shiny Session Mock class
+#'
+#' @description
+#'
 #' Mock for Session object, only some tests require this right now
 #' but more tests may require this session object in the future
 #' Right now only services need session$destroy() method to clear
 #' services so you can create same service in more then one test
+#'
+#' @field token - string used by battery to distinguish users
+#' @importFrom R6 R6Class
+#' @keywords mock testing unittests
+#' @name Session
 #' @export
+#' @examples
+#'
+#' TestComponent <- battery::component(
+#'   "TestComponent",
+#'   public = list(
+#'     constructor = function() {
+#'        print(self$session$token)
+#'     }
+#'   )
+#' )
+#' session <- battery::Session$new("Test")
+#' input <- activeInput()
+#' output <- activeOutput()
+#' component <- TestComponent$new(input = input, output = output, session = session)
 Session <- R6::R6Class(
   classname = 'Session',
   private = list(
@@ -824,12 +858,30 @@ Session <- R6::R6Class(
   ),
   public = list(
     token = NULL,
+    ## -------------------------------------------------------------------------
+    #' @description
+    #' Session mock constructor
+    #' @param token - optional token used for testing to create different
+    #'        users that should get different data for services and globals
+    ## -------------------------------------------------------------------------
     initialize = function(token = NULL) {
       self$token <- token
     },
+    ## -------------------------------------------------------------------------
+    #' @description
+    #' Mock for destroy session
+    #'
+    #' it will trigger handlers added by \code{onSessionEnded}
+    ## -------------------------------------------------------------------------
     destroy = function() {
       invisible(lapply(private$.destroy, do.call, args = list()))
     },
+    ## -------------------------------------------------------------------------
+    #' @description
+    #' Mock for the function that add handler on session destroy
+    #' @param fn - function that will be called when \code{destroy}
+    #'        is called
+    ## -------------------------------------------------------------------------
     onSessionEnded = function(fn) {
       private$.destroy <- append(private$.destroy, list(fn))
     }

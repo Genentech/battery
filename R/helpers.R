@@ -19,9 +19,16 @@ debug <- function(...) {
 #' @param path - path to directory
 #' @param pattern - pattern used to selected the files (default all R files)
 #' @param ignore - string or vector of strings with fillanme files that should be ignored
+#' @param ignore.case - should it ignore case of pattern when searching for files
 #' @param recursive - if set to TRUE (default) loading of files will be recursive
+#' @param local - TRUE, FALSE or enviroment use in source - if value is TRUE it will use parent.frame()
 #' @export
-load <- function(path, pattern = "*.R$", ignore = NULL, recursive = TRUE, ignore.case = TRUE) {
+load <- function(path,
+                 pattern = "*.R$",
+                 ignore = NULL,
+                 recursive = TRUE,
+                 ignore.case = TRUE,
+                 local = TRUE) {
   components <- list.files(
     path = path,
     pattern = pattern,
@@ -29,14 +36,17 @@ load <- function(path, pattern = "*.R$", ignore = NULL, recursive = TRUE, ignore
     ignore.case = ignore.case,
     full.names = TRUE
   )
+  if (isTRUE(local)) {
+    local <- parent.frame()
+  }
   if (is.null(ignore)) {
     for (path in components) {
-      source(path, local = FALSE)
+      source(path, local = local)
     }
   } else {
     for (path in components) {
       if (all(path != ignore)) {
-        source(path, local = FALSE)
+        source(path, local = local)
       }
     }
   }
@@ -47,11 +57,15 @@ now <- function() {
   format(as.numeric(Sys.time())*1000, scientific = FALSE)
 }
 
+
 #' Force of reactive value trigger
+#' @param fn - function that can have reactive value asignment that will alway invalidate reactive context
+#' @param session - session object - in battery there is only one session object
+#'
 ## TODO: waiting for better solution (reply on SO or GitHub)
 ## https://github.com/rstudio/shiny/issues/2488
 ## https://stackoverflow.com/q/60654485/387194
-force <- function(fn, session = getDefaultReactiveDomain()) {
+force <- function(fn, session = shiny::getDefaultReactiveDomain()) {
   shinyHack <- shiny::isolate(session$input$battery_shinyHack)
   shiny::observeEvent(session$input$battery_shinyHack, {
     fn()
@@ -60,6 +74,8 @@ force <- function(fn, session = getDefaultReactiveDomain()) {
 }
 
 #' add spaces before the string
+#' @param n - number of spaces
+#' @param string - string that will be added after spaces
 indent <- function(n, string) {
   spaces <- strrep(" ", n)
   paste0(spaces, string)

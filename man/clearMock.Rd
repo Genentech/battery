@@ -6,6 +6,13 @@
 \usage{
 clearMock(name, env, package = "shiny")
 }
+\arguments{
+\item{name}{- name of the function}
+
+\item{env}{- environment used}
+
+\item{package}{- string with name of the pacakge}
+}
 \description{
 function restore original shiny function
 }

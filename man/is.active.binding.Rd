@@ -2,7 +2,7 @@
 % Please edit documentation in R/mocks.R
 \name{is.active.binding}
 \alias{is.active.binding}
-\title{Function check if name is active biding inside environment activeInput or Output}
+\title{Function check if name is active biding inside environment activeInput or activeOutput}
 \usage{
 is.active.binding(name, env)
 }
@@ -12,5 +12,5 @@ is.active.binding(name, env)
 \item{env}{- active environment to test}
 }
 \description{
-Function check if name is active biding inside environment activeInput or Output
+Function check if name is active biding inside environment activeInput or activeOutput
 }
