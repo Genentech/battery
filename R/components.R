@@ -643,7 +643,7 @@ BaseComponent <- R6::R6Class(
     #' }, input = TRUE)
     #'
     #'
-    #' self$on("event", function(value = NULL, target = NULL) {
+    #' self$on("event", function(value, target) {
     #'   ## this event can be fired with trigger/emit/broadcast
     #' })
     #' }
