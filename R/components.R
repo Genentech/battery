@@ -111,13 +111,19 @@ BaseComponent <- R6::R6Class(
         }
       }
     },
-    ## ---------------------------------------------------------------
+    ## -------------------------------------------------------------------------
     .indent = function() {
       if (self$static$.global$.level > 0) {
         strrep(" ", self$static$.global$.level * 2)
       } else {
         ""
       }
+    },
+    ## -------------------------------------------------------------------------
+    ## :: Method check if expression is self$on('xxx')
+    ## -------------------------------------------------------------------------
+    .is.ns = function(expr) {
+      length(expr) == 2 && class(expr[[1]]) == 'call' && deparse(expr[[1]]) == 'self$on'
     }
   ),
   ## -----------------------------------------------------------------
@@ -649,6 +655,12 @@ BaseComponent <- R6::R6Class(
     #' }
     ## ---------------------------------------------------------------
     on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
+      if (private$.is.ns(substitute(events)) && !input) {
+        print(paste(
+          "[WARN] you should use input = TRUE when using self$ns to create event on",
+          "shiny input element. You should not use self$ns with battery events."
+        ))
+      }
       for (event in events) {
         self$log("battery", "on", event = event, type = "on")
       }
