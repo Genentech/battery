@@ -179,7 +179,7 @@ self$on(self$ns("save"), function() {
 }, input = TRUE)
 
 
-self$on("event", function(value = NULL, target = NULL) {
+self$on("event", function(value, target) {
   ## this event can be fired with trigger/emit/broadcast
 })
 }
@@ -424,6 +424,8 @@ every reactive context
 \item{\code{name}}{- name of the event to fire}
 
 \item{\code{data}}{- data to be used to trigger the event if function use}
+
+\item{\code{.force}}{- internal option to disable forcing of reactive events}
 
 \item{\code{.level}}{- internal option for logger, that is used to created indent}
 }
@@ -691,7 +693,7 @@ self$on(self$ns("save"), function() {
 }, input = TRUE)
 
 
-self$on("event", function(value = NULL, target = NULL) {
+self$on("event", function(value, target) {
   ## this event can be fired with trigger/emit/broadcast
 })
 }

@@ -379,6 +379,7 @@ BaseComponent <- R6::R6Class(
     #'
     #' @param name - name of the event to fire
     #' @param data - data to be used to trigger the event if function use
+    #' @param .force - internal option to disable forcing of reactive events
     #' @param .level - internal option for logger, that is used to created indent
     ## ---------------------------------------------------------------
     trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
