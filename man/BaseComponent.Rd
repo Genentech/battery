@@ -246,6 +246,7 @@ with all instances of same battery component.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$new(
@@ -289,6 +290,7 @@ it will search the tree of components find name with specific id}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-getById"></a>}}
+\if{latex}{\out{\hypertarget{method-getById}{}}}
 \subsection{Method \code{getById()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$getById(id)}\if{html}{\out{</div>}}
@@ -312,6 +314,7 @@ so \code{component$broadcast} and \code{component$emit} work properly
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-appendChild"></a>}}
+\if{latex}{\out{\hypertarget{method-appendChild}{}}}
 \subsection{Method \code{appendChild()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$appendChild(name, child)}\if{html}{\out{</div>}}
@@ -332,6 +335,7 @@ it can be used with name or the component}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-removeChild"></a>}}
+\if{latex}{\out{\hypertarget{method-removeChild}{}}}
 \subsection{Method \code{removeChild()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$removeChild(name = NULL, child)}\if{html}{\out{</div>}}
@@ -350,6 +354,7 @@ Method used to create namespaced identifier}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ns"></a>}}
+\if{latex}{\out{\hypertarget{method-ns}{}}}
 \subsection{Method \code{ns()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{BaseComponent$ns(name)}\if{html}{\out{</div>}}
@@ -390,6 +395,7 @@ Method used to create namespaced identifier}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-createEvent"></a>}}
+\if{latex}{\out{\hypertarget{method-createEvent}{}}}
 \subsection{Method \code{createEvent()}}{
 Method will create battery event
 
@@ -411,6 +417,7 @@ this function is called automatically when using on to create observer
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-trigger"></a>}}
+\if{latex}{\out{\hypertarget{method-trigger}{}}}
 \subsection{Method \code{trigger()}}{
 Method will trigger the event. It call every observer and invalidate
 every reactive context
@@ -434,6 +441,7 @@ every reactive context
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-emit"></a>}}
+\if{latex}{\out{\hypertarget{method-emit}{}}}
 \subsection{Method \code{emit()}}{
 Propagate events from child to parent
 
@@ -517,6 +525,7 @@ Panel <- battery::component(
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-broadcast"></a>}}
+\if{latex}{\out{\hypertarget{method-broadcast}{}}}
 \subsection{Method \code{broadcast()}}{
 Propagate events from parent to all children
 
@@ -610,6 +619,7 @@ Counter <- battery::component(
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-connect"></a>}}
+\if{latex}{\out{\hypertarget{method-connect}{}}}
 \subsection{Method \code{connect()}}{
 Helper method that will create binding between input event from shiny and battery event
 \subsection{Usage}{
@@ -628,6 +638,7 @@ Helper method that will create binding between input event from shiny and batter
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-disconnect"></a>}}
+\if{latex}{\out{\hypertarget{method-disconnect}{}}}
 \subsection{Method \code{disconnect()}}{
 Method remove binding between input element and compnents events
 
@@ -646,6 +657,7 @@ complementary to connect
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-on"></a>}}
+\if{latex}{\out{\hypertarget{method-on}{}}}
 \subsection{Method \code{on()}}{
 Add event listener to given internal event or native input
 \subsection{Usage}{
@@ -705,6 +717,7 @@ self$on("event", function(value, target) {
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-off"></a>}}
+\if{latex}{\out{\hypertarget{method-off}{}}}
 \subsection{Method \code{off()}}{
 Method removes event listener(s) added by \code{on}
 
@@ -725,6 +738,7 @@ if handler is NULL it will remove all listeners for a given event name
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-class"></a>}}
+\if{latex}{\out{\hypertarget{method-class}{}}}
 \subsection{Method \code{class()}}{
 Method return name of this class - same as classname when crating the class
 \subsection{Usage}{
@@ -737,6 +751,7 @@ string - class name
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-destroy"></a>}}
+\if{latex}{\out{\hypertarget{method-destroy}{}}}
 \subsection{Method \code{destroy()}}{
 Method dfestroy component
 
@@ -749,6 +764,7 @@ it also use other clean ups.
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-finalize"></a>}}
+\if{latex}{\out{\hypertarget{method-finalize}{}}}
 \subsection{Method \code{finalize()}}{
 R6Class method that will be called when object is destroyed
 it just calls \code{destroy}
@@ -759,6 +775,7 @@ it just calls \code{destroy}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addService"></a>}}
+\if{latex}{\out{\hypertarget{method-addService}{}}}
 \subsection{Method \code{addService()}}{
 Method dynamically add service to battery component system
 
@@ -782,6 +799,7 @@ e.g. self$service$foo}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-template"></a>}}
+\if{latex}{\out{\hypertarget{method-template}{}}}
 \subsection{Method \code{template()}}{
 Helper method that create \code{shiny::htmlTemplate}
 with self and private as defaults variables to be used in html (inside {{ }})
@@ -802,6 +820,7 @@ template}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-path"></a>}}
+\if{latex}{\out{\hypertarget{method-path}{}}}
 \subsection{Method \code{path()}}{
 Method return path to the object in battery components tree
 \subsection{Usage}{
@@ -814,6 +833,7 @@ vector of strings of id of the components in the tree
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-log"></a>}}
+\if{latex}{\out{\hypertarget{method-log}{}}}
 \subsection{Method \code{log()}}{
 Method log message that can be listen to, best way to add listener
 is to use self$logger("name", fn) in root component constructor
@@ -840,6 +860,7 @@ in battery type is name of the method - or "method" inside user method}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-logger"></a>}}
+\if{latex}{\out{\hypertarget{method-logger}{}}}
 \subsection{Method \code{logger()}}{
 Shortcut function to add listener to logger
 \subsection{Usage}{
@@ -858,6 +879,7 @@ Shortcut function to add listener to logger
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-render"></a>}}
+\if{latex}{\out{\hypertarget{method-render}{}}}
 \subsection{Method \code{render()}}{
 Function that should be overwritten in battery component
 
@@ -876,6 +898,7 @@ overwriten render by convention should return shiny tags
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

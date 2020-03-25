@@ -120,7 +120,7 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## :: Method check if expression is self$on('xxx')
+    ## :: Method checks if expression is self$ns('xxx')
     ## -------------------------------------------------------------------------
     .is.ns = function(expr) {
       length(expr) == 2 && class(expr[[1]]) == 'call' && deparse(expr[[1]]) == 'self$on'

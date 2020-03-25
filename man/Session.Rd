@@ -45,6 +45,7 @@ component <- TestComponent$new(input = input, output = output, session = session
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 Session mock constructor
 \subsection{Usage}{
@@ -62,6 +63,7 @@ users that should get different data for services and globals}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-destroy"></a>}}
+\if{latex}{\out{\hypertarget{method-destroy}{}}}
 \subsection{Method \code{destroy()}}{
 Mock for destroy session
 
@@ -73,6 +75,7 @@ it will trigger handlers added by \code{onSessionEnded}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-onSessionEnded"></a>}}
+\if{latex}{\out{\hypertarget{method-onSessionEnded}{}}}
 \subsection{Method \code{onSessionEnded()}}{
 Mock for the function that add handler on session destroy
 \subsection{Usage}{
@@ -90,6 +93,7 @@ is called}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

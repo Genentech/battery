@@ -58,6 +58,7 @@ otherwise it's normal environment but with R active bindings that can't be used 
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 R6Class Constructor. If shiny option is used it will create ReactiveBinding
 with hack that always trigger reactive context (the same cases the
@@ -78,6 +79,7 @@ with hack that always trigger reactive context (the same cases the
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-on"></a>}}
+\if{latex}{\out{\hypertarget{method-on}{}}}
 \subsection{Method \code{on()}}{
 Method add new handler for given event
 
@@ -102,6 +104,7 @@ on next handler on single event, we keep it just in case it may be of use
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-emit"></a>}}
+\if{latex}{\out{\hypertarget{method-emit}{}}}
 \subsection{Method \code{emit()}}{
 Method emit event add trigger all handlers added by \code{on}
 \subsection{Usage}{
@@ -120,6 +123,7 @@ Method emit event add trigger all handlers added by \code{on}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-off"></a>}}
+\if{latex}{\out{\hypertarget{method-off}{}}}
 \subsection{Method \code{off()}}{
 Method removes single handler or all handlers and observer of no handler left
 \subsection{Usage}{
@@ -138,6 +142,7 @@ Method removes single handler or all handlers and observer of no handler left
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-finalize"></a>}}
+\if{latex}{\out{\hypertarget{method-finalize}{}}}
 \subsection{Method \code{finalize()}}{
 R6Class destructor. Cleans up event handlers
 \subsection{Usage}{
@@ -147,6 +152,7 @@ R6Class destructor. Cleans up event handlers
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
