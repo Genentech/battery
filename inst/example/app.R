@@ -33,11 +33,11 @@ Foo <- R6::R6Class(
           )
           print(paste("XXXXXXXXXXX", identical(shiny::isolate(self$events[[name]]), new.data)))
           #self$events[[name]] <- new.data
-          
+
           private$force(function() {
             self$events[[name]] <- new.data
           })
-          
+
         }
         print(shiny::isolate(self$events[[name]]))
       }
@@ -119,11 +119,11 @@ Foo <- R6::R6Class(
       self$on("bar", function(value) {
         print(paste("CALL: ", value))
       })
-      private$trigger("bar", list(value = "NORMAL"))
-      
+      self$trigger("bar", list(value = "NORMAL"))
+
       self$session$manageInputs(list(shinyHack = TRUE))
       observeEvent(self$input$shinyHack, {
-        private$trigger("bar", list(value = "WITH HACK"))
+        self$trigger("bar", list(value = "WITH HACK"))
       })
     }
   )

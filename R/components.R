@@ -87,70 +87,6 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    ## @description
-    ## Method will trigger the event. It call every observer and invalidate
-    ## every reactive context
-    ##
-    ## @param name - name of the event to fire
-    ## @param data - data to be used to trigger the event if function use
-    ## @param .level - internal option for logger, that is used to created indent
-    ## ---------------------------------------------------------------
-    trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
-      indent <- .level * 2
-
-      msg <- battery:::indent(indent, "trigger")
-      self$log("battery", msg, name = name, target = self$id, type = "trigger")
-
-      if (name %in% ls(self$events)) {
-        update <- if (is.null(data)) {
-          function() {
-            msg <- battery:::indent(indent, "trigger::force (NULL)")
-            self$log("battery", msg, name = name, target = self$id, type = "trigger")
-
-            self$events[[name]] <- shiny::isolate({
-              if (is.logical(self$events[[name]])) {
-                !self$events[[name]]
-              } else if (is.list(self$events[[name]])) {
-                append(list(
-                  timestamp = battery:::now()
-                ), self$events[[name]])
-              } else {
-                message(paste(
-                  "[WARN] trigger: wrong data type (if used event data need to be list",
-                  "or boolean)"
-                ))
-                NULL
-              }
-            })
-          }
-        } else if (is.list(data)) {
-          function() {
-            data$timestamp <- battery:::now()
-            if (is.null(data$target)) {
-              data$target <- self$id
-            }
-            msg <- battery:::indent(indent, "trigger::force (list)")
-            self$log("battery", msg, name = name, target = self$id, type = "trigger")
-            self$events[[name]] <- data
-          }
-        } else {
-          function() {
-            message(paste(
-              "[WARN] trigger: wrong data type (if used event data need to be list",
-            "or boolean)"
-            ))
-          }
-        }
-        private$.pending(name, increment = 1)
-        ## force is hack that always trigger the event, even if shiny decide not to
-        if (.force) {
-          battery:::force(update)
-        } else {
-          update()
-        }
-      }
-    },
-    ## ---------------------------------------------------------------
     ## :: setter/getter for pending counter for given event
     ## :: used to check if there was no pending events
     ## :: that was not triggered
@@ -182,10 +118,6 @@ BaseComponent <- R6::R6Class(
       } else {
         ""
       }
-    },
-    ## ---------------------------------------------------------------
-    .handler.exists = function(event, handler) {
-      any()
     }
   ),
   ## -----------------------------------------------------------------
@@ -436,6 +368,70 @@ BaseComponent <- R6::R6Class(
     },
     ## ---------------------------------------------------------------
     #' @description
+    #' Method will trigger the event. It call every observer and invalidate
+    #' every reactive context
+    #'
+    #' @param name - name of the event to fire
+    #' @param data - data to be used to trigger the event if function use
+    #' @param .level - internal option for logger, that is used to created indent
+    ## ---------------------------------------------------------------
+    trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
+      indent <- .level * 2
+
+      msg <- battery:::indent(indent, "trigger")
+      self$log("battery", msg, name = name, target = self$id, type = "trigger")
+
+      if (name %in% ls(self$events)) {
+        update <- if (is.null(data)) {
+          function() {
+            msg <- battery:::indent(indent, "trigger::force (NULL)")
+            self$log("battery", msg, name = name, target = self$id, type = "trigger")
+
+            self$events[[name]] <- shiny::isolate({
+              if (is.logical(self$events[[name]])) {
+                !self$events[[name]]
+              } else if (is.list(self$events[[name]])) {
+                append(list(
+                  timestamp = battery:::now()
+                ), self$events[[name]])
+              } else {
+                message(paste(
+                  "[WARN] trigger: wrong data type (if used event data need to be list",
+                  "or boolean)"
+                ))
+                NULL
+              }
+            })
+          }
+        } else if (is.list(data)) {
+          function() {
+            data$timestamp <- battery:::now()
+            if (is.null(data$target)) {
+              data$target <- self$id
+            }
+            msg <- battery:::indent(indent, "trigger::force (list)")
+            self$log("battery", msg, name = name, target = self$id, type = "trigger")
+            self$events[[name]] <- data
+          }
+        } else {
+          function() {
+            message(paste(
+              "[WARN] trigger: wrong data type (if used event data need to be list",
+            "or boolean)"
+            ))
+          }
+        }
+        private$.pending(name, increment = 1)
+        ## force is hack that always trigger the event, even if shiny decide not to
+        if (.force) {
+          battery:::force(update)
+        } else {
+          update()
+        }
+      }
+    },
+    ## ---------------------------------------------------------------
+    #' @description
     #' Propagate events from child to parent
     #'
     #' it will recursivly walk whole tree, and trigger only events that
@@ -501,7 +497,7 @@ BaseComponent <- R6::R6Class(
       self$log("battery", msg, name = name, value = value, target = target, type = "emit")
 
       if (include.self) {
-        private$trigger(name, list(value = value, target = target), .level = .level)
+        self$trigger(name, list(value = value, target = target), .level = .level)
       }
       if (!is.null(self$parent)) {
         self$parent$emit(name, value, target = target, include.self = TRUE, .level = .level + 1)
@@ -584,7 +580,7 @@ BaseComponent <- R6::R6Class(
       self$log("battery", msg, name = name, value = value, target = target, type = "broadcast")
 
       if (include.self) {
-        private$trigger(name, list(value = value, target = target), .level = .level)
+        self$trigger(name, list(value = value, target = target), .level = .level)
       }
       lapply(self$children, function(child) {
         child$broadcast(name, value, self$id, include.self = TRUE, .level = .level + 1)
@@ -630,6 +626,7 @@ BaseComponent <- R6::R6Class(
     #' @param events - character or character vector of internal event or input id
     #' @param handler - function that can have value and target parameters (optional)
     #' @param input - boolean that's indicate if event should be added to input
+    #'        otherwise it's internal battery event
     #' @param enabled - boolean that enable event to easy toggle event
     #' @param single - if used it will create only one event, it will always destroy old one
     #' @param init - indicate if event should be triggered on init
@@ -646,7 +643,7 @@ BaseComponent <- R6::R6Class(
     #' }, input = TRUE)
     #'
     #'
-    #' self$on("event", function(value = NULL, target = NULL) {
+    #' self$on("event", function(value, target) {
     #'   ## this event can be fired with trigger/emit/broadcast
     #' })
     #' }
