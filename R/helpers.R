@@ -57,7 +57,6 @@ now <- function() {
   format(as.numeric(Sys.time())*1000, scientific = FALSE)
 }
 
-
 #' Force of reactive value trigger
 #' @param fn - function that can have reactive value asignment that will alway invalidate reactive context
 #' @param session - session object - in battery there is only one session object
@@ -66,8 +65,11 @@ now <- function() {
 ## https://github.com/rstudio/shiny/issues/2488
 ## https://stackoverflow.com/q/60654485/387194
 force <- function(fn, session = shiny::getDefaultReactiveDomain()) {
+  ## marker/hack for monkey patch of shiny::observeEvent
+  ..BATTERY <- TRUE
   shinyHack <- shiny::isolate(session$input$battery_shinyHack)
   shiny::observeEvent(session$input$battery_shinyHack, {
+    ..BATTERY <- FALSE
     fn()
   }, once = TRUE)
   session$manageInputs(list(battery_shinyHack = `if`(is.null(shinyHack), TRUE, !shinyHack)))
