@@ -2,33 +2,43 @@
 % Please edit documentation in R/mocks.R
 \name{observeEventMock}
 \alias{observeEventMock}
-\title{Function used the same as battery::observeEvent (based on shiny::observeEvent)
-that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+\title{Function used the same as battery::observeEvent (based on \code{shiny::observeEvent})
+that use active binding input mocks - the work almost the same as \code{shiny::observeEvent} but it
 destroy previous created observer, so there are no duplicates}
 \usage{
-observeEventMock(eventExpr, handlerExpr, handler.env = parent.frame(),
-  ignoreInit = FALSE, ignoreNULL = TRUE, observerName = NULL,
-  once = FALSE, ...)
+observeEventMock(
+  eventExpr,
+  handlerExpr,
+  handler.env = parent.frame(),
+  ignoreInit = FALSE,
+  ignoreNULL = TRUE,
+  observerName = NULL,
+  once = FALSE,
+  ...
+)
 }
 \arguments{
-\item{eventExpr}{- same as in shiny::observeEvent}
+\item{eventExpr}{- same as in \code{shiny::observeEvent}}
 
-\item{handlerExpr}{- same as in shiny::observeEvent}
+\item{handlerExpr}{- same as in \code{shiny::observeEvent}}
 
-\item{handler.env}{- same as in shiny::observeEvent}
+\item{handler.env}{- same as in \code{shiny::observeEvent}}
 
-\item{ignoreInit}{- same as in shiny::observeEvent}
+\item{ignoreInit}{- same as in \code{shiny::observeEvent}}
 
-\item{ignoreNULL}{- same as in shiny::observeEvent}
+\item{ignoreNULL}{- same as in \code{shiny::observeEvent}}
 
 \item{observerName}{- name that will distinguish observers with same code}
 
-\item{once}{- same as in shiny::observeEvent}
+\item{once}{- same as in \code{shiny::observeEvent}}
 
-\item{...}{- reset the params from shiny::observeEvent}
+\item{...}{- reset the params from \code{shiny::observeEvent}}
+}
+\value{
+list with destroy method - same as \code{shiny::observeEvent}
 }
 \description{
-Function used the same as battery::observeEvent (based on shiny::observeEvent)
-that use active binding input mocks - the work almost the same as shiny::observeEvent but it
+Function used the same as battery::observeEvent (based on \code{shiny::observeEvent})
+that use active binding input mocks - the work almost the same as \code{shiny::observeEvent} but it
 destroy previous created observer, so there are no duplicates
 }

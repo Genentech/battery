@@ -8,7 +8,7 @@ battery::useMocks()
 test_that('it should create component using R6Class', {
   A <- R6::R6Class(
     classname = 'A',
-    inherit = battery::BaseComponent,
+    inherit = battery:::BaseComponent,
     public = list(
       static = list2env(list(count = 0)),
       value = NULL,
@@ -56,7 +56,7 @@ test_that('it should create component using component function', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should extend base component using extend static method', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -80,7 +80,7 @@ test_that('it should extend base component using extend static method', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create child component', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     public = list(
       value = NULL,
@@ -112,7 +112,7 @@ test_that('it should create child component', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should create static fields', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     static = list(
       number = 10
@@ -139,7 +139,7 @@ test_that('it should create static fields', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should call parent constructor if no constuctor in child component', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     public = list(
       name = NULL,
@@ -164,7 +164,7 @@ test_that('it should call parent constructor if no constuctor in child component
 
 ## ----------------------------------------------------------------------------
 test_that('it should create new static field in child component', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     static = list(
       number = 10
@@ -204,7 +204,7 @@ test_that('it should create new static field in child component', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should update static field', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     static = list(
       number = 10,
@@ -252,7 +252,7 @@ test_that('it should update static field', {
 
 ## ----------------------------------------------------------------------------
 test_that('it should compose objects', {
-  A <- battery::BaseComponent$extend(
+  A <- battery:::BaseComponent$extend(
     classname = 'A',
     public = list(
       name = NULL,
@@ -261,7 +261,7 @@ test_that('it should compose objects', {
       }
     )
   )
-  B <- battery::BaseComponent$extend(
+  B <- battery:::BaseComponent$extend(
     classname = 'B',
     public = list(
       constructor = function() {

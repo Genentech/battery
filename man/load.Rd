@@ -2,9 +2,16 @@
 % Please edit documentation in R/helpers.R
 \name{load}
 \alias{load}
-\title{Function load all R file components from directory}
+\title{Function load all R file components from directory, component classes will be global}
 \usage{
-load(path, pattern = "*.R$", ignore = NULL, recursive = TRUE)
+load(
+  path,
+  pattern = "*.R$",
+  ignore = NULL,
+  recursive = TRUE,
+  ignore.case = TRUE,
+  local = TRUE
+)
 }
 \arguments{
 \item{path}{- path to directory}
@@ -14,7 +21,11 @@ load(path, pattern = "*.R$", ignore = NULL, recursive = TRUE)
 \item{ignore}{- string or vector of strings with fillanme files that should be ignored}
 
 \item{recursive}{- if set to TRUE (default) loading of files will be recursive}
+
+\item{ignore.case}{- should it ignore case of pattern when searching for files}
+
+\item{local}{- TRUE, FALSE or enviroment use in source - if value is TRUE it will use parent.frame()}
 }
 \description{
-Function load all R file components from directory
+Function load all R file components from directory, component classes will be global
 }

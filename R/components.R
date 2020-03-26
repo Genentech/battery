@@ -1,6 +1,10 @@
-#' Global env generator function - it's added to each component one per root (component without parent)
+#' Main file with base of battery components
+
+
+#' Global env generator function - added to each component one per root (component without parent)
 #' This env is used so you can share services for one tree of components. You can't send data between
 #' Two trees of components.
+#' @name new.global.env
 new.global.env <- function() {
   list2env(list(
     components = list(),
@@ -14,113 +18,67 @@ new.global.env <- function() {
 
 #' Helper where new static default values can be added
 #' this static env should be the same for each Component per shiny session
+#' @name new.static.env
 new.static.env <- function() {
   list2env(list(count = 0))
 }
 
 #' Global varialbe added to base component that hold each classes and component list
 #' for getById method
+#' @name global
 global <- new.global.env()
 global$sessions <- list()
 
-#' Component base class
+#' Root component that have no parent,
 #'
+#' @description
 #'
-#' Root component that don't have parent need to be called with input output and session
+#' need to be called with input, output and session. it should not be used directly,
+#' only using \code{\link{component}} function.
 #'
-#' app <- App$new(input = input, output = output, session = session)
-#' output$app <- renderUI({
-#'    app$render()
-#' })
+#' @name BaseComponent
+#' @importFrom R6 R6Class
+#' @keywords components architecture structure
 #'
-#' the code will invoke initialize R6 class constructor and call constructor method
-#' with remaining parameters added when creating new object
-#'
-#' :: Services ::
-#'
-#' services are global object that are unique per appliction and every component
-#' can access then using self$service$name
-#' they can be added using constructor using servies option or using service function
-#' that will add new service to the system. It may be usefull to create as service
-#' isntance of EventEmitter to share events across the appliction without the need
-#' to broadcast and emit if you want to send message to siblings. You can use any
-#' object as service.
-#'
-#' Base class for components
-#' @export
-#' @examples
-#' A <- R6::R6Class(
-#'    classname = "A",
-#'    inherit = battery::BaseComponent,
-#'    public = list(
-#'      x = NULL,
-#'      constructor = function(x) {
-#'         self$x <- x
-#'      }
-#'    )
-#' )
-#' i <- battery::activeInput()
-#' o <- battery::activeOutput()
-#' s <- list()
-#' a <- A$new(x = 10, input = i, output = o, session = s)
-#'
-#' ## proper use of components
-#' Button <- battery::component(
-#'   classname = "Button",
-#'   public = list(
-#'     count = NULL,
-#'     ## constructor is artifical method so you don't need to call super
-#'     ## which you may forget to add
-#'     constructor = function(canEdit = TRUE) {
-#'       self$connect('click', self$ns('button'))
-#'       self$count <- 0
-#'       self$on('click', function(e = NULL, target = NULL) {
-#'         self$count <- self$count + 1
-#'       }, enabled = canEdit)
-#'       self$output[[self$ns('buttonOutput')]] <- renderUI({
-#'         self$events$click
-#'         tags$div(
-#'           tags$span(self$count),
-#'           actionButton(self$ns('button'), 'click')
-#'         )
-#'       })
-#'     },
-#'     render = function() {
-#'       tags$div(
-#'         class = 'button-component',
-#'         uiOutput(self$ns('buttonOutput'))
-#'       )
-#'     }
-#'   )
-#' )
-#' Panel <- battery::component(
-#'   classname = "Panel",
-#'   public = list(
-#'     title = NULL,
-#'     constructor = function(title) {
-#'       self$title <- title
-#'       btn <- Button$new(parent = self)
-#'       self$appendChild('button', btn)
-#'       self$output[[self$ns('button')]] <- renderUI({
-#'         btn$render()
-#'       })
-#'     },
-#'     render = function() {
-#'       tags$div(
-#'         tags$h2(self$title),
-#'         tags$div(uiOutput(self$ns('button')))
-#'       )
-#'     }
-#'   )
-#' )
-#'
-#' ## instead of mocks use objects from shiny server function
-#'
-#' i <- battery::activeInput()
-#' o <- battery::activeOutput()
-#' s <- list()
-#' panel <- Panel$new(title = "Hello", input = i, output = o, session = s)
-#'
+#' @field id - string that
+#' @field name - component instance name, set using \code{parent$appendChild(name)} or
+#'        \code{component$new(parent = self, component.name = name)}
+#' @field services - environment that hold static services - objects shared across battery components
+#'        tree. Services can be added using \code{component$addService(name, ANY)}
+#' @field events - environment that will hold reactive values added by on or createEvent method
+#' @field parent - parent component
+#' @field children - list of components that are children of the component, this list will be used to
+#'        when using \code{component$broadcast("name")}
+#' @field input - shiny input object added in constructor of root class or inherited from parent
+#' @field output - shiny output object added in constructor of root class or inherited from parent
+#' @field session - shiny session object added in constructor of root class or inherited from parent
+#' @field static - environment that can be used to save property into class, it will be shared
+#'        with all instances of same battery component.
+#' @section Methods:
+#' \describe{
+#'   \item{Documentation}{For full documentation of each method go to https://stash.intranet.roche.com/stash/projects/DIVOS/repos/battery/browse}
+#'   \item{\code{BaseComponent$new(...)}}{This method is used to create base battery object, it should never be created directly. Battery components should be created as inherited from this BaseComponent, but this should be done only using \code{component} function}
+#'   \item{\code{getById}}{Method return component with specific id}
+#'   \item{\code{appendChild}}{Method add battery component as child this current component}
+#'   \item{\code{removeChild}}{Method remove child component complementary to appendChild}
+#'   \item{\code{ns}}{Method used to create namespaced identifier}
+#'   \item{\code{createEvent}}{Method will create battery event}
+#'   \item{\code{emit}}{Propagate events from child to parent}
+#'   \item{\code{broadcast}}{Propagate events from parent to all children}
+#'   \item{\code{connect}}{Helper method that will create binding between input event from shiny and battery event}
+#'   \item{\code{disconnect}}{Method remove binding between input element and compnents events}
+#'   \item{\code{on}}{Add event listener to given internal event or native input}
+#'   \item{\code{off}}{Method removes event listener(s) added by \code{on}}
+#'   \item{\code{class}}{Method return name of this class - same as classname when crating the class}
+#'   \item{\code{destroy}}{Method remove all observers created for this component}
+#'   \item{\code{finalize}}{R6Class method that will be called when object is destroyed}
+#'   \item{\code{addService}}{Method dynamically add service to battery component system}
+#'   \item{\code{template}}{Helper method that create \code{shiny::htmlTemplate} with self and private as defaults variables}
+#'   \item{\code{path}}{Method return path to the object in battery components tree}
+#'   \item{\code{log}}{Method log messages that can be listen to with \code{logger} helper}
+#'   \item{\code{logger}}{Shortcut function to add listener to logger}
+#'   \item{\code{render}}{Function that should be overwritten in battery component}
+#' }
 BaseComponent <- R6::R6Class(
   classname = 'BaseComponent',
   private = list(
@@ -129,30 +87,52 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    trigger = function(name, data = NULL) {
-      if (name %in% ls(self$events)) {
-        if (is.null(data)) {
-          self$events[[name]] <- shiny::isolate({
-            if (is.logical(self$events[[name]])) {
-              !self$events[[name]]
-            } else if (is.null(self$events[[name]]$value)) {
-              TRUE
-            } else {
-              !self$events[[name]]$value
+    ## :: setter/getter for pending counter for given event
+    ## :: used to check if there was no pending events
+    ## :: that was not triggered
+    ## :: this shouldn't be needed, it's just in case
+    ## ---------------------------------------------------------------
+    .pending = function(name, value = NULL, increment = NULL, fn = NULL) {
+      if (!is.null(private$.handlers[[name]])) {
+        if (!is.null(value)) {
+          for (i in seq_along(private$.handlers[[name]])) {
+            handler <- private$.handlers[[name]][[i]]
+            if (is.null(fn) || identical(handler$handler, fn)) {
+              private$.handlers[[name]][[i]]$pending <- value
             }
-          })
+          }
+        } else if (!is.null(increment)) {
+          for (i in seq_along(private$.handlers[[name]])) {
+            handler <- private$.handlers[[name]][[i]]
+            if (is.null(fn) || identical(handler$handler, fn)) {
+              private$.handlers[[name]][[i]]$pending <- handler$pending + increment
+            }
+          }
         } else {
-          data$timestamp <- as.numeric(Sys.time())*1000
-          self$events[[name]] <- data
+          sapply(private$.handlers[[name]], '[[', 'pending')
         }
       }
+    },
+    ## -------------------------------------------------------------------------
+    .indent = function() {
+      if (self$static$.global$.level > 0) {
+        strrep(" ", self$static$.global$.level * 2)
+      } else {
+        ""
+      }
+    },
+    ## -------------------------------------------------------------------------
+    ## :: Method checks if expression is self$ns('xxx')
+    ## -------------------------------------------------------------------------
+    .is.ns = function(expr) {
+      length(expr) == 2 && class(expr[[1]]) == 'call' && deparse(expr[[1]]) == 'self$on'
     }
   ),
   ## -----------------------------------------------------------------
   public = list(
     id = NULL,
     name = NULL,
-    ## every component share same services
+    ## every component in a tree share same services
     services = NULL,
     events = NULL,
     parent = NULL,
@@ -165,11 +145,25 @@ BaseComponent <- R6::R6Class(
     ## of the class (for id used in getById and ns namespace)
     static = list2env(list(count = 0)),
     ## ---------------------------------------------------------------
-    ## :: native R6 class constructor
-    ## ---------------------------------------------------------------
+    #' native R6 class constructor
+    #'
+    #' this should never be overwriten by child components, they should only
+    #' overwrite constructor that is not as problematic when not called super
+    #'
+    #' @param input - shiny input object added in constructor of root class or inherited from parent
+    #' @param output - shiny output object added in constructor of root class or inherited from parent
+    #' @param session - shiny session object added in constructor of root class or inherited from parent
+    #' @param parent - parent battery component, if used you don't need to add
+    #'                 \code{input}, \code{output} and \code{session}
+    #' @param component.name - name of the component to be used in component$parent$children
+    #' @param services - list of any static services that can be created on component initialization
+    #' @param spy - used in unit test to record component method calls (only user methods are recorded)
+    #' @param ... - everything else is passed to \code{constructor} method that should be used in
+    #'              user components
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
                           services = NULL, spy = FALSE, ...) {
+      ## shiny values parent inheritance
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
         stop(paste('Components without parent need to define input, output ',
@@ -210,6 +204,7 @@ BaseComponent <- R6::R6Class(
       ## init global env, used by services, one per root component
       if (is.null(parent)) {
         self$static$.global <- new.global.env()
+        self$static$.global$.level <- 0
       } else {
         self$static$.global <- self$parent$static$.global
       }
@@ -228,15 +223,25 @@ BaseComponent <- R6::R6Class(
 
       self$id <- paste0(classname, self$static$count)
 
+      ## TODO: Optimize children use env
       self$children <- list()
+
+      ## Services init
       self$services <- self$static$.global$services
+      ## logger
+      if (is.null(parent)) {
+        self$services$.log <- EventEmitter$new()
+      }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
         }
       }
       if (!is.null(component.name)) {
-        parent$appendChild(component.name, self)
+        self$name <- component.name
+        if (!is.null(parent)) {
+          parent$appendChild(component.name, self)
+        }
       }
       ## global reset component counter - execute once for session
       if (!is.null(self$session) &&
@@ -245,6 +250,7 @@ BaseComponent <- R6::R6Class(
           self$destroy()
         })
       }
+
       if (!is.null(self$constructor)) {
         ## TODO: improve stack trce in Battery and make it stable
         ## this stimetimes prints no stack trace aviable
@@ -257,14 +263,17 @@ BaseComponent <- R6::R6Class(
             message(paste0("throw in ", self$id, "::constructor"))
             message(cond$message)
             traceback(cond)
-            stop(cond)
           }
         })
       }
     },
     ## ---------------------------------------------------------------
-    ## :: return component with specific id
-    ## :: id are created using class name and counter
+    #' Method return component with specific id
+    #'
+    #' it will search the tree of components find name with specific id
+    #'
+    #' @param id - string - id of the component to search
+    #' @return Battery component
     ## ---------------------------------------------------------------
     getById = function(id) {
       ## components is one reference for every instance (static)
@@ -276,9 +285,29 @@ BaseComponent <- R6::R6Class(
       NULL
     },
     ## ---------------------------------------------------------------
-    ## :: method remove child component alternative to appendChild
-    ## :: this function is called automatically on parent
-    ## :: when destroy is called
+    #' Method add battery component as child this current component
+    #'
+    #' this function is called if you pass component.name to constructor
+    #' otherwise it should be called to create proper tree. This is required
+    #' so \code{component$broadcast} and \code{component$emit} work properly
+    #'
+    #' @param name - string to be used as name
+    #' @param child - battery component
+    ## ---------------------------------------------------------------
+    appendChild = function(name, child) {
+      if (!is.null(self$children[[name]])) {
+        stop(sprintf('Child with name `%s` already exists', name))
+      } else {
+        self$children[[name]] <- child
+      }
+    },
+    ## ---------------------------------------------------------------
+    #' Method remove child component complementary to appendChild
+    #'
+    #' it can be used with name or the component
+    #'
+    #' @param name - name of the component to remove
+    #' @param child - battery component to remove
     ## ---------------------------------------------------------------
     removeChild = function(name = NULL, child) {
       if (!is.null(name)) {
@@ -293,199 +322,528 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
-    ## :: you need to invoke this method on each child you're creating
-    ## :: so event propagation work correctly
-    ## ---------------------------------------------------------------
-    appendChild = function(name, child) {
-      if (!is.null(self$children[[name]])) {
-        stop(sprintf('Child with name `%s` already exists', name))
-      } else {
-        self$children[[name]] <- child
-      }
-    },
+    #' Method used to create namespaced identifier
+    #'
+    #' @param name - name to be used inside shiny input or output
+    #' @examples
+    #' \dontrun{
+    #'  battery::component(
+    #'    classname = "Plot",
+    #'    public = list(
+    #'      constructor = function() {
+    #'        self$output[[ self$ns("plot") ]] <- renderPlot({
+    #'          ## ...
+    #'        })
+    #'     },
+    #'     render = function() {
+    #'       shiny::div(
+    #'         class = "container",
+    #'         plotOutput(self$ns("plot"))
+    #'       )
+    #'     }
+    #'   )
+    #' )
+    #' }
     ## ---------------------------------------------------------------
     ns = function(name) {
       paste0(self$id, '_', name)
     },
     ## ---------------------------------------------------------------
-    ## :: create internal event that can be used in renderUI or render function
-    ## :: to trigger rendering
+    #' @description
+    #' Method will create battery event
+    #'
+    #' this event can be triggered from R code it can also be broadcasted
+    #' this function is called automatically when using on to create observer
+    #'
+    #' @param name - string, name of the event
+    #' @param value - initial value of the event reactive variable
     ## ---------------------------------------------------------------
     createEvent = function(name, value = NULL) {
+      self$log("battery", "createEvent", name = name, type = "createEvent")
       if (!name %in% ls(self$events)) {
+        self$log("battery", "makeReactiveBinding", name = name, type = "createEvent")
         shiny::makeReactiveBinding(name, env = self$events)
         if (is.logical(value) && value) {
           self$events[[name]] <- TRUE
         } else {
           data <- list(
             value = value,
-            timestamp = as.numeric(Sys.time())*1000
+            timestamp = battery:::now()
           )
           self$events[[name]] <- data
         }
       }
     },
     ## ---------------------------------------------------------------
-    ## :: propagate evets from child to parent
+    #' @description
+    #' Method will trigger the event. It call every observer and invalidate
+    #' every reactive context
+    #'
+    #' @param name - name of the event to fire
+    #' @param data - data to be used to trigger the event if function use
+    #' @param .force - internal option to disable forcing of reactive events
+    #' @param .level - internal option for logger, that is used to created indent
     ## ---------------------------------------------------------------
-    emit = function(name, value = NULL, target = NULL, include.self = FALSE) {
-      if (is.null(target)) {
-        target <- self$id
-      }
-      if (include.self) {
-        private$trigger(name, list(value = value, target = target))
-      }
-      if (!is.null(self$parent)) {
-        self$parent$emit(name, value, target = target, include.self = TRUE)
+    trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
+      indent <- .level * 2
+
+      msg <- battery:::indent(indent, "trigger")
+      self$log("battery", msg, name = name, target = self$id, type = "trigger")
+
+      if (name %in% ls(self$events)) {
+        update <- if (is.null(data)) {
+          function() {
+            msg <- battery:::indent(indent, "trigger::force (NULL)")
+            self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
+
+            self$events[[name]] <- shiny::isolate({
+              if (is.logical(self$events[[name]])) {
+                !self$events[[name]]
+              } else if (is.list(self$events[[name]])) {
+                list(
+                  timestamp = battery:::now(),
+                  target = self$id,
+                  value = self$events[[name]]$value
+                )
+              } else {
+                message(paste(
+                  "[WARN]",
+                  self$id,
+                  "- trigger: wrong data type (if used event data need to be list or boolean)"
+                ))
+                NULL
+              }
+            })
+          }
+        } else if (is.list(data)) {
+          function() {
+            data$timestamp <- battery:::now()
+            if (is.null(data$target)) {
+              data$target <- self$id
+            }
+            msg <- battery:::indent(indent, "trigger::force (list)")
+            self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
+            self$events[[name]] <- data
+          }
+        } else {
+          function() {
+            message(paste(
+              "[WARN]",
+              self$id,
+              "- trigger: wrong data type (if used event data need to be list or boolean)"
+            ))
+          }
+        }
+        private$.pending(name, increment = 1)
+        ## force is hack that always trigger the event, even if shiny decide not to
+        if (.force) {
+          battery:::force(update)
+        } else {
+          update()
+        }
       }
     },
     ## ---------------------------------------------------------------
-    ## :: propagate events from parent to all children
+    #' @description
+    #' Propagate events from child to parent
+    #'
+    #' it will recursivly walk whole tree, and trigger only events that
+    #' have reactive values added with \code{createEvent} it will also trigger
+    #' all observers added with \code{on}
+    #'
+    #' @param name - name of the event to propagate
+    #' @param value - optional value to to set on reactive values (it will be
+    #'        access from component$events or inside observer
+    #' @param target - optioanl target that should be passed along the event
+    #'        can only be access from event handler added by \code{component$on}
+    #' @param include.self - shoult it also trigger on this component or only
+    #'        on children
+    #' @param .level - internal option for logger, that is used to created indent
+    #'
+    #' @examples
+    #' \dontrun{
+    #' App <- battery::component(
+    #'   classname = "App",
+    #'   public = list(
+    #'     constructor = function() {
+    #'       self$on("update", function() {
+    #'         print("I need to update")
+    #'       })
+    #'       panel <- Panel$new(parent = self, component.name = "panel")
+    #'       self$outptu[[self$ns("panel")]] <- renderUI({
+    #'          panel$render()
+    #'       })
+    #'     },
+    #'     render = function() {
+    #'       shiny::tags$div(
+    #'         #...
+    #'         uiOutput(self$ns("panel"))
+    #'       )
+    #'     }
+    #'   )
+    #' )
+    #' Panel <- battery::component(
+    #'   classname = "Panel",
+    #'   public = list(
+    #'     constructor = function() {
+    #'       self$on(self$ns("button"), function() {
+    #'         self$emit("update")
+    #'       }, input = TRUE)
+    #'     },
+    #'     render = function() {
+    #'        shiny::tags$div(
+    #'           #...
+    #'           actionButton(self$ns("button"), "Click Me")
+    #'        )
+    #'     }
+    #'   )
+    #' )
+    #' ## clicking on button will emit the event to the parent and print the message
+    #' }
     ## ---------------------------------------------------------------
-    broadcast = function(name, value = NULL, target = NULL, include.self = FALSE) {
+    emit = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
       if (is.null(target)) {
         target <- self$id
-      }
-      if (include.self) {
-        private$trigger(name, list(value = value, target = target))
       }
 
-      lapply(self$children, function(child) {
-        child$broadcast(name, value, self$id, include.self = TRUE)
-      })
+      msg <- battery:::indent(.level * 2, "emit")
+      self$log("battery", msg, name = name, value = value, target = target, type = "emit")
+
+      if (include.self) {
+        self$trigger(name, list(value = value, target = target), .level = .level)
+      }
+      if (!is.null(self$parent)) {
+        self$parent$emit(name, value, target = target, include.self = TRUE, .level = .level + 1)
+      }
     },
     ## ---------------------------------------------------------------
-    ## :: create bidning between input browser event and comonent
-    ## :: event system
+    #' @description
+    #' Propagate events from parent to all children
+    #'
+    #' methods similar to \code{emit} but it propagete event to children
+    #' if called on root component it will send message to all components
+    #' inside the tree.
+    #'
+    #' @param name - string - name of the component to trigger
+    #' @param value - default value adde to component$events
+    #' @param target - string that indicate which battery component trigger the event
+    #'        it can be omited if so it will use same object that called the method
+    #' @param include.self - flag that indicate if event should also be called on self
+    #' @param .level - internal option for logger, that is used to created indent
+    #'
+    #' @examples
+    #' \dontrun{
+    #' App <- battery::component(
+    #'   classname = "App",
+    #'   public = list(
+    #'     count = 0,
+    #'     constructor = function() {
+    #'       self$label <- label
+    #'       self$on(self$ns("button"), function() {
+    #'         self$count <- self$count + 2
+    #'         self$broadcast("update", paste0("Update_number_", count))
+    #'       }, input = TRUE)
+    #'       counter <- Counter$new(parent = self, component.name = "counter")
+    #'       self$outptu[[self$ns("counter")]] <- renderUI({
+    #'          panel$render()
+    #'       })
+    #'     },
+    #'     inc = function(count) {
+    #'       self$label <- paste0("label_", count)
+    #'     },
+    #'     render = function() {
+    #'       shiny::tags$div(
+    #'         actionButton(self$ns("button"), "Click Me"),
+    #'         uiOutput(self$ns("counter"))
+    #'       )
+    #'     }
+    #'   )
+    #' )
+    #' Counter <- battery::component(
+    #'   classname = "Counter",
+    #'   public = list(
+    #'     counter = 0,
+    #'     constructor = function() {
+    #'       self$createEvent("update")
+    #'     },
+    #'     render = function() {
+    #'        self$counter <- self$counter + 1
+    #'        shiny::tags$div(
+    #'           paste("Counter", self$counter),
+    #'           self$events$update$value
+    #'        )
+    #'     }
+    #'   )
+    #' )
+    #' ## first it will render the child with "Counter 1" (the value of events reactive
+    #' ## reactive variable will be NULL, default value of events)
+    #' ## after clicking the button it will increase the count in App by 2
+    #' ## send event to children and it will in turn trigger render child again
+    #' ## so it will display "Counter 2" and "Update_number_2"
+    #' ##
+    #' ## child render will be called twice and event handler on button once
+    #' }
+    ## ---------------------------------------------------------------
+    broadcast = function(name, value = NULL, target = NULL, include.self = FALSE, .level = 0) {
+      if (is.null(target)) {
+        target <- self$id
+      }
+
+      msg <- battery:::indent(.level * 2, "broadcast")
+      self$log("battery", msg, name = name, value = value, target = target, type = "broadcast")
+
+      if (include.self) {
+        self$trigger(name, list(value = value, target = target), .level = .level)
+      }
+      lapply(self$children, function(child) {
+        child$broadcast(name, value, self$id, include.self = TRUE, .level = .level + 1)
+      })
+    },
+
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Helper method that will create binding between input event from shiny and battery event
+    #'
+    #' @param event - name of the event
+    #' @param elementId - id of the HTML element (shiny input it should be value from \code{self$ns})
     ## ---------------------------------------------------------------
     connect = function(event, elementId) {
 
-      self$createEvent(event)
+      self$log("battery", "connect", event = event, type = "connect")
 
-      uuid <- uuid::UUIDgenerate()
-      observer <- battery::observeEvent(self$input[[elementId]], {
-        self$emit(event, self$input[[elementId]], include.self = TRUE)
-      }, observerName = uuid)
+      if (is.null(private$.observers[[elementId]])) {
+        self$createEvent(event)
 
-      private$.observers[[elementId]] <- list(
-        observer = observer,
-        uuid = uuid
-      )
+        observer <- shiny::observeEvent(self$input[[elementId]], {
+          self$emit(event, self$input[[elementId]], include.self = TRUE)
+        })
+
+        private$.observers[[elementId]] <- observer
+      }
     },
     ## ---------------------------------------------------------------
-    ## :: remove binding between input element and compnents events
+    #' @description
+    #' Method remove binding between input element and compnents events
+    #'
+    #' complementary to connect
+    #'
+    #' @param elementId - it of the input element
     ## ---------------------------------------------------------------
     disconnect = function(elementId) {
-      private$.observers[[elementId]]$observer$observer$destroy()
+      private$.observers[[elementId]]$destroy()
     },
     ## ---------------------------------------------------------------
-    ## :: add event listener to given internal event or native input
-    ## ::
-    ## :: usage:
-    ## ::   self$on(self$ns('input'), function(value = NULL, target = NULL) {
-    ## ::   }, input = TRUE)
-    ## :: or
-    ## ::   self$on('event', function(value = NULL, target = NULL) {
-    ## ::   })
-    ## :: second event will be triggered if any of child components have
-    ## :: called Component::connect or use parent component call
-    ## :: Component::broadcast or child component Component::emit
-    ## :: if component only waiting for internal events it need to call
-    ## :: Component::createEvent('name')
+    #' @description
+    #' Add event listener to given internal event or native input
     #'
-    #' @param event - name of internal event or input id
-    #' @param handler - function that should have value and target parameters
+    #' @param events - character or character vector of internal event or input id
+    #' @param handler - function that can have value and target parameters (optional)
     #' @param input - boolean that's indicate if event should be added to input
+    #'        otherwise it's internal battery event
     #' @param enabled - boolean that enable event to easy toggle event
+    #' @param single - if used it will create only one event, it will always destroy old one
     #' @param init - indicate if event should be triggered on init
+    #' @param ... - any additional arguments are passed into shiny::observeEvent
+    #' @examples
+    #' \dontrun{
+    #'
+    #' self$on(self$ns("inputValue"), function(value) {
+    #'    print(paste("Input value is ", value))
+    #' }, input = TRUE)
+    #'
+    #' self$on(self$ns("save"), function() {
+    #'    print("user click save")
+    #' }, input = TRUE)
+    #'
+    #'
+    #' self$on("event", function(value, target) {
+    #'   ## this event can be fired with trigger/emit/broadcast
+    #' })
+    #' }
     ## ---------------------------------------------------------------
-    on = function(event, handler, input = FALSE, enabled = TRUE, init = FALSE, ...) {
+    on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
+      if (private$.is.ns(substitute(events)) && !input) {
+        print(paste(
+          "[WARN]",
+          self$id,
+          "- you should use input = TRUE when using self$ns to create event on",
+          "shiny input element. You should not use self$ns with battery events."
+        ))
+      }
+      for (event in events) {
+        self$log("battery", "on", event = event, type = "on")
+      }
+      ## HACK: for avengersApps to detect battery in shiny::observeEvent monkey patch
+      ##
+      ##       avengersApps use: is.battery <- any(grepl("..BATTERY <- FALSE", sys.call()))
+      ##       to detect if the function was called in battery
+      ##
+      ## TODO: remove the hack and refactor avengersApps::observeEvent
+      ##       to use option single = TRUE in IDA to force destroy of old observer,
+      ##       so it will not affect battery, that have same expression for multiple events
+      ##       on same component or input (without this only last handler remain)
+      ##       battery can't use observerName because it need to work with original
+      ##       shiny::observeEvent that don't have that option
+      ..BATTERY <- TRUE
       if (enabled) {
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
         }
-        if (is.null(private$.handlers[[event]])) {
-          private$.handlers[[event]] <- list()
-        }
-
-        uuid <- uuid::UUIDgenerate()
-
-        observer <- if (input) {
-          battery::observeEvent(self$input[[event]], {
-            tryCatch({
-              battery:::invoke(handler, self$input[[event]], self)
-            }, error = function(cond) {
-              if (!inherits(cond, "shiny.silent.error")) {
-                message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
-                message(cond$message)
-                traceback(cond)
-                stop(cond)
+        for (event in events) {
+          if (is.null(private$.handlers[[event]])) {
+            private$.handlers[[event]] <- list()
+          } else if (single && length(private$.handlers[[event]]) > 0) {
+            ## destroy old event
+            for (i in seq_along(private$.handlers[[event]])) {
+              if (identical(private$.handlers[[event]][[i]]$handler, handler)) {
+                private$.handlers[[event]][[i]]$observer$destroy()
+                private$.handlers[[event]][i] <- NULL
               }
-            })
-          }, observerName = uuid, ignoreInit = !init, ...)
-        } else {
-          self$createEvent(event)
-
-          battery::observeEvent(self$events[[event]], {
-            data <- self$events[[event]]
-            ## invoke handler function with only argument it accept
-            tryCatch({
-              if (is.null(data) || is.logical(data)) {
-                battery:::invoke(handler, NULL, NULL)
-              } else {
-                battery:::invoke(handler, data[["value"]], data[["target"]])
-              }
-            }, error = function(cond) {
-              if (!inherits(cond, "shiny.silent.error")) {
-                message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
-                message(cond$message)
-                traceback(cond)
-                stop(cond)
-              }
-            })
-          }, observerName = uuid, ignoreInit = !init, ...)
-        }
-
-        private$.handlers[[event]] <- append(private$.handlers[[event]], list(
-          list(
-            handler = handler,
-            uuid = uuid,
-            observer = observer$observer
-          )
-        ))
-      }
-    },
-    ## ---------------------------------------------------------------
-    ## :: remove event listener(s) for internal event
-    ## :: if handler is null it will remove all listeners for a given
-    ## :: event
-    ## ---------------------------------------------------------------
-    off = function(event, handler = NULL) {
-      if (is.null(handler)) {
-        lapply(private$.handlers[[event]], function(e) {
-          e$observer$destroy()
-        })
-        private$.handlers[event] <- NULL
-      } else {
-        flags <- sapply(private$.handlers[[event]], function(e) {
-          if (identical(e$handler, handler)) {
-            e$observer$destroy()
-            FALSE
-          } else {
-            TRUE
+            }
           }
-        })
-        private$.handlers[[event]] <- private$.handlers[[event]][flags]
+
+          observer <- if (input) {
+            shiny::observeEvent(self$input[[event]], {
+              ..BATTERY <- FALSE
+              tryCatch({
+                space <- private$.indent()
+                self$log(
+                  c("battery", "info"),
+                  paste0(space, "on::trigger::before(N)"),
+                  event = event,
+                  input = input,
+                  type = "on"
+                )
+                self$static$.global$.level = self$static$.global$.level + 1
+                private$.pending(event, increment = -1, fn = handler)
+                battery:::invoke(handler, self$input[[event]], self)
+                self$static$.global$.level = self$static$.global$.level - 1
+                self$log(
+                  c("battery", "info"),
+                  paste0(space, "on::trigger::after(N)"),
+                  event = event,
+                  input = input,
+                  type = "on"
+                )
+              }, error = function(cond) {
+                if (!inherits(cond, "shiny.silent.error")) {
+                  message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
+                  message(cond$message)
+                  traceback(cond)
+                }
+              })
+            }, ignoreInit = !init, ...)
+          } else {
+            self$createEvent(event)
+
+            shiny::observeEvent(self$events[[event]], {
+              ..BATTERY <- FALSE
+              data <- self$events[[event]]
+              ## invoke handler function with only argument it accept
+              tryCatch({
+                space <- private$.indent()
+                self$log(
+                  c("battery", "info"),
+                  paste0(space, "on::trigger::before(B)"),
+                  event = event,
+                  input = input,
+                  type = "on"
+                )
+                self$static$.global$.level = self$static$.global$.level + 1
+                private$.pending(event, increment = -1, fn = handler)
+                if (is.null(data) || is.logical(data)) {
+                  battery:::invoke(handler, NULL, NULL)
+                } else {
+                  battery:::invoke(handler, data[["value"]], data[["target"]])
+                }
+                self$static$.global$.level = self$static$.global$.level - 1
+                self$log(
+                  c("battery", "info"),
+                  paste0(space, "on::trigger::after(B)"),
+                  event = event,
+                  input = input,
+                  type = "on"
+                )
+              }, error = function(cond) {
+                if (!inherits(cond, "shiny.silent.error")) {
+                  message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
+                  message(cond$message)
+                  traceback(cond)
+                }
+              })
+            }, ignoreInit = !init, ...)
+          }
+
+          private$.handlers[[event]] <- append(private$.handlers[[event]], list(
+            list(
+              handler = handler,
+              pending = 0,
+              observer = observer
+            )
+          ))
+        }
       }
     },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Method removes event listener(s) added by \code{on}
+    #'
+    #' if handler is NULL it will remove all listeners for a given event name
+    #'
+    #' @param events - vector or string with names of events to remove
+    #' @param handler - optional event handler
+    ## ---------------------------------------------------------------
+    off = function(events, handler = NULL) {
+      for (event in events) {
+        self$log("battery", "off", event = event, handler = handler, type = "off")
+        if (is.null(handler)) {
+          for (e in private$.handlers[[event]]) {
+            if (e$pending != 0) {
+              print(paste(
+                "[WARN]", self$id, "- event", event, "was not called,",
+                "you can try to call this event with force"
+              ))
+            }
+            e$observer$destroy()
+          }
+          private$.handlers[event] <- NULL
+        } else {
+          flags <- sapply(private$.handlers[[event]], function(e) {
+            if (identical(e$handler, handler)) {
+              if (e$pending != 0) {
+                print(paste(
+                  "[WARN]", self$id,"- event", event, "was not called,",
+                  "you can try to call this event with force"
+                ))
+              }
+              e$observer$destroy()
+              FALSE
+            } else {
+              TRUE
+            }
+          })
+          private$.handlers[[event]] <- private$.handlers[[event]][flags]
+        }
+      }
+    },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Method return name of this class - same as classname when crating the class
+    #'
+    #' @return string - class name
     ## ---------------------------------------------------------------
     class = function() {
       private$.class
     },
     ## ---------------------------------------------------------------
-    ## :: Method remove all observers created for this component
+    #' @description
+    #' Method dfestroy component
+    #'
+    #' It removes all observers created for this component also clear
+    #' it also use other clean ups.
     ## ---------------------------------------------------------------
     destroy = function() {
+      self$log("battery", "destroy", type = "destroy")
       for (event in names(private$.handlers)) {
         self$off(event)
       }
@@ -507,49 +865,194 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## ---------------------------------------------------------------
+    #' @description
+    #' R6Class method that will be called when object is destroyed
+    #' it just calls \code{destroy}
+    ## ---------------------------------------------------------------
     finalize = function() {
       self$destroy()
     },
     ## ---------------------------------------------------------------
-    ## :: dynamically add service to battery component system
-    ## :: it may be better to add services in constructor
+    #' @description
+    #' Method dynamically add service to battery component system
+    #'
+    #' only one service with giben name can be added to the tree
+    #' same object will be accessed in every component in the tree.
+    #' there is one default service logger that is \code{EventEmitter}
+    #'
+    #' @param name - name of the service by which you access the service
+    #'        e.g. self$service$foo
+    #' @param service - object used as service - it can be any object
     ## ---------------------------------------------------------------
     addService = function(name, service) {
+      self$log("info", "addService", name = name, type = "addService")
       if (name %in% names(self$services)) {
         stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
       }
       self$services[[name]] <- service
     },
     ## ---------------------------------------------------------------
-    ## :: Helper method that create HTML template with self as default
-    ## :: variable to be used in html (inside {{ }})
+    #' @description
+    #' Helper method that create \code{shiny::htmlTemplate}
+    #' with self and private as defaults variables to be used in html (inside {{ }})
+    #'
+    #' @param filename - name of the template
+    #' @param ... - any number of arguments that will be accessible in
+    #'        template
     ## ---------------------------------------------------------------
     template = function(filename, ...) {
-      do.call(shiny::htmlTemplate, c(filename = filename, self = self, list(...)))
+      do.call(shiny::htmlTemplate, c(
+        filename = filename,
+        private = private,
+        self = self,
+        list(...)))
     },
     ## ---------------------------------------------------------------
+    #' @description
+    #' Method return path to the object in battery components tree
+    #'
+    #' @return vector of strings of id of the components in the tree
+    ## ---------------------------------------------------------------
+    path = function() {
+      path <- c(self$id)
+      node = self
+      while (!is.null(node$parent)) {
+        node <- node$parent
+        path <- c(node$id, path)
+      }
+      path
+    },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Method log message that can be listen to, best way to add listener
+    #' is to use self$logger("name", fn) in root component constructor
+    #' each event is triggered with list(id, type, path, message, args)
+    #'
+    #' @param levels - vector of characters to listen (default names in battery
+    #'        are "battery" and "info")
+    #' @param message - message to log
+    #' @param type - default battery - additional value to distinguish the message
+    #'        in battery type is name of the method - or "method" inside user method
+    #' @param ... - any arguments are added into args property
+    ## ---------------------------------------------------------------
+    log = function(levels, message, type = "battery", ...) {
+      path <- paste(self$path(), collapse = "/")
+      data <- list(
+        id = self$id,
+        type = type,
+        path = path,
+        message = message,
+        args = list(...)
+      )
+      for (level in levels) {
+        self$services$.log$emit(level, data)
+      }
+    },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Shortcut function to add listener to logger
+    #'
+    #' @param level - character vector or character of log levels to listen
+    #' @param fn - function handler
+    ## ---------------------------------------------------------------
+    logger = function(level, fn) {
+      self$services$.log$on(level, fn)
+    },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' Function that should be overwritten in battery component
+    #'
+    #' this is convention that this function should return HTML (shiny tags)
+    #' this function can have reactive value self$events.
+    #' render function should not have children render if possible becasue
+    #' update of parent will rerender the children. The proper way is to use
+    #' renderUI in constructor and renderUI in render function for the children.
+    #'
+    #' @return overwriten render by convention should return shiny tags
+    ## ---------------------------------------------------------------
     render = function() {
-      stop('this function need to be overwritten in child class')
+      stop('render function need to be overwritten in child class')
     }
   )
 )
 
-#' Helper function for defining components with additional static field. It can also be used
-#' so you don't confuse battery component with normal R6Class
+#' Basic function to create battery components.
 #'
+#' @description Use this function to create new battery class object.
+#'
+#' @return \code{\link{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
 #' @param classname - name of the class as string
 #' @param public - list of public functions and properties
 #' @param private - list of private functions and properties
 #' @param static - list of fields that will stay the same for every instance of the component
-#' @param inherit - base class - if not specifed it will inherit from Base class (battery::Component)
-#' @param ... - reset option passed to R6Class constructor
-#'
+#' @param inherit - base class - if not specifed it will inherit from Base class \code{\link{BaseComponent}}
+#' @param ... - reset option passed to \code{\link{R6Class}} constructor
 #' @export
+#' @examples
+#' \dontrun{
+#'
+#' Button <- battery::component(
+#'   classname = "Button",
+#'   public = list(
+#'     count = NULL,
+#'     ## constructor is artifical method so you don't need to call super
+#'     ## which you may forget to add
+#'     constructor = function(canEdit = TRUE) {
+#'       self$connect("click", self$ns("button"))
+#'       self$count <- 0
+#'       self$on("click", function(e = NULL, target = NULL) {
+#'         self$count <- self$count + 1
+#'       }, enabled = canEdit)
+#'       self$output[[self$ns("buttonOutput")]] <- renderUI({
+#'         self$events$click
+#'         tags$div(
+#'           tags$span(self$count),
+#'           actionButton(self$ns("button"), "click")
+#'         )
+#'       })
+#'     },
+#'     render = function() {
+#'       tags$div(
+#'         class = "button-component",
+#'         uiOutput(self$ns("buttonOutput"))
+#'       )
+#'     }
+#'   )
+#' )
+#' Panel <- battery::component(
+#'   classname = "Panel",
+#'   public = list(
+#'     title = NULL,
+#'     constructor = function(title) {
+#'       self$title <- title
+#'       btn <- Button$new(parent = self)
+#'       self$appendChild("button", btn)
+#'       self$output[[self$ns("button")]] <- renderUI({
+#'         btn$render()
+#'       })
+#'     },
+#'     render = function() {
+#'       tags$div(
+#'         tags$h2(self$title),
+#'         tags$div(uiOutput(self$ns("button")))
+#'       )
+#'     }
+#'   )
+#' )
+#'
+#' server <- function(input, output, session) {
+#'    ## this is entry point into batter component tree
+#'    root <- Panel$new(title = "Hello", input = i, output = o, session = s)
+#'    renderUI({
+#'        root$render()
+#'    })
+#' }
+#' }
 component <- function(classname,
                       public = NULL,
                       private = NULL,
                       static = NULL,
-                      inherit = battery::BaseComponent,
+                      inherit = battery:::BaseComponent,
                       ...) {
   static.env <- new.static.env()
   if (!is.null(static)) {
@@ -584,12 +1087,11 @@ component <- function(classname,
   class
 }
 
-#' helper function for adding properties to R6Class
+#' Helper function for adding properties to R6Class
 #' @param class - battery component constructor
 #' @param seq - named list of properties and functions methods
 #'
 r6.class.add <- function(class, seq) {
-
   prop.name <- as.character(substitute(seq)) # so we don't need to write name as string
   lapply(names(seq), function(name) {
     if (is.function(seq[[name]])) {
@@ -615,13 +1117,19 @@ r6.class.add <- function(class, seq) {
           env$private$.spy(name = name, ...)
         }
         tryCatch({
-          fn(...)
+          space <- env$private$.indent()
+          self$static$.global$.level = self$static$.global$.level + 1
+          env$self$log("info", paste0(space, name, "::before"), type = "method")
+          ret <- fn(...)
+          self$static$.global$.level = self$static$.global$.level - 1
+          env$self$log("info", paste0(space, name, "::after"), type = "method")
+          ret
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
             message(paste0("throw in ", env$self$id, "::", name))
             message(cond$message)
             traceback(cond)
-            stop(cond)
+            stop()
           }
         })
       }, list(fn.expr = seq[[name]], name = name)))
@@ -634,6 +1142,7 @@ r6.class.add <- function(class, seq) {
 
 #' higher order function for creating extend static method on every battery::Component
 #' @param class - battery component constructor
+#' @return function
 make.extend <- function(class) {
   function(...) {
     child <- component(inherit = class, ...)
@@ -642,5 +1151,5 @@ make.extend <- function(class) {
   }
 }
 
-#' init extend on base battery component
+## init extend on base battery component
 BaseComponent$extend <- make.extend(BaseComponent)
