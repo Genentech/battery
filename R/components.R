@@ -95,15 +95,17 @@ BaseComponent <- R6::R6Class(
     .pending = function(name, value = NULL, increment = NULL, fn = NULL) {
       if (!is.null(private$.handlers[[name]])) {
         if (!is.null(value)) {
-          for (handler in private$.handlers[[name]]) {
+          for (i in seq_along(private$.handlers[[name]])) {
+            handler <- private$.handlers[[name]][[i]]
             if (is.null(fn) || identical(handler$handler, fn)) {
-              handler$pending <- value
+              private$.handlers[[name]][[i]]$pending <- value
             }
           }
         } else if (!is.null(increment)) {
-          for (handler in private$.handlers[[name]]) {
+          for (i in seq_along(private$.handlers[[name]])) {
+            handler <- private$.handlers[[name]][[i]]
             if (is.null(fn) || identical(handler$handler, fn)) {
-              handler$pending <- handler$pending + increment
+              private$.handlers[[name]][[i]]$pending <- handler$pending + increment
             }
           }
         } else {
@@ -111,13 +113,19 @@ BaseComponent <- R6::R6Class(
         }
       }
     },
-    ## ---------------------------------------------------------------
+    ## -------------------------------------------------------------------------
     .indent = function() {
       if (self$static$.global$.level > 0) {
         strrep(" ", self$static$.global$.level * 2)
       } else {
         ""
       }
+    },
+    ## -------------------------------------------------------------------------
+    ## :: Method checks if expression is self$ns('xxx')
+    ## -------------------------------------------------------------------------
+    .is.ns = function(expr) {
+      length(expr) == 2 && class(expr[[1]]) == 'call' && deparse(expr[[1]]) == 'self$on'
     }
   ),
   ## -----------------------------------------------------------------
@@ -373,6 +381,7 @@ BaseComponent <- R6::R6Class(
     #'
     #' @param name - name of the event to fire
     #' @param data - data to be used to trigger the event if function use
+    #' @param .force - internal option to disable forcing of reactive events
     #' @param .level - internal option for logger, that is used to created indent
     ## ---------------------------------------------------------------
     trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
@@ -385,19 +394,22 @@ BaseComponent <- R6::R6Class(
         update <- if (is.null(data)) {
           function() {
             msg <- battery:::indent(indent, "trigger::force (NULL)")
-            self$log("battery", msg, name = name, target = self$id, type = "trigger")
+            self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
 
             self$events[[name]] <- shiny::isolate({
               if (is.logical(self$events[[name]])) {
                 !self$events[[name]]
               } else if (is.list(self$events[[name]])) {
-                append(list(
-                  timestamp = battery:::now()
-                ), self$events[[name]])
+                list(
+                  timestamp = battery:::now(),
+                  target = self$id,
+                  value = self$events[[name]]$value
+                )
               } else {
                 message(paste(
-                  "[WARN] trigger: wrong data type (if used event data need to be list",
-                  "or boolean)"
+                  "[WARN]",
+                  self$id,
+                  "- trigger: wrong data type (if used event data need to be list or boolean)"
                 ))
                 NULL
               }
@@ -410,14 +422,15 @@ BaseComponent <- R6::R6Class(
               data$target <- self$id
             }
             msg <- battery:::indent(indent, "trigger::force (list)")
-            self$log("battery", msg, name = name, target = self$id, type = "trigger")
+            self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
             self$events[[name]] <- data
           }
         } else {
           function() {
             message(paste(
-              "[WARN] trigger: wrong data type (if used event data need to be list",
-            "or boolean)"
+              "[WARN]",
+              self$id,
+              "- trigger: wrong data type (if used event data need to be list or boolean)"
             ))
           }
         }
@@ -649,6 +662,14 @@ BaseComponent <- R6::R6Class(
     #' }
     ## ---------------------------------------------------------------
     on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
+      if (private$.is.ns(substitute(events)) && !input) {
+        print(paste(
+          "[WARN]",
+          self$id,
+          "- you should use input = TRUE when using self$ns to create event on",
+          "shiny input element. You should not use self$ns with battery events."
+        ))
+      }
       for (event in events) {
         self$log("battery", "on", event = event, type = "on")
       }
@@ -779,7 +800,7 @@ BaseComponent <- R6::R6Class(
           for (e in private$.handlers[[event]]) {
             if (e$pending != 0) {
               print(paste(
-                "[WARN] event", event, "was not called",
+                "[WARN]", self$id, "- event", event, "was not called,",
                 "you can try to call this event with force"
               ))
             }
@@ -791,7 +812,7 @@ BaseComponent <- R6::R6Class(
             if (identical(e$handler, handler)) {
               if (e$pending != 0) {
                 print(paste(
-                  "[WARN] event", event, "was not called",
+                  "[WARN]", self$id,"- event", event, "was not called,",
                   "you can try to call this event with force"
                 ))
               }
