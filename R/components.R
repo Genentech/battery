@@ -87,24 +87,23 @@ BaseComponent <- R6::R6Class(
     .observers = NULL,
     .global = NULL,
     ## ---------------------------------------------------------------
-    ## :: setter/getter for pending counter for given event
-    ## :: used to check if there was no pending events
-    ## :: that was not triggered
-    ## :: this shouldn't be needed, it's just in case
+    ## :: setter/getter for pending counter for given internal events
+    ## :: used to check if there was no pending events that was not
+    ## :: triggered. This shouldn't be needed, it's just in case
     ## ---------------------------------------------------------------
     .pending = function(name, value = NULL, increment = NULL, fn = NULL) {
       if (!is.null(private$.handlers[[name]])) {
         if (!is.null(value)) {
           for (i in seq_along(private$.handlers[[name]])) {
             handler <- private$.handlers[[name]][[i]]
-            if (is.null(fn) || identical(handler$handler, fn)) {
+            if (!handler$input && (is.null(fn) || identical(handler$handler, fn))) {
               private$.handlers[[name]][[i]]$pending <- value
             }
           }
         } else if (!is.null(increment)) {
           for (i in seq_along(private$.handlers[[name]])) {
             handler <- private$.handlers[[name]][[i]]
-            if (is.null(fn) || identical(handler$handler, fn)) {
+            if (!handler$input && (is.null(fn) || identical(handler$handler, fn))) {
               private$.handlers[[name]][[i]]$pending <- handler$pending + increment
             }
           }
@@ -715,8 +714,7 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
                 self$static$.global$.level = self$static$.global$.level + 1
-                private$.pending(event, increment = -1, fn = handler)
-                battery:::invoke(handler, self$input[[event]], self)
+                battery:::invoke(handler, self$input[[event]], self$id)
                 self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
@@ -776,6 +774,7 @@ BaseComponent <- R6::R6Class(
 
           private$.handlers[[event]] <- append(private$.handlers[[event]], list(
             list(
+              input = input,
               handler = handler,
               pending = 0,
               observer = observer
