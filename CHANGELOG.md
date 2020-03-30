@@ -1,3 +1,7 @@
+## 0.4.1
+### Bugfix
+* fix false warning about not triggered handlers on input events
+
 ## 0.4.0
 ### Features
 * eventEmitter based logging system
