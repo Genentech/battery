@@ -131,7 +131,7 @@ EventEmitter <- R6::R6Class(
           if (is.null(private$observers[[event]])) {
             shiny::makeReactiveBinding(event, env = self$events)
 
-            private$observers[[event]] <- shiny::observeEvent(self$events[[event]], {
+            private$observers[[event]] <- battery:::observeWrapper(self$events[[event]], {
               data <- self$events[[event]]
 
               if (is.null(data) || is.logical(data)) {
@@ -139,7 +139,11 @@ EventEmitter <- R6::R6Class(
               } else {
                 private$invoke(event, data[["value"]])
               }
-            }, ...)
+            },
+            ignoreInit = TRUE,
+            event.env = environment(),
+            handler.env = environment(),
+            ...)
           }
         } else {
           makeActiveBinding(event, env = self$events, fun = function(data) {

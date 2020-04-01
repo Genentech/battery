@@ -9,7 +9,11 @@ test_that('it should emit event', {
   InputComponent <- battery::component(
     classname = 'InputComponent',
     public = list(
-      constructor = function() {},
+      constructor = function() {
+        self$logger(c('info', 'battery'), function(data) {
+          print(paste(data$message, data$id, `if`(length(data$args) > 0, data$args[[1]])))
+        })
+      },
       run = function(arg) {
         self$emit('foo', arg)
       },
@@ -25,6 +29,7 @@ test_that('it should emit event', {
       constructor = function() {
         InputComponent$new(component.name = 'c', parent = self, spy = TRUE)
         self$on('foo', function(value) {
+          print("TRIGGER")
           self$foo(value)
           args <<- list(value)
         })
@@ -37,7 +42,7 @@ test_that('it should emit event', {
   output <- activeOutput()
   t <- TestingComponent$new(input = input, output = output, session = session,  spy = TRUE)
   t$children$c$run(100)
-  
+
   expect_equal(args, list(100))
   expect_equal(t$.calls$foo, list(list(100)))
   t$children$c$run(200)
