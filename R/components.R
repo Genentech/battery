@@ -718,7 +718,7 @@ BaseComponent <- R6::R6Class(
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "obsever before(input)"),
+                  paste0(space, "observer before(input)"),
                   event = event,
                   input = input,
                   type = "on"
@@ -729,7 +729,7 @@ BaseComponent <- R6::R6Class(
                 self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "obsever after(input)"),
+                  paste0(space, "observer after(input)"),
                   event = event,
                   input = input,
                   type = "on"
