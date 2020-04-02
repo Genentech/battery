@@ -10,6 +10,7 @@ observeWrapper(
   event.env = parent.frame(),
   handler.env = parent.frame(),
   ignoreNULL = TRUE,
+  ignoreInit = FALSE,
   exitHandler = NULL,
   once = FALSE,
   debounceMillis = NULL
@@ -27,11 +28,16 @@ observeWrapper(
 \item{ignoreNULL}{- if set to TRUE it will not invoke the handler if reactive
 value is NULL}
 
+\item{ignoreInit}{- if set to FALSE it will run handler expression on init}
+
 \item{exitHandler}{- additional function that will be called if once is set}
 
 \item{once}{- if set to TRUE it will invoke the handler once nad destroy observer}
 
 \item{debounceMillis}{- if not NULL it will use the value as time for \code{shiny::debounce}}
+}
+\value{
+result of \code{shiny::obseve}
 }
 \description{
 wrapper over observe that works similar to \code{shiny::observeEvent}
