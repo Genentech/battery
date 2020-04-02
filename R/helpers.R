@@ -82,3 +82,68 @@ indent <- function(n, string) {
   spaces <- strrep(" ", n)
   paste0(spaces, string)
 }
+
+
+#' Function helper taken from \code{shiny::observeEvent} implementation
+#' from https://github.com/rstudio/shiny/blob/master/R/reactives.R
+#' @param value - value from calling output of \code{shiny::exprToFunction}
+isNullEvent <- function(value) {
+  is.null(value) || (inherits(value, 'shinyActionButtonValue') && value == 0)
+}
+
+
+#' wrapper over observe that works similar to \code{shiny::observeEvent}
+#' @param eventExpr - reactive expression
+#' @param handlerExpr - expression that react to reactive expression
+#' @param event.env - environment used for reactive expression
+#' @param handler.env - environment used for handler expression
+#' @param ignoreNULL - if set to TRUE it will not invoke the handler if reactive
+#'        value is NULL
+#' @param ignoreInit - if set to FALSE it will run handler expression on init
+#' @param exitHandler - additional function that will be called if once is set
+#' @param once - if set to TRUE it will invoke the handler once nad destroy observer
+#' @param debounceMillis - if not NULL it will use the value as time for \code{shiny::debounce}
+#' @return result of \code{shiny::obseve}
+observeWrapper <- function(eventExpr,
+                           handlerExpr,
+                           event.env = parent.frame(),
+                           handler.env = parent.frame(),
+                           ignoreNULL = TRUE,
+                           ignoreInit = FALSE,
+                           exitHandler = NULL,
+                           once = FALSE,
+                           debounceMillis = NULL) {
+
+  exprFun <- shiny::exprToFunction(eventExpr, event.env)
+  handlerFun <- shiny::exprToFunction(handlerExpr, handler.env)
+
+  ## debounce need to be on function that is reactive
+  if (!is.null(debounceMillis)) {
+    exprFun <- exprFun %>% shiny::debounce(debounceMillis)
+  }
+
+  initialized <- FALSE
+  shiny::observe({
+    e <- exprFun()
+    if (ignoreInit && !initialized) {
+      initialized <<- TRUE
+      return()
+    }
+
+    if (once) {
+      on.exit({
+        if (is.null(exitHandler)) {
+          observer$destroy()
+        } else {
+          exitHandler(observer)
+        }
+      })
+    }
+
+    if (ignoreNULL && isNullEvent(e)) {
+      return()
+    }
+
+    shiny::isolate(handlerFun())
+  })
+}

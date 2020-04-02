@@ -641,8 +641,10 @@ BaseComponent <- R6::R6Class(
     #'        otherwise it's internal battery event
     #' @param enabled - boolean that enable event to easy toggle event
     #' @param single - if used it will create only one event, it will always destroy old one
+    #' @param once - argument works the same as in \code{shiny::observeEvent}
+    #' @param debounceMillis - if not NULL it will use \code{shiny::debounce} on the function
+    #' @param ignoreNULL - argument works the same as in \code{shiny::observeEvent}
     #' @param init - indicate if event should be triggered on init
-    #' @param ... - any additional arguments are passed into shiny::observeEvent
     #' @examples
     #' \dontrun{
     #'
@@ -660,7 +662,15 @@ BaseComponent <- R6::R6Class(
     #' })
     #' }
     ## ---------------------------------------------------------------
-    on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
+    on = function(events,
+                  handler,
+                  input = FALSE,
+                  enabled = TRUE,
+                  single = TRUE,
+                  debounceMillis = NULL,
+                  once = FALSE,
+                  ignoreNULL = TRUE,
+                  init = FALSE) {
       if (private$.is.ns(substitute(events)) && !input) {
         print(paste(
           "[WARN]",
@@ -701,24 +711,25 @@ BaseComponent <- R6::R6Class(
             }
           }
 
-          observer <- if (input) {
-            shiny::observeEvent(self$input[[event]], {
-              ..BATTERY <- FALSE
+          if (input) {
+            reactiveEnv <- "input"
+            invokeEvent <- function() {
               tryCatch({
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "on::trigger::before(N)"),
+                  paste0(space, "observer before(input)"),
                   event = event,
                   input = input,
                   type = "on"
                 )
                 self$static$.global$.level = self$static$.global$.level + 1
+                ## invoke handler function with only argument it accept
                 battery:::invoke(handler, self$input[[event]], self$id)
                 self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "on::trigger::after(N)"),
+                  paste0(space, "observer after(input)"),
                   event = event,
                   input = input,
                   type = "on"
@@ -730,25 +741,23 @@ BaseComponent <- R6::R6Class(
                   traceback(cond)
                 }
               })
-            }, ignoreInit = !init, ...)
+            }
           } else {
             self$createEvent(event)
-
-            shiny::observeEvent(self$events[[event]], {
-              ..BATTERY <- FALSE
-              data <- self$events[[event]]
-              ## invoke handler function with only argument it accept
+            invokeEvent <- function() {
               tryCatch({
+                data <- self$events[[event]]
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "on::trigger::before(B)"),
+                  paste0(space, "observer before(events)"),
                   event = event,
                   input = input,
                   type = "on"
                 )
                 self$static$.global$.level = self$static$.global$.level + 1
                 private$.pending(event, increment = -1, fn = handler)
+                ## invoke handler function with only argument it accept
                 if (is.null(data) || is.logical(data)) {
                   battery:::invoke(handler, NULL, NULL)
                 } else {
@@ -757,7 +766,7 @@ BaseComponent <- R6::R6Class(
                 self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
-                  paste0(space, "on::trigger::after(B)"),
+                  paste0(space, "observer after(events)"),
                   event = event,
                   input = input,
                   type = "on"
@@ -769,8 +778,26 @@ BaseComponent <- R6::R6Class(
                   traceback(cond)
                 }
               })
-            }, ignoreInit = !init, ...)
+            }
+            reactiveEnv <- "events"
           }
+
+          ## We use variable with string because for unknonw reason
+          ## shiny::exprToFunction try to evaluate self$TRUE
+          ## instead of self$input probably because of some substitute
+          observer <- battery:::observeWrapper(
+            self[[reactiveEnv]][[event]],
+            handlerExpr = {
+              invokeEvent()
+            },
+            ignoreInit = !init,
+            ignoreNULL = ignoreNULL,
+            exitHandler = function(o) {
+              self$off(event, handler)
+            },
+            once = once,
+            debounceMillis = debounceMillis
+          )
 
           private$.handlers[[event]] <- append(private$.handlers[[event]], list(
             list(
