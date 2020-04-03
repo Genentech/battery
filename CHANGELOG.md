@@ -1,6 +1,7 @@
 ## 0.4.1
 ### Bugfix
 * fix false warning about not triggered handlers on input events
+* remove the hack for observeEvent
 
 ## 0.4.0
 ### Features

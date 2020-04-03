@@ -682,18 +682,6 @@ BaseComponent <- R6::R6Class(
       for (event in events) {
         self$log("battery", "on", event = event, type = "on")
       }
-      ## HACK: for avengersApps to detect battery in shiny::observeEvent monkey patch
-      ##
-      ##       avengersApps use: is.battery <- any(grepl("..BATTERY <- FALSE", sys.call()))
-      ##       to detect if the function was called in battery
-      ##
-      ## TODO: remove the hack and refactor avengersApps::observeEvent
-      ##       to use option single = TRUE in IDA to force destroy of old observer,
-      ##       so it will not affect battery, that have same expression for multiple events
-      ##       on same component or input (without this only last handler remain)
-      ##       battery can't use observerName because it need to work with original
-      ##       shiny::observeEvent that don't have that option
-      ..BATTERY <- TRUE
       if (enabled) {
         if (!is.function(handler)) {
           stop(sprintf("battery::component::on handler for `%s` is not a function", event))
