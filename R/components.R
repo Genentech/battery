@@ -614,6 +614,7 @@ BaseComponent <- R6::R6Class(
         self$createEvent(event)
 
         observer <- shiny::observeEvent(self$input[[elementId]], {
+          ..BATTERY <- FALSE
           self$emit(event, self$input[[elementId]], include.self = TRUE)
         })
 
