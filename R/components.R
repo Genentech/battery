@@ -112,6 +112,14 @@ BaseComponent <- R6::R6Class(
         }
       }
     },
+    .error.handle = function(cond) {
+      if (is.function(self$services$.error)) {
+        if (identical(self$services$.error(cond), FALSE)) {
+          return(FALSE)
+        }
+      }
+      return(TRUE)
+    },
     ## -------------------------------------------------------------------------
     .indent = function() {
       if (self$static$.global$.level > 0) {
@@ -161,7 +169,7 @@ BaseComponent <- R6::R6Class(
     #'              user components
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          services = NULL, spy = FALSE, ...) {
+                          error = NULL, services = NULL, spy = FALSE, ...) {
       ## shiny values parent inheritance
       if (is.null(parent) && (is.null(input) || is.null(output) ||
                               is.null(session))) {
@@ -231,6 +239,10 @@ BaseComponent <- R6::R6Class(
       if (is.null(parent)) {
         self$services$.log <- EventEmitter$new()
       }
+      ## global error handler
+      if (!is.null(error) && is.null(parent)) {
+        self$services$.error <- error
+      }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
@@ -259,9 +271,13 @@ BaseComponent <- R6::R6Class(
           self$constructor(...)
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
+            if (private$.error.handle(cond) == FALSE) {
+              return()
+            }
             message(paste0("throw in ", self$id, "::constructor"))
             message(cond$message)
             traceback(cond)
+            stop()
           }
         })
       }
@@ -726,9 +742,13 @@ BaseComponent <- R6::R6Class(
                 )
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
+                  if (private$.error.handle(cond) == FALSE) {
+                    return()
+                  }
                   message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                   message(cond$message)
                   traceback(cond)
+                  stop()
                 }
               })
             }, ignoreInit = !init, ...)
@@ -765,9 +785,13 @@ BaseComponent <- R6::R6Class(
                 )
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
+                  if (private$.error.handle(cond) == FALSE) {
+                    return()
+                  }
                   message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                   message(cond$message)
                   traceback(cond)
+                  stop()
                 }
               })
             }, ignoreInit = !init, ...)
@@ -1118,14 +1142,17 @@ r6.class.add <- function(class, seq) {
         }
         tryCatch({
           space <- env$private$.indent()
-          self$static$.global$.level = self$static$.global$.level + 1
+          env$self$static$.global$.level = env$self$static$.global$.level + 1
           env$self$log("info", paste0(space, name, "::before"), type = "method")
           ret <- fn(...)
-          self$static$.global$.level = self$static$.global$.level - 1
+          env$self$static$.global$.level = self$static$.global$.level - 1
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
+            if (private$.error.handle(cond) == FALSE) {
+              return()
+            }
             message(paste0("throw in ", env$self$id, "::", name))
             message(cond$message)
             traceback(cond)
