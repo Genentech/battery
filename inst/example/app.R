@@ -19,7 +19,7 @@ Button <- battery::component(
       self$on("click", function() {
         self$count <- self$count + 1
         if (self$count %% 2 == 0) {
-          self$trow.error()
+          self$throw.error()
         }
       }, enabled = canEdit)
       self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
@@ -30,7 +30,7 @@ Button <- battery::component(
         )
       })
     },
-    trow.error = function() {
+    throw.error = function() {
       x()
     },
     render = function() {
@@ -107,13 +107,16 @@ server <- function(input, output, session) {
     input = input,
     output = output,
     session = session,
-    error = function(cond) {
-      print(cond)
+    error = function(cond, details) {
+      message(cond$message)
+      if (details$type == "method") {
+        message(paste("  thrown from", details$name, "in", details$id))
+      }
       return(FALSE)
     }
   )
   root$logger(c('info'), function(data) {
-    print(data$message)
+    #print(data$message)
   })
 
   output$app <- renderUI({

@@ -112,9 +112,13 @@ BaseComponent <- R6::R6Class(
         }
       }
     },
-    .error.handle = function(cond) {
+    ## -------------------------------------------------------------------------
+    ## global error handler
+    .error.handle = function(cond, data) {
       if (is.function(self$services$.error)) {
-        if (identical(self$services$.error(cond), FALSE)) {
+        data <- c(data, list(id = self$id))
+        ret <- battery:::invoke(self$services$.error, cond, data)
+        if (identical(ret, FALSE)) {
           return(FALSE)
         }
       }
@@ -272,7 +276,7 @@ BaseComponent <- R6::R6Class(
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
             if (private$.error.handle(cond) == FALSE) {
-              return()
+              return(NA)
             }
             message(paste0("throw in ", self$id, "::constructor"))
             message(cond$message)
@@ -678,7 +682,8 @@ BaseComponent <- R6::R6Class(
     #' }
     ## ---------------------------------------------------------------
     on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
-      if (private$.is.ns(substitute(events)) && !input) {
+      is.ns <- private$.is.ns(substitute(events))
+      if ((is.ns && !input) || (!is.ns && input)) {
         print(paste(
           "[WARN]",
           self$id,
@@ -730,9 +735,8 @@ BaseComponent <- R6::R6Class(
                   input = input,
                   type = "on"
                 )
-                self$static$.global$.level = self$static$.global$.level + 1
+                self$static$.global$.level <- self$static$.global$.level + 1
                 battery:::invoke(handler, self$input[[event]], self$id)
-                self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
                   paste0(space, "on::trigger::after(N)"),
@@ -742,14 +746,21 @@ BaseComponent <- R6::R6Class(
                 )
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
-                  if (private$.error.handle(cond) == FALSE) {
-                    return()
+                  err.data <- list(
+                    type = "event",
+                    event = event,
+                    input = input
+                  )
+                  if (private$.error.handle(cond, err.data) == FALSE) {
+                    return(NA)
                   }
                   message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                   message(cond$message)
                   traceback(cond)
                   stop()
                 }
+              }, finally = {
+                self$static$.global$.level = self$static$.global$.level - 1
               })
             }, ignoreInit = !init, ...)
           } else {
@@ -775,7 +786,6 @@ BaseComponent <- R6::R6Class(
                 } else {
                   battery:::invoke(handler, data[["value"]], data[["target"]])
                 }
-                self$static$.global$.level = self$static$.global$.level - 1
                 self$log(
                   c("battery", "info"),
                   paste0(space, "on::trigger::after(B)"),
@@ -785,14 +795,21 @@ BaseComponent <- R6::R6Class(
                 )
               }, error = function(cond) {
                 if (!inherits(cond, "shiny.silent.error")) {
-                  if (private$.error.handle(cond) == FALSE) {
-                    return()
+                  err.data <- list(
+                    type = "event",
+                    event = event,
+                    input = input
+                  )
+                  if (private$.error.handle(cond, err.data) == FALSE) {
+                    return(NA)
                   }
                   message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
                   message(cond$message)
                   traceback(cond)
                   stop()
                 }
+              }, finally = {
+                self$static$.global$.level <- self$static$.global$.level - 1
               })
             }, ignoreInit = !init, ...)
           }
@@ -1145,19 +1162,25 @@ r6.class.add <- function(class, seq) {
           env$self$static$.global$.level = env$self$static$.global$.level + 1
           env$self$log("info", paste0(space, name, "::before"), type = "method")
           ret <- fn(...)
-          env$self$static$.global$.level = self$static$.global$.level - 1
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
         }, error = function(cond) {
           if (!inherits(cond, "shiny.silent.error")) {
-            if (private$.error.handle(cond) == FALSE) {
-              return()
+            err.data <- list(
+              type = "method",
+              name = name,
+              args = list(...)
+            )
+            if (private$.error.handle(cond, err.data) == FALSE) {
+              return(NA)
             }
             message(paste0("throw in ", env$self$id, "::", name))
             message(cond$message)
             traceback(cond)
             stop()
           }
+        }, finally = {
+          env$self$static$.global$.level = self$static$.global$.level - 1
         })
       }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
