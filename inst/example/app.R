@@ -36,7 +36,7 @@ Button <- battery::component(
     render = function() {
       tags$div(
         class = "button-component",
-        tags$p(class = "buton-label", self$label),
+        tags$p(class = "button-label", self$label),
         shiny::uiOutput(self$ns("buttonOutput"))
       )
     }

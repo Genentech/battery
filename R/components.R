@@ -114,13 +114,19 @@ BaseComponent <- R6::R6Class(
     },
     ## -------------------------------------------------------------------------
     ## global error handler
-    .error.handle = function(cond, data) {
-      if (is.function(self$services$.error)) {
-        data <- c(data, list(id = self$id))
-        ret <- battery:::invoke(self$services$.error, cond, data)
-        if (identical(ret, FALSE)) {
-          return(FALSE)
+    .error.handle = function(origin, cond, data) {
+      if (!inherits(cond, "shiny.silent.error")) {
+        if (is.function(self$static$.global$.error)) {
+          data <- c(data, list(id = self$id))
+          ret <- battery:::invoke(self$static$.global$.error, cond, data)
+          if (identical(ret, FALSE)) {
+            return()
+          }
         }
+        message(paste("thrown in", origin))
+        message(cond$message)
+        traceback(cond)
+        stop()
       }
       return(TRUE)
     },
@@ -245,7 +251,7 @@ BaseComponent <- R6::R6Class(
       }
       ## global error handler
       if (!is.null(error) && is.null(parent)) {
-        self$services$.error <- error
+        self$static$.global$.error <- error
       }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
@@ -274,15 +280,12 @@ BaseComponent <- R6::R6Class(
         tryCatch({
           self$constructor(...)
         }, error = function(cond) {
-          if (!inherits(cond, "shiny.silent.error")) {
-            if (private$.error.handle(cond) == FALSE) {
-              return(NA)
-            }
-            message(paste0("throw in ", self$id, "::constructor"))
-            message(cond$message)
-            traceback(cond)
-            stop()
-          }
+          err.data <- list(
+            type = "constructor",
+            args = list(...)
+          )
+          origin <- paste0(self$id, "::constructor")
+          private$.error.handle(origin, cond, err.data)
         })
       }
     },
@@ -745,20 +748,13 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
               }, error = function(cond) {
-                if (!inherits(cond, "shiny.silent.error")) {
-                  err.data <- list(
-                    type = "event",
-                    event = event,
-                    input = input
-                  )
-                  if (private$.error.handle(cond, err.data) == FALSE) {
-                    return(NA)
-                  }
-                  message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
-                  message(cond$message)
-                  traceback(cond)
-                  stop()
-                }
+                err.data <- list(
+                  type = "event",
+                  event = event,
+                  input = input
+                )
+                origin <- paste0(self$id, "::on('", event, "', ...)")
+                private$.error.handle(origin, cond, err.data)
               }, finally = {
                 self$static$.global$.level = self$static$.global$.level - 1
               })
@@ -794,20 +790,13 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
               }, error = function(cond) {
-                if (!inherits(cond, "shiny.silent.error")) {
-                  err.data <- list(
-                    type = "event",
-                    event = event,
-                    input = input
-                  )
-                  if (private$.error.handle(cond, err.data) == FALSE) {
-                    return(NA)
-                  }
-                  message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
-                  message(cond$message)
-                  traceback(cond)
-                  stop()
-                }
+                err.data <- list(
+                  type = "event",
+                  event = event,
+                  input = input
+                )
+                origin <- paste0(self$id, "::on('", event, "', ...)")
+                private$.error.handle(origin, cond, err.data)
               }, finally = {
                 self$static$.global$.level <- self$static$.global$.level - 1
               })
@@ -1165,20 +1154,13 @@ r6.class.add <- function(class, seq) {
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
         }, error = function(cond) {
-          if (!inherits(cond, "shiny.silent.error")) {
-            err.data <- list(
-              type = "method",
-              name = name,
-              args = list(...)
-            )
-            if (private$.error.handle(cond, err.data) == FALSE) {
-              return(NA)
-            }
-            message(paste0("throw in ", env$self$id, "::", name))
-            message(cond$message)
-            traceback(cond)
-            stop()
-          }
+          origin <- paste0(env$self$id, "::", name)
+          err.data <- list(
+            type = "method",
+            name = name,
+            args = list(...)
+          )
+          private$.error.handle(origin, cond, err.data)
         }, finally = {
           env$self$static$.global$.level = self$static$.global$.level - 1
         })
