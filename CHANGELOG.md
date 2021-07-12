@@ -1,3 +1,7 @@
+## 0.4.2
+### Bugfix
+* fix testing framework when parsing expression with inline functions
+
 ## 0.4.1
 ### Bugfix
 * fix false warning about not triggered handlers on input events
