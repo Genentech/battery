@@ -1,6 +1,8 @@
 library(testthat)
 library(shiny)
 library(battery)
+library(magrittr)
+
 
 context('test_connection')
 
@@ -208,5 +210,91 @@ test_that('it should allow to create active output after renderUI', {
   input$foo <- 20
   expect_equal(output$bar, 30)
 })
+
+test_that('it should parse dplyr operators', {
+  input <- activeInput()
+  output <- activeOutput()
+
+  x <- function(x, y) {
+    x + y
+  }
+
+  output$bar <- renderUI({
+    input$foo %>% x(10) %>% x(0)
+  })
+  input$new('foo')
+  output$new('bar')
+  input$foo <- 10
+  expect_equal(output$bar, 20)
+  input$foo <- 20
+  expect_equal(output$bar, 30)
+})
+
+test_that('it should parse dplyr operators without active input', {
+  output <- activeOutput()
+
+  x <- function(x, y) {
+    x + y
+  }
+
+  output$bar <- renderUI({
+    10 %>% x(10)
+  })
+  output$new('bar')
+  expect_equal(output$bar, 20)
+})
+
+test_that('should process higher order functions', {
+  output <- activeOutput()
+
+  map <- function(lst, fn) {
+    result <- list()
+    for (x in lst) {
+      result <- append(result, fn(x, NULL))
+    }
+    result
+  }
+
+  output$bar <- renderUI({
+    map(
+      lst = list(1, 2, 3),
+      fn = function(x, key) {
+        x + 1
+      }
+    )
+  })
+  output$new('bar')
+  expect_equal(output$bar, list(2, 3, 4))
+})
+
+test_that('should found active name in inline functions', {
+  output <- activeOutput()
+
+  input <- activeInput()
+
+  input$new("foo")
+
+  map <- function(lst, fn) {
+    result <- list()
+    for (x in lst) {
+      result <- append(result, fn(x, NULL))
+    }
+    result
+  }
+
+  output$bar <- renderUI({
+    map(
+      lst = list(1, 2, 3),
+      fn = function(x, key) {
+        x + input$foo
+      }
+    )
+  })
+  output$new('bar')
+  input$foo <- 10
+  expect_equal(output$bar, list(11, 12, 13))
+})
+
+
 
 battery::clearMocks()

@@ -396,6 +396,27 @@ expect_that(t$.calls$foo, list(list(10), list(x = 20)))
 constructor is also on the list of `.calls`, everything except of functions that are in base
 component R6 class (this may change in the future if will be needed).
 
+### Error handler
+
+In version 0.5.0 you can add single global error handler that will be invoked on any error.
+By default when error happen the battery will call `stop()` but you can prevent that.
+By returning `FALSE` and do your own handling of errors.
+
+Example
+```R
+root <- App$new(
+  input = input,
+  output = output,
+  session = session,
+  error = function(cond) {
+    print(cond)
+    return(FALSE)
+  }
+)
+```
+
+This will make error silient, the application will run like nothing happens.
+
 ## Contributors
 * Jakub T. Jankiewicz
 * Michał Jakubczak

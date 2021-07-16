@@ -430,7 +430,7 @@ renderUIMock <- function(expr) {
 #' Merge two lists into desc list - destructive
 #'
 #' @param desc - detination list
-#' @param src - source lise
+#' @param src - source list
 merge.props <- function(desc, src) {
   lapply(names(src), function(name) {
     desc[[name]] <<- append(desc[[name]], src[[name]])
@@ -593,6 +593,16 @@ is.variable <- function(chr) {
 #' @param item - substitute expression
 is.dolar.variable <- is.variable('$')
 
+#' Function check if expression is function passed as argument
+#'
+#' @param item - substitute expression
+is.inline.fucntion <- function(item) {
+  typeof(item) == 'language' &&
+    length(item) > 0 &&
+    typeof(item[[1]]) == 'symbol' &&
+    item[[1]] == 'function'
+}
+
 #' Function check if argumnet is expression foo[[bar]]
 #'
 #' @param item - substitute expression
@@ -700,6 +710,9 @@ extractActiveNames <- function(arg) {
       if (length(item) > 1) {
         result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))
       }
+    } else if (is.inline.fucntion(item)) {
+      body.expr <- item[[3]]
+      result <- merge.props(result, extractActiveNames(list(expr = body.expr, env = env)))
     } else if (length(item) > 1 && !isolate &&
                !(is.dolar.variable(item) || is.dbbracket.variable(item))) {
       result <- merge.props(result, extractActiveNames(list(expr = item, env = arg$env)))

@@ -1,130 +1,101 @@
-
 library(shiny)
 
 
 ui <- fluidPage(
-  uiOutput('output')
+  uiOutput('app')
 )
 
-Foo <- R6::R6Class(
-  "Foo",
-  private = list(
-    trigger = function(name, data = NULL) {
-      if (name %in% ls(self$events)) {
-        print(shiny::isolate(self$events[[name]]))
-        if (is.null(data)) {
-          self$events[[name]] <- shiny::isolate({
-            if (is.logical(self$events[[name]])) {
-              print("a")
-              !self$events[[name]]
-            } else if (is.null(self$events[[name]]$value)) {
-              print("b")
-              TRUE
-            } else {
-              print("c")
-              !self$events[[name]]$value
-            }
-          })
-        } else {
-          print("d")
-          new.data <- list(
-            timestamp = as.numeric(Sys.time())*1000,
-            value = data$value
-          )
-          print(paste("XXXXXXXXXXX", identical(shiny::isolate(self$events[[name]]), new.data)))
-          #self$events[[name]] <- new.data
-
-          private$force(function() {
-            self$events[[name]] <- new.data
-          })
-
-        }
-        print(shiny::isolate(self$events[[name]]))
-      }
-    },
-    force = function(fn) {
-      observeEvent(NULL, {
-        invalidateLater(0)
-        fn()
-      }, once = TRUE, ignoreNULL = FALSE, ignoreInit = FALSE)
-    }
-  ),
+Button <- battery::component(
+  classname = "Button",
   public = list(
-    events = NULL,
-    input = NULL,
-    session = NULL,
-    initialize = function(input, session, ...) {
-      #session$manageInputs(list(shinyHack = TRUE))
-      #observeEvent(input$shinyHack, {
-      #})
-      self$input <- input
-      self$session <- session
-      self$events <- new.env()
-      if (!is.null(self$constructor)) {
-        self$constructor(...)
-      }
-    },
-    ## ------------------------------------------------------------------------
-    createEvent = function(name, value = NULL) {
-      print(paste("CREATE: ", name))
-      if (!name %in% ls(self$events)) {
-        shiny::makeReactiveBinding(name, env = self$events)
-        if (is.logical(value) && value) {
-          self$events[[name]] <- TRUE
-        } else {
-          data <- list(
-            value = value,
-            timestamp = as.numeric(Sys.time())*1000
-          )
-          self$events[[name]] <- data
+    count = NULL,
+    label = NULL,
+    ## constructor is artifical method so you don't need to call super
+    ## which you may forget to add
+    constructor = function(label, canEdit = TRUE) {
+      self$label <- label
+      self$connect("click", self$ns("button"))
+      self$count <- 0
+      self$on("click", function() {
+        self$count <- self$count + 1
+        if (self$count %% 2 == 0) {
+          self$throw.error()
         }
-      }
+      }, enabled = canEdit)
+      self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
+        self$events$click
+        tags$div(
+          tags$span(self$count),
+          actionButton(self$ns("button"), "click")
+        )
+      })
     },
-    ## ------------------------------------------------------------------------
-    on = function(event, handler, init = FALSE, ...) {
-      self$createEvent(event)
+    throw.error = function() {
+      x()
+    },
+    render = function() {
+      tags$div(
+        class = "button-component",
+        tags$p(class = "button-label", self$label),
+        shiny::uiOutput(self$ns("buttonOutput"))
+      )
+    }
+  )
+)
+HelloButton <- Button$extend(
+  classname = "HelloButton",
+  public = list(
+    constructor = function() {
+      super$constructor("hello")
+    }
+  )
+)
 
-      shiny::observeEvent(self$events[[event]], {
-        print(paste("::::", event))
-        data <- self$events[[event]]
-        ## invoke handler function with only argument it accept
-        tryCatch({
-          if (is.null(data) || is.logical(data)) {
-            battery:::invoke(handler, NULL, NULL)
-          } else {
-            battery:::invoke(handler, data[["value"]], data[["target"]])
-          }
-        }, error = function(cond) {
-          if (!inherits(cond, "shiny.silent.error")) {
-            message(paste0("throw in ", self$id, "::on('", event, "', ...)"))
-            message(cond$message)
-            traceback(cond)
-            stop(cond)
-          }
-        })
-      }, ignoreInit = !init, ...)
-    },
-    ## ------------------------------------------------------------------------
-    working = function() {
-      shiny::makeReactiveBinding("bar", env = self$events)
-      self$events$bar <- 10
-      shiny::observeEvent(self$events$bar, {
-        print("foo bar")
-        print(self$events$bar)
+Panel <- battery::component(
+  classname = "Panel",
+  public = list(
+    title = NULL,
+    constructor = function(title) {
+      self$title <- title
+      Button$new(label = "click Me", component.name = "btn1", parent = self)
+      HelloButton$new(component.name = "btn2", parent = self)
+      ## inside each component you have access to output, input and session in self$
+      ## to make component separated if more then one is used use self$ns to create unique id
+      self$output[[self$ns("button")]] <- shiny::renderUI({
+        tags$div(
+          self$children$btn1$render(),
+          self$children$btn2$render()
+        )
       })
-      self$events$bar <- 20
     },
-    ## ------------------------------------------------------------------------
-    not.working = function() {
-      self$on("bar", function(value) {
-        print(paste("CALL: ", value))
-      })
-      self$trigger("bar", list(value = "NORMAL"))
+    render = function() {
+      tags$div(
+        tags$h2(self$title),
+        tags$div(shiny::uiOutput(self$ns("button")))
+      )
+    }
+  )
+)
 
-      self$session$manageInputs(list(shinyHack = TRUE))
-      observeEvent(self$input$shinyHack, {
-        self$trigger("bar", list(value = "WITH HACK"))
+App <- battery::component(
+  classname = "App",
+  public = list(
+    constructor = function() {
+      ## for root node you don't need to use ns to create namespace but you can
+        a <- Panel$new(title = "A", component.name = "panelA", parent = self)
+        b <- Panel$new(title = "B", component.name = "panelB", parent = self)
+      self$output[[ self$ns("root") ]] <- shiny::renderUI({
+        tags$div(
+          a$render(),
+          b$render()
+        )
       })
+    },
+    render = function() {
+      tags$div(
+        titlePanel('Shiny App using Battery R package'),
+        mainPanel(shiny::uiOutput(self$ns("root")))
+      )
     }
   )
 )
@@ -132,9 +103,25 @@ Foo <- R6::R6Class(
 server <- function(input, output, session) {
 
   ## Root component that don't have parent need to be called with input output and session.
-  root <- Foo$new(input = input, session = session)
-  root$working()
-  root$not.working()
+  root <- App$new(
+    input = input,
+    output = output,
+    session = session,
+    error = function(cond, details) {
+      message(cond$message)
+      if (details$type == "method") {
+        message(paste("  thrown from", details$name, "in", details$id))
+      }
+      return(FALSE)
+    }
+  )
+  root$logger(c('info'), function(data) {
+    #print(data$message)
+  })
+
+  output$app <- renderUI({
+    root$render()
+  })
 }
 
 # Run the application
