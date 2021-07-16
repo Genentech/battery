@@ -809,7 +809,7 @@ BaseComponent <- R6::R6Class(
             },
             ignoreInit = !init,
             ignoreNULL = ignoreNULL,
-            exitHandler = function(o) {
+            exitHandler = function() {
               self$off(event, handler)
             },
             once = once,

@@ -134,8 +134,8 @@ observeWrapper <- function(eventExpr,
       on.exit({
         if (is.null(exitHandler)) {
           observer$destroy()
-        } else {
-          exitHandler(observer)
+        } else if (is.function(exitHandler)) {
+          battery:::invoke(exitHandler, observer)
         }
       })
     }
