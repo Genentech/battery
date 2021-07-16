@@ -128,7 +128,6 @@ BaseComponent <- R6::R6Class(
         traceback(cond)
         stop()
       }
-      return(TRUE)
     },
     ## -------------------------------------------------------------------------
     .indent = function() {
@@ -685,8 +684,7 @@ BaseComponent <- R6::R6Class(
     #' }
     ## ---------------------------------------------------------------
     on = function(events, handler, input = FALSE, enabled = TRUE, single = TRUE, init = FALSE, ...) {
-      is.ns <- private$.is.ns(substitute(events))
-      if ((is.ns && !input) || (!is.ns && input)) {
+      if (private$.is.ns(substitute(events)) && !input) {
         print(paste(
           "[WARN]",
           self$id,
@@ -1160,9 +1158,9 @@ r6.class.add <- function(class, seq) {
             name = name,
             args = list(...)
           )
-          private$.error.handle(origin, cond, err.data)
+          env$private$.error.handle(origin, cond, err.data)
         }, finally = {
-          env$self$static$.global$.level = self$static$.global$.level - 1
+          env$self$static$.global$.level = env$self$static$.global$.level - 1
         })
       }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
