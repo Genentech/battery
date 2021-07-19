@@ -99,7 +99,6 @@ activeInput <- function(env = new.env(), ...) {
                      expr = NULL,
                      ignoreNULL = TRUE,
                      debounceMillis = NULL,
-                     observerName = NULL,
                      ...) {
     if (is.null(env$.listeners[[event.name]])) {
       env$.listeners[[event.name]] <- list()
@@ -119,18 +118,17 @@ activeInput <- function(env = new.env(), ...) {
           expr = expr,
           ignoreNULL = ignoreNULL,
           calls = list(),
-          observerName = observerName,
           fn = fn
         )
       )
     )
   }
-  env$off <- function(event.name, expr, observerName = NULL) {
+  env$off <- function(event.name, expr) {
     if (is.null(expr)) {
       env$.listeners[[event.name]] <- list()
     } else {
       env$.listeners[[event.name]] <- Filter(function(listener) {
-        !(listener$expr == expr || identical(observerName, listener$observerName))
+        listener$expr != expr
       }, env$.listeners[[event.name]])
     }
   }
@@ -246,30 +244,32 @@ is.active.binding <- function(name, env) {
 }
 
 # -----------------------------------------------------------------------------
-#' Function used the same as battery::observeEvent (based on \code{shiny::observeEvent})
-#' that use active binding input mocks - the work almost the same as \code{shiny::observeEvent} but it
-#' destroy previous created observer, so there are no duplicates
+#' Function used the same as \code{battery:::observeWrapper} (based on \code{shiny::observeEvent})
 #' @param eventExpr - same as in \code{shiny::observeEvent}
 #' @param handlerExpr - same as in \code{shiny::observeEvent}
+#' @param event.env - same as in \code{shiny::observeEvent}
 #' @param handler.env - same as in \code{shiny::observeEvent}
 #' @param ignoreInit - same as in \code{shiny::observeEvent}
 #' @param ignoreNULL - same as in \code{shiny::observeEvent}
-#' @param observerName - name that will distinguish observers with same code
 #' @param once - same as in \code{shiny::observeEvent}
-#' @param ... - reset the params from \code{shiny::observeEvent}
+#' @param ... - reset the params from \code{battery:::observeWrapper}
 #' @return list with destroy method - same as \code{shiny::observeEvent}
-#'
-#' @export
-observeEventMock <- function(eventExpr,
-                             handlerExpr,
-                             handler.env = parent.frame(),
-                             ignoreInit = FALSE,
-                             ignoreNULL = TRUE,
-                             observerName = NULL,
-                             once = FALSE,
-                             ...) {
+## TODO: add debounce implementation using R active binding
+observeWrapperMock <- function(eventExpr,
+                               handlerExpr,
+                               event.env = parent.frame(),
+                               handler.env = parent.frame(),
+                               ignoreInit = FALSE,
+                               ignoreNULL = TRUE,
+                               once = FALSE,
+                               ...) {
+  ## force lazy eval
+  force_eval <- eventExpr
+  force_eval <- handler.env
+
   expr <- substitute(handlerExpr)
   sub <- substitute(eventExpr)
+
   if (deparse(sub) == "NULL") {
     if (!ignoreInit && !ignoreNULL) {
       eval(expr, envir = handler.env)
@@ -280,23 +280,35 @@ observeEventMock <- function(eventExpr,
       )
     ))
   }
-  ## check if this is self$name - we don't check every corner case
-  ## we will only use self$events (in components) and maybe
-  ## just in case input$foo or input[[name]] with this mock
+  ## parsing expression: we don't check every possible case
+  ## it checks those possible uses (only last one is actually used
+  ## in component `on` method in components.R)
+  ## also mocks for observeEvent are using first use case
+  ##
+  ##    input$foo
+  ##    input[[name]]
+  ##    self$input$name
+  ##    self$input[[name]]
+  ##    self[[events]]$name
+  ##    self[[events]][[name]]
+  ##
   activeEnv <- if (length(sub[[2]]) > 1) {
     prop <- sub[[2]]
-    if (prop[[1]] == '$') {
-      obj <- get(deparse(prop[[2]]), handler.env)
-      obj[[deparse(prop[[3]])]]
+    obj <- get(deparse(prop[[2]]), event.env)
+    name <- if (prop[[1]] == '$') {
+      deparse(prop[[3]])
+    } else if (prop[[1]] == '[[') {
+      get(deparse(prop[[3]]), event.env)
     }
+    obj[[name]]
   } else {
-    get(deparse(sub[[2]]), handler.env)
+    get(deparse(sub[[2]]), event.env)
   }
   name <- if (sub[[1]] == '$') {
     as.character(sub[[3]])
   } else if (sub[[1]] == '[[') {
     if (class(sub[[3]]) == 'name') {
-      get(deparse(sub[[3]]), handler.env)
+      get(deparse(sub[[3]]), event.env)
     } else {
       sub[[3]]
     }
@@ -306,17 +318,17 @@ observeEventMock <- function(eventExpr,
     eval(expr, envir = handler.env)
   }
   if (is.active.input(activeEnv)) {
-    activeEnv$off(name, expr, observerName = observerName)
+    activeEnv$off(name, expr)
     activeEnv$on(name, function(old, value) {
       eval(expr, envir = handler.env)
       if (once) {
-        activeEnv$off(name, expr, observerName = observerName)
+        activeEnv$off(name, expr)
       }
-    }, observerName = observerName, expr = expr, ...)
+    }, expr = expr, ...)
   }
   list(
     destroy = function() {
-      activeEnv$off(name, expr, observerName = observerName)
+      activeEnv$off(name, expr)
     }
   )
 }
@@ -767,11 +779,27 @@ originals <- new.env()
 #' @export
 useMocks <- function() {
   env <- parent.frame()
-  mock('observeEvent', battery::observeEventMock, env)
+  ## we mock obseveEvent for unit tests
+  mock('observeEvent', battery:::observeWrapperMock, env)
+  mock('observeWrapper', battery:::observeWrapperMock, env, package = 'battery')
   mock('isolate', battery::isolate, env)
   mock('makeReactiveBinding', battery::makeReactiveBinding, env)
   mock('renderUI', battery::renderUIMock, env)
   mock('force', function(x) x(), env, package = 'battery')
+}
+
+#' Helper function to be used at the end of test files (useful if same session is used
+#' to run test and application e.g. RStudio)
+#'
+#' @export
+clearMocks <- function() {
+  env <- parent.frame()
+  for (name in c('isolate', 'observeEvent', 'makeReactiveBinding', 'renderUI')) {
+    clearMock(name, env)
+  }
+  for (name in c('force', 'observeWrapper')) {
+    clearMock(name, env, package = 'battery')
+  }
 }
 
 #' function create single mock for shiny function
@@ -792,19 +820,6 @@ mock <- function(name, mock, env, package = 'shiny') {
 clearMock <- function(name, env, package = 'shiny') {
   utils::assignInNamespace(name, originals[[name]], package)
   env[[name]] <- originals[[name]]
-}
-
-
-#' Helper function to be used at the end of test files (useful if same session is used
-#' to run test and application e.g. RStudio)
-#'
-#' @export
-clearMocks <- function() {
-  env <- parent.frame()
-  for (name in c('observeEvent', 'isolate', 'makeReactiveBinding', 'renderUI')) {
-    clearMock(name, env)
-  }
-  clearMock('force', env, package = 'battery')
 }
 
 

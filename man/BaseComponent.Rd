@@ -667,8 +667,10 @@ Add event listener to given internal event or native input
   input = FALSE,
   enabled = TRUE,
   single = TRUE,
-  init = FALSE,
-  ...
+  debounceMillis = NULL,
+  once = FALSE,
+  ignoreNULL = TRUE,
+  init = FALSE
 )}\if{html}{\out{</div>}}
 }
 
@@ -686,9 +688,13 @@ otherwise it's internal battery event}
 
 \item{\code{single}}{- if used it will create only one event, it will always destroy old one}
 
-\item{\code{init}}{- indicate if event should be triggered on init}
+\item{\code{debounceMillis}}{- if not NULL it will use \code{shiny::debounce} on the function}
 
-\item{\code{...}}{- any additional arguments are passed into shiny::observeEvent}
+\item{\code{once}}{- argument works the same as in \code{shiny::observeEvent}}
+
+\item{\code{ignoreNULL}}{- argument works the same as in \code{shiny::observeEvent}}
+
+\item{\code{init}}{- indicate if event should be triggered on init}
 }
 \if{html}{\out{</div>}}
 }
