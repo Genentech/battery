@@ -730,12 +730,12 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
               }, error = function(cond) {
-                list(
+                create.error(cond, list(
                   type = "event",
                   origin = paste0(self$id, "::on('", event, "', ...)"),
                   event = event,
                   input = input
-                )
+                ))
               }, finally = function() {
                 self$static$.global$.level = self$static$.global$.level - 1
               })
@@ -1155,11 +1155,17 @@ r6.class.add <- function(class, seq) {
 #' @param handler - list of handlers
 #' @param rest - indicate if old handlers should be removed
 #' @export
-exceptions <- function(handler, reset = FALSE) {
+exceptions <- function(handler = NULL, reset = FALSE) {
   if (reset) {
-    global$exceptions <- handler
+    global$exceptions <- if (is.null(handler)) {
+      list()
+    } else {
+      handler
+    }
+  } else if (is.null(handler)) {
+    stop("battery::excpetion list require NULL given")
   } else {
-    global$exceptions <- c(global$exceptions, handler)
+    global$exceptions <- modifyList(global$exceptions, handler)
   }
 }
 
@@ -1180,10 +1186,17 @@ handle.exceptions <- function(cond, finally = NULL) {
   if (!is.null(cond$class)) {
     for (c in cond$class) {
       if (is.function(global$exceptions[[c]])) {
-        ret <- battery:::invoke(global$exceptions[[c]], cond)
-        if (identical(ret, FALSE) && is.null(result)) {
-          result <- FALSE
-        }
+        withExceptions({
+          ret <- battery:::invoke(global$exceptions[[c]], cond)
+          if (identical(ret, FALSE) && is.null(result)) {
+            result <- FALSE
+          }
+        }, error = function(cond) {
+           create.error(cond, list(
+             type = "exception",
+             name = c
+           ))
+        })
       }
     }
   }
@@ -1194,8 +1207,13 @@ handle.exceptions <- function(cond, finally = NULL) {
 }
 
 #' global exception handler that is used in battery instead of tryCatch
-withExceptions <- function(expr, error, finally = NULL) {
-  withCallingHandlers({
+#' @param expr - any expression
+#' @param error - function that will be triggered on error default NULL
+#'                it should return add add meta data create.error(cond, list(...))
+#' @param finally - function that is always executed after exception is handled
+#' @export
+withExceptions <- function(expr, error = NULL, finally = NULL) {
+  invisible(withCallingHandlers({
     withRestarts(
       expr = expr,
       battery__ignore = function() {
@@ -1204,23 +1222,28 @@ withExceptions <- function(expr, error, finally = NULL) {
     )
   },
   error = function(cond) {
-    if (!inherits(cond, "shiny.silent.error") && is.function(error)) {
-      err <- battery:::invoke(error, cond)
-      if (is.list(err) && err$class == "error") {
-        handle.error(err, finally)
+    if (!inherits(cond, "shiny.silent.error")) {
+      if (is.function(error)) {
+        err <- battery:::invoke(error, cond)
+        if (is.list(err) && err$class == "error") {
+          handle.error(err, finally)
+        }
+      } else {
+        handle.error(cond, finally)
       }
       invokeRestart("battery__ignore")
     }
   },
-  exception = function(cond) {
+  battery__exception = function(cond) {
     handle.exceptions(cond, finally)
-  })
+  }))
 }
 
 
 #' create structure that can be used to signal error in applications
 #' @param cond - input from withCallingHandlers it should be unexpected error in app
 #' @param meta - addition extra data that should be added into meta property
+#' @export
 create.error <- function(cond, meta) {
   c(cond, list(class = "error", meta = meta))
 }
@@ -1234,7 +1257,7 @@ create.error <- function(cond, meta) {
 signal <- function(class, message, ...) {
   exception <- structure(
     c(list(...), list(message = message, class = class)),
-    class = c("battery", "exception", "condition")
+    class = c("battery__exception", "condition")
   )
   signalCondition(exception)
 }
