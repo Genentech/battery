@@ -81,9 +81,16 @@ activeInput <- function(env = new.env(), ...) {
   init.binding <- function() {
     for (name in names(input)) {
       if (name == 'self') {
-        stop("You can't use self as name")
+        stop("battery::activeInput: You can't use self as name")
       }
-      env$new(name, fn = input[[name]])
+      arg <- input[[name]]
+      if (!(is.null(arg) && is.function(arg))) {
+        stop(sprintf(
+          "battery::activeInput: name `%s' needs to be NULL or a function",
+          name
+        ))
+      }
+      env$new(name, fn = arg)
     }
   }
   if (is.active.input(env)) {
