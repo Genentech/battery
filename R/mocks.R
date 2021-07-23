@@ -84,7 +84,7 @@ activeInput <- function(env = new.env(), ...) {
         stop("battery::activeInput: You can't use self as name")
       }
       arg <- input[[name]]
-      if (!(is.null(arg) && is.function(arg))) {
+      if (!(is.null(arg) || is.function(arg))) {
         stop(sprintf(
           "battery::activeInput: name `%s' needs to be NULL or a function",
           name

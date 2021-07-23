@@ -51,7 +51,7 @@ test_it('should catch exception', {
       data <<- cond$message
     }
   ))
-  battery:::withExceptions({
+  battery::withExceptions({
     battery::signal('foo', msg)
   })
   expect_equal(data, msg)
@@ -68,7 +68,7 @@ test_it('should handle exception from handler', {
       battery::signal('bar', msg)
     }
   ))
-  battery:::withExceptions({
+  battery::withExceptions({
     battery::signal('foo', msg)
   })
   expect_equal(data, msg)
@@ -87,7 +87,7 @@ test_it('should not remove handler', {
       data <<- cond$message
     }
   ))
-  battery:::withExceptions({
+  battery::withExceptions({
     battery::signal('foo', msg)
   })
   expect_equal(data, msg)
@@ -101,7 +101,7 @@ test_it('should stop execution after exception', {
       data <<- cond$message
     }
   ))
-  battery:::withExceptions({
+  battery::withExceptions({
     battery::signal('foo', msg)
     data <<- NULL
   })
