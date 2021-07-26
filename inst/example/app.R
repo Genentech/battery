@@ -104,8 +104,6 @@ server <- function(input, output, session) {
 
   ## Root component that don't have parent need to be called with input output and session.
   root <- App$new(
-    input = input,
-    output = output,
     session = session,
     error = function(cond, details) {
       message(cond$message)

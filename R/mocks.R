@@ -878,14 +878,26 @@ Session <- R6::R6Class(
   ),
   public = list(
     token = NULL,
+    input = NULL,
+    output = NULL,
     ## -------------------------------------------------------------------------
     #' @description
     #' Session mock constructor
     #' @param token - optional token used for testing to create different
     #'        users that should get different data for services and globals
+    #' @param input - mock for shiny input
+    #' @param output - mock for shiny output
     ## -------------------------------------------------------------------------
-    initialize = function(token = NULL) {
-      self$token <- token
+    initialize = function(token = NULL,
+                          input = battery::activeInput(),
+                          output = battery::activeOutput()) {
+      self$token <- if (is.null(token)) {
+        uuid::UUIDgenerate(use.time = TRUE)
+      } else {
+        token
+      }
+      self$input <- input
+      self$output <- output
     },
     ## -------------------------------------------------------------------------
     #' @description

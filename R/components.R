@@ -28,7 +28,10 @@ new.static.env <- function() {
 #' @name global
 global <- new.global.env()
 global$sessions <- list()
-global$exceptions <- list()
+global$exceptions <- list(
+  default = list(),
+  tokens = list()
+)
 
 #' Root component that have no parent,
 #'
@@ -164,25 +167,23 @@ BaseComponent <- R6::R6Class(
                           parent = NULL, component.name = NULL,
                           error = NULL, services = NULL, spy = FALSE, ...) {
       ## shiny values parent inheritance
-      if (is.null(parent) && (is.null(input) || is.null(output) ||
-                              is.null(session))) {
-        stop(paste('Components without parent need to define input, output ',
-                   ' and session in constructor'))
+      if (is.null(parent) && is.null(session)) {
+        stop(paste('Components without parent need to define session in constructor'))
+      } else if (!is.null(parent)) {
+        self$session <- parent$session
+        self$input <- parent$input
+        self$output <- parent$output
       } else {
+        self$session <- session
         if (is.null(input)) {
-          self$input <- parent$input
+          self$input <- session$input
         } else {
           self$input <- input
         }
         if (is.null(output)) {
-          self$output <- parent$output
+          self$output <- session$output
         } else {
           self$output <- output
-        }
-        if (is.null(session)) {
-          self$session <- parent$session
-        } else {
-          self$session <- session
         }
       }
 
@@ -260,9 +261,10 @@ BaseComponent <- R6::R6Class(
         ## this stimetimes prints no stack trace aviable
         ## add to handlers ($on) and fn(...) in building method
         ## with scope at the end
-        withExceptions({
+        battery::withExceptions({
           self$constructor(...)
         },
+        session = self$session,
         error = function(cond) {
           create.error(cond, list(
             type = "constructor",
@@ -738,7 +740,7 @@ BaseComponent <- R6::R6Class(
                 ))
               }, finally = function() {
                 self$static$.global$.level = self$static$.global$.level - 1
-              })
+              }, session = self$session)
             }, ignoreInit = !init, ...)
           } else {
             self$createEvent(event)
@@ -779,7 +781,7 @@ BaseComponent <- R6::R6Class(
                 ))
               }, finally = function() {
                 self$static$.global$.level <- self$static$.global$.level - 1
-              })
+              }, session = self$session)
             }, ignoreInit = !init, ...)
           }
 
@@ -1142,7 +1144,7 @@ r6.class.add <- function(class, seq) {
           ))
         }, finally = function() {
           env$self$static$.global$.level = env$self$static$.global$.level - 1
-        })
+        }, session = env$self$session)
       }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
     } else {
@@ -1154,40 +1156,68 @@ r6.class.add <- function(class, seq) {
 #' function allows to add global exception handler for all battery components
 #' @param handler - list of handlers
 #' @param rest - indicate if old handlers should be removed
+#' @param session - optional shiny session where to register the exception handler
 #' @export
-exceptions <- function(handler = NULL, reset = FALSE) {
+exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
   if (reset) {
-    global$exceptions <- if (is.null(handler)) {
-      list()
+    if (is.null(session)) {
+      if (is.null(handler)) {
+        global$exceptions$tokens <- list()
+        global$exceptions$default <- list()
+      } else {
+        global$exceptions$defult <- handler
+      }
     } else {
-      handler
+      token <- session$token
+      global$exceptions$tokens[[ token ]] <- if (is.null(handler)) {
+        list()
+      } else {
+        handler
+      }
     }
   } else if (is.null(handler)) {
     stop("battery::excpetion list require NULL given")
+  } else if (is.null(session)) {
+    exceptions <- global$exceptions$default
+    global$exceptions$default <- if (is.null(exceptions)) {
+      handler
+    } else {
+      modifyList(exceptions, handler)
+    }
   } else {
-    global$exceptions <- modifyList(global$exceptions, handler)
+    token <- session$token
+    exceptions <- global$exceptions$tokens[[ token ]]
+    global$exceptions$tokens[[ token ]] <- if (is.null(exceptions)) {
+      handler
+    } else {
+      modifyList(exceptions, handler)
+    }
   }
 }
 
 #' global handler for errors that print exception if user didn't process it
-handle.error <- function(error, finally = NULL) {
-  if (!handle.exceptions(error, finally = finally)) {
+handle.error <- function(error, finally = NULL, session = NULL) {
+  if (!handle.exceptions(error, finally = finally, session = session)) {
     message(paste("thrown in", error$origin))
     message(error$message)
-    traceback(cond)
-    stop()
+    stop(cond)
   }
 }
 
 #' function that invoke global exception handler based on cond data
 #' @param cond - structure with classes that indicate exception
-handle.exceptions <- function(cond, finally = NULL) {
+handle.exceptions <- function(cond, finally = NULL, session = NULL) {
   result <- TRUE
   if (!is.null(cond$class)) {
     for (c in cond$class) {
-      if (is.function(global$exceptions[[c]])) {
+      exceptions <- if (is.null(session)) {
+        global$exceptions$default
+      } else {
+        global$exceptions$tokens[[ session$token ]]
+      }
+      if (is.function(exceptions[[ c ]])) {
         battery::withExceptions({
-          ret <- battery:::invoke(global$exceptions[[c]], cond)
+          ret <- battery:::invoke(exceptions[[ c ]], cond)
           if (identical(ret, FALSE) && is.null(result)) {
             result <- FALSE
           }
@@ -1195,15 +1225,14 @@ handle.exceptions <- function(cond, finally = NULL) {
           if (c == "error") {
             message("[WARN] prevent recursive error, error exception thrown an error")
             message(cond$message)
-            traceback(cond)
-            stop()
+            stop(cond)
           } else {
             create.error(cond, list(
               type = "exception",
               name = c
             ))
           }
-        })
+        }, session = session)
       }
     }
   }
@@ -1219,8 +1248,9 @@ handle.exceptions <- function(cond, finally = NULL) {
 #'                if added it should return add add meta data create.error(cond, list(...))
 #'                it is used internally by battery, it can safely ignored.
 #' @param finally - function that is always executed after exception is handled
+#' @param session - optional shiny session to create exception handler only for given session
 #' @export
-withExceptions <- function(expr, error = NULL, finally = NULL) {
+withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
   invisible(withCallingHandlers({
     withRestarts(
       expr = expr,
@@ -1234,20 +1264,20 @@ withExceptions <- function(expr, error = NULL, finally = NULL) {
       if (is.function(error)) {
         err <- battery:::invoke(error, cond)
         if (is.list(err) && err$class == "error") {
-          handle.error(err, finally)
+          handle.error(err, finally, session = session)
         }
       } else {
         err <- create.error(cond, list(
           type = "exception",
           name = c
         ))
-        handle.error(err, finally)
+        handle.error(err, finally, session = session)
       }
       invokeRestart("battery__ignore")
     }
   },
   battery__exception = function(cond) {
-    handle.exceptions(cond, finally)
+    handle.exceptions(cond, finally, session = session)
   }))
 }
 
@@ -1259,7 +1289,6 @@ withExceptions <- function(expr, error = NULL, finally = NULL) {
 create.error <- function(cond, meta) {
   c(cond, list(class = "error", meta = meta))
 }
-
 
 #' signal exception in applications
 #' @param class - string vector that indicate class of the exception
