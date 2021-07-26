@@ -1186,16 +1186,23 @@ handle.exceptions <- function(cond, finally = NULL) {
   if (!is.null(cond$class)) {
     for (c in cond$class) {
       if (is.function(global$exceptions[[c]])) {
-        withExceptions({
+        battery::withExceptions({
           ret <- battery:::invoke(global$exceptions[[c]], cond)
           if (identical(ret, FALSE) && is.null(result)) {
             result <- FALSE
           }
         }, error = function(cond) {
-           create.error(cond, list(
-             type = "exception",
-             name = c
-           ))
+          if (c == "error") {
+            message("[WARN] prevent recursive error, error exception thrown an error")
+            message(cond$message)
+            traceback(cond)
+            stop()
+          } else {
+            create.error(cond, list(
+              type = "exception",
+              name = c
+            ))
+          }
         })
       }
     }
@@ -1209,7 +1216,8 @@ handle.exceptions <- function(cond, finally = NULL) {
 #' global exception handler that is used in battery instead of tryCatch
 #' @param expr - any expression
 #' @param error - function that will be triggered on error default NULL
-#'                it should return add add meta data create.error(cond, list(...))
+#'                if added it should return add add meta data create.error(cond, list(...))
+#'                it is used internally by battery, it can safely ignored.
 #' @param finally - function that is always executed after exception is handled
 #' @export
 withExceptions <- function(expr, error = NULL, finally = NULL) {
@@ -1229,7 +1237,11 @@ withExceptions <- function(expr, error = NULL, finally = NULL) {
           handle.error(err, finally)
         }
       } else {
-        handle.error(cond, finally)
+        err <- create.error(cond, list(
+          type = "exception",
+          name = c
+        ))
+        handle.error(err, finally)
       }
       invokeRestart("battery__ignore")
     }

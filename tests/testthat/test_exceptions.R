@@ -74,6 +74,84 @@ test_it('should handle exception from handler', {
   expect_equal(data, msg)
 })
 
+test_it('should catch error with exception', {
+  data <- NULL
+  msg <- "BATTERY ERROR"
+  battery::exceptions(list(
+    error = function() {
+      data <<- msg
+    }
+  ))
+  battery::withExceptions({
+    foo()
+  })
+
+  expect_equal(data, msg)
+})
+
+test_it('should catch error in exception handler', {
+  data <- NULL
+  msg <- "BATTERY ERROR"
+  battery::exceptions(list(
+    error = function() {
+      data <<- msg
+    },
+    foo = function() {
+      foo()
+    }
+  ))
+  battery::withExceptions({
+    battery::signal('foo')
+  })
+
+  expect_equal(data, msg)
+})
+
+test_it('should catch error in error handler', {
+  data <- NULL
+  msg <- "BATTERY ERROR"
+  count <- 0
+  battery::exceptions(list(
+    error = function() {
+      count <<- count + 1
+      foo()
+    },
+    foo = function() {
+      foo()
+    }
+  ))
+  tryCatch({
+    battery::withExceptions({
+      battery::signal('foo')
+    })
+  }, error = function(cond) {
+    data <<- msg
+  })
+
+  expect_equal(count, 1)
+  expect_equal(data, msg)
+})
+
+test_it('should catch error in handler', {
+  data <- NULL
+  msg <- "BATTERY ERROR"
+  battery::exceptions(list(
+    foo = function() {
+      foo()
+    },
+    error = function() {
+      data <<- msg
+    }
+  ))
+  battery::withExceptions({
+    battery::signal('foo')
+  })
+
+  expect_equal(data, msg)
+})
+
+
+
 test_it('should not remove handler', {
   data <- NULL
   msg <- "BATTERY EXCEPTION"
@@ -191,8 +269,5 @@ test_it('should catch exception in input', {
 
   expect_equal(data, msg)
 })
-
-
-
 
 battery::clearMocks()
