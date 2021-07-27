@@ -29,7 +29,7 @@ new.static.env <- function() {
 global <- new.global.env()
 global$sessions <- list()
 global$exceptions <- list(
-  default = list(),
+  global = list(),
   tokens = list()
 )
 
@@ -867,7 +867,7 @@ BaseComponent <- R6::R6Class(
       }
       ## clear data for different users in one R process
       if (!is.null(self$session$token)) {
-        global$sessions[[self$session$token]] <- NULL
+        global$sessions[[ self$session$token ]] <- NULL
       }
       for (handler in names(private$.observers)) {
         self$disconnect(handler)
@@ -1162,14 +1162,14 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
   if (reset) {
     if (is.null(session)) {
       if (is.null(handler)) {
-        global$exceptions$tokens <- list()
-        global$exceptions$default <- list()
+        global$exceptions$sessions <- list()
+        global$exceptions$global <- list()
       } else {
-        global$exceptions$defult <- handler
+        global$exceptions$global <- handler
       }
     } else {
       token <- session$token
-      global$exceptions$tokens[[ token ]] <- if (is.null(handler)) {
+      global$exceptions$sessions[[ token ]] <- if (is.null(handler)) {
         list()
       } else {
         handler
@@ -1178,16 +1178,16 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
   } else if (is.null(handler)) {
     stop("battery::excpetion list require NULL given")
   } else if (is.null(session)) {
-    exceptions <- global$exceptions$default
-    global$exceptions$default <- if (is.null(exceptions)) {
+    exceptions <- global$exceptions$global
+    global$exceptions$global <- if (is.null(exceptions)) {
       handler
     } else {
       modifyList(exceptions, handler)
     }
   } else {
     token <- session$token
-    exceptions <- global$exceptions$tokens[[ token ]]
-    global$exceptions$tokens[[ token ]] <- if (is.null(exceptions)) {
+    exceptions <- global$exceptions$sessions[[ token ]]
+    global$exceptions$sessions[[ token ]] <- if (is.null(exceptions)) {
       handler
     } else {
       modifyList(exceptions, handler)
@@ -1211,9 +1211,9 @@ handle.exceptions <- function(cond, finally = NULL, session = NULL) {
   if (!is.null(cond$class)) {
     for (c in cond$class) {
       exceptions <- if (is.null(session)) {
-        global$exceptions$default
+        global$exceptions$global
       } else {
-        global$exceptions$tokens[[ session$token ]]
+        global$exceptions$sessions[[ session$token ]]
       }
       if (is.function(exceptions[[ c ]])) {
         battery::withExceptions({

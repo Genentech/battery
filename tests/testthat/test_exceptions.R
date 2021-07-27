@@ -25,7 +25,7 @@ test_it('should add exception handler', {
     foo = fn
   ))
 
-  expect_equal(battery:::global$exceptions$default$foo, fn)
+  expect_equal(battery:::global$exceptions$global$foo, fn)
 })
 
 test_it('should clear exception handlers', {
@@ -39,7 +39,7 @@ test_it('should clear exception handlers', {
     baz = fn
   ))
   battery::exceptions(reset = TRUE)
-  expect_equal(battery:::global$exceptions$default, list())
+  expect_equal(battery:::global$exceptions$global, list())
 })
 
 test_it('should clear exception handlers per session', {
@@ -64,8 +64,8 @@ test_it('should clear exception handlers per session', {
   ), session = session_B)
 
   battery::exceptions(reset = TRUE, session = session_B)
-  expect_equal(battery:::global$exceptions$tokens[[ token_B ]], list())
-  expect_equal(battery:::global$exceptions$tokens[[ token_A ]], list(
+  expect_equal(battery:::global$exceptions$sessions[[ token_B ]], list())
+  expect_equal(battery:::global$exceptions$sessions[[ token_A ]], list(
     foo = fn,
     bar = fn,
     baz = fn
