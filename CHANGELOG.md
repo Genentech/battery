@@ -1,6 +1,8 @@
 ## 0.5.0
 ### Features
 * add global error handler
+* allow to use only session in root battery constructor
+* simplify mocking session/input/output with `battery::Session$new()`
 
 ## 0.4.2
 ### Bugfix

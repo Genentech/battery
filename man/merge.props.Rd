@@ -9,7 +9,7 @@
 \arguments{
 \item{desc}{- detination list}
 
-\item{src}{- source lise}
+\item{src}{- source list}
 }
 \description{
 Merge two lists into desc list - destructive
