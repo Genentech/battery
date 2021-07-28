@@ -1218,11 +1218,13 @@ handle.exceptions <- function(cond, finally = NULL, session = NULL) {
       if (is.function(exceptions[[ c ]])) {
         battery::withExceptions({
           ret <- battery:::invoke(exceptions[[ c ]], cond)
-          if (identical(ret, FALSE) && is.null(result)) {
+          if (identical(ret, FALSE) && result) {
             result <- FALSE
           }
         }, error = function(cond) {
-          if (c == "error") {
+          if (cond$message == "") {
+            stop()
+          } else if (c == "error") {
             message("[WARN] prevent recursive error, error exception thrown an error")
             message(cond$message)
             stop(cond)
@@ -1277,7 +1279,9 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     }
   },
   battery__exception = function(cond) {
-    handle.exceptions(cond, finally, session = session)
+    if (!handle.exceptions(cond, finally, session = session)) {
+      invokeRestart("battery__ignore")
+    }
   }))
 }
 
