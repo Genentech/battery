@@ -713,7 +713,7 @@ BaseComponent <- R6::R6Class(
           observer <- if (input) {
             shiny::observeEvent(self$input[[event]], {
               ..BATTERY <- FALSE
-              battery:::withExceptions({
+              battery::withExceptions({
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
@@ -749,7 +749,7 @@ BaseComponent <- R6::R6Class(
               ..BATTERY <- FALSE
               data <- self$events[[event]]
               ## invoke handler function with only argument it accept
-              battery:::withExceptions({
+              battery::withExceptions({
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
@@ -1128,7 +1128,7 @@ r6.class.add <- function(class, seq) {
         if (env$private$.spying) {
           env$private$.spy(name = name, ...)
         }
-        withExceptions({
+        battery::withExceptions({
           space <- env$private$.indent()
           env$self$static$.global$.level = env$self$static$.global$.level + 1
           env$self$log("info", paste0(space, name, "::before"), type = "method")
