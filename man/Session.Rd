@@ -49,7 +49,11 @@ component <- TestComponent$new(input = input, output = output, session = session
 \subsection{Method \code{new()}}{
 Session mock constructor
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Session$new(token = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Session$new(
+  token = NULL,
+  input = battery::activeInput(),
+  output = battery::activeOutput()
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -57,6 +61,10 @@ Session mock constructor
 \describe{
 \item{\code{token}}{- optional token used for testing to create different
 users that should get different data for services and globals}
+
+\item{\code{input}}{- mock for shiny input}
+
+\item{\code{output}}{- mock for shiny output}
 }
 \if{html}{\out{</div>}}
 }
