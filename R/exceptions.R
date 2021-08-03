@@ -54,12 +54,18 @@ handle.error <- function(error, finally = NULL, session = NULL) {
 handle.exceptions <- function(cond, finally = NULL, session = NULL) {
   result <- TRUE
   if (!is.null(cond$class)) {
-    for (c in cond$class) {
-      exceptions <- if (is.null(session)) {
+    exceptions <- if (is.null(session)) {
+      global$exceptions$global
+    } else {
+      session.exceptions <- global$exceptions$sessions[[ session$token ]]
+      if (is.null(session.exceptions)) {
+        ## fallback if no session exceptions
         global$exceptions$global
       } else {
-        global$exceptions$sessions[[ session$token ]]
+        session.exceptions
       }
+    }
+    for (c in cond$class) {
       if (is.function(exceptions[[ c ]])) {
         battery::withExceptions({
           ret <- battery:::invoke(exceptions[[ c ]], cond)
@@ -124,7 +130,6 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     }
   },
   battery__exception = function(cond) {
-    message(paste0('battery::', cond$class[1], cond$message))
     if (!handle.exceptions(cond, finally, session = session)) {
       invokeRestart("battery__ignore")
     }
