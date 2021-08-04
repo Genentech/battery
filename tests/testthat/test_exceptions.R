@@ -86,6 +86,24 @@ test_it('should catch exception', {
   expect_equal(data, msg)
 })
 
+test_it('should continue execution', {
+  data <- NULL
+  data.2 <- NULL
+  msg <- "BATTERY EXCEPTION"
+  msg.2 <- paste(msg, "[2]")
+  battery::exceptions(list(
+    foo = function(cond) {
+      data <<- msg
+    }
+  ))
+  battery::withExceptions({
+    battery::signal('foo', msg)
+    data.2 <- msg.2
+  })
+  expect_equal(data, msg)
+  expect_equal(data.2, msg.2)
+})
+
 test_it('should execute exception per session', {
   token_A <- "AAAA"
   token_B <- "BBBB"
@@ -239,13 +257,72 @@ test_it('should stop execution after exception', {
   battery::exceptions(list(
     foo = function(cond) {
       data <<- cond$message
+      return(FALSE)
     }
   ))
   battery::withExceptions({
     battery::signal('foo', msg)
-    data <<- NULL
+    data <- NULL
   })
   expect_equal(data, msg)
+})
+
+test_it('should continue execution after exception', {
+  data <- NULL
+  msg <- "BATTERY EXCEPTION"
+  data.2 <- NULL
+  battery::exceptions(list(
+    foo = function(cond) {
+      data <<- cond$message
+    }
+  ))
+  battery::withExceptions({
+    battery::signal('foo', msg)
+    data.2 <- msg
+  })
+  expect_equal(data, msg)
+  expect_equal(data.2, msg)
+})
+
+test_it('should invoke multiple exceptions', {
+  data.1 <- NULL
+  data.2 <- NULL
+  msg <- "BATTERY EXCEPTION"
+  battery::exceptions(list(
+    foo = function(cond) {
+      data.1 <<- cond$message
+    },
+    bar = function(cond) {
+      data.2 <<- cond$message
+    }
+  ))
+  battery::withExceptions({
+    battery::signal(c('foo', 'bar'), msg)
+  })
+  expect_equal(data.1, msg)
+  expect_equal(data.2, msg)
+})
+
+test_it('should invoke multiple exceptions when one stop execution', {
+  data.1 <- NULL
+  data.2 <- NULL
+  msg <- "BATTERY EXCEPTION"
+  battery::exceptions(list(
+    foo = function(cond) {
+      data.1 <<- cond$message
+      return(FALSE)
+    },
+    bar = function(cond) {
+      data.2 <<- cond$message
+    }
+  ))
+  battery::withExceptions({
+    battery::signal(c('foo', 'bar'), msg)
+    data.1 <- NULL
+    data.2 <- NULL
+  })
+  expect_equal(data.1, msg)
+  expect_equal(data.2, msg)
 })
 
 test_it('should handle exception in component method', {
