@@ -5,38 +5,15 @@
 #' @export
 exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
   if (reset) {
-    if (is.null(session)) {
-      if (is.null(handler)) {
-        global$exceptions$sessions <- list()
-        global$exceptions$global <- list()
-      } else {
-        global$exceptions$global <- handler
-      }
+    if (is.null(handler)) {
+      reset.exceptions(session)
     } else {
-      token <- session$token
-      global$exceptions$sessions[[ token ]] <- if (is.null(handler)) {
-        list()
-      } else {
-        handler
-      }
+      set.exceptions(handler, session)
     }
   } else if (is.null(handler)) {
     stop("battery::excpetion list require NULL given")
-  } else if (is.null(session)) {
-    exceptions <- global$exceptions$global
-    global$exceptions$global <- if (is.null(exceptions)) {
-      handler
-    } else {
-      modifyList(exceptions, handler)
-    }
   } else {
-    token <- session$token
-    exceptions <- global$exceptions$sessions[[ token ]]
-    global$exceptions$sessions[[ token ]] <- if (is.null(exceptions)) {
-      handler
-    } else {
-      modifyList(exceptions, handler)
-    }
+    extend.exceptions(handler, session)
   }
 }
 
@@ -130,6 +107,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     }
   },
   battery__exception = function(cond) {
+    message(paste("battery::", cond$message))
     if (!handle.exceptions(cond, finally, session = session)) {
       invokeRestart("battery__ignore")
     }
@@ -157,3 +135,68 @@ signal <- function(class, message, ...) {
   signalCondition(exception)
 }
 
+
+#' helper function that capture all signal messages into a vector
+#' it can be used in unit tests to check if the function sent proper messages
+#' @param expr - any expression
+#' @param signal - charcater vector with signals that should be captured
+#' @export
+capture_signal_messages <- function(expr, signal, session = NULL) {
+  data <- c()
+
+  exceptions <- list()
+  for (name in signal) {
+    exceptions[[name]] <- function(cond) {
+      data <<- c(data, cond$message)
+    }
+  }
+
+  old.exceptions <- get.exceptions(session)
+
+  battery::exceptions(exceptions, reset = TRUE, session = session)
+  battery::withExceptions(expr, session = session)
+
+  set.exceptions(old.exceptions, session)
+
+  data
+}
+
+#' helper function that returns exception handler
+get.exceptions <- function(session = NULL) {
+  if (is.null(session)) {
+    global$exceptions$global
+  } else {
+    global$exceptions$sessions[[ session$token ]]
+  }
+}
+
+#' helper function that reset exceptions
+reset.exceptions <- function(session = NULL) {
+  if (is.null(session)) {
+    global$exceptions$sessions <- list()
+    global$exceptions$global <- list()
+  } else {
+    global$exceptions$sessions[[ session$token ]] <- list()
+  }
+}
+
+#' helper function that extend existing exception handler
+#' note that if same handler function is used it will be overwritten
+extend.exceptions <- function(handler, session = NULL) {
+  exceptions <- get.exceptions(session)
+  exceptions <- if (is.null(exceptions)) {
+    handler
+  } else {
+    modifyList(exceptions, handler)
+  }
+  set.exceptions(exceptions, session)
+}
+
+#' helper function that set exception uncoditionaly, old handler is discarded
+set.exceptions <- function(handler, session = NULL) {
+  if (is.null(session)) {
+    global$exceptions$global <- handler
+  } else {
+    global$exceptions$sessions[[ session$token ]] <- handler
+  }
+}

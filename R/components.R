@@ -28,10 +28,10 @@ new.static.env <- function() {
 #' @name global
 global <- new.global.env()
 global$sessions <- list()
-global$exceptions <- list(
+global$exceptions <- list2env(list(
   global = list(),
-  tokens = list()
-)
+  sessions = list()
+))
 
 #' Root component that have no parent,
 #'
