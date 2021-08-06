@@ -255,7 +255,6 @@ with all instances of same battery component.}
   session = NULL,
   parent = NULL,
   component.name = NULL,
-  error = NULL,
   services = NULL,
   spy = FALSE,
   ...

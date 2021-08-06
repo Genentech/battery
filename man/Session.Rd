@@ -8,6 +8,9 @@ Mock for Session object, only some tests require this right now
 but more tests may require this session object in the future
 Right now only services need session$destroy() method to clear
 services so you can create same service in more then one test
+
+with version 0.5.0 session mock can be used as the only object
+passed to root component constructor.
 }
 \examples{
 
@@ -31,6 +34,10 @@ component <- TestComponent$new(input = input, output = output, session = session
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
 \item{\code{token}}{- string used by battery to distinguish users}
+
+\item{\code{input}}{- shiny input}
+
+\item{\code{output}}{- shiny output}
 }
 \if{html}{\out{</div>}}
 }
