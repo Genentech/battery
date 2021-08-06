@@ -1,7 +1,7 @@
 Package: battery
 Type: Package
 Title: Battery R6Class Components
-Version: 0.4.3
+Version: 0.5.0
 Date: 2020-03-20 06:01:30
 CommitHash: 0697b403cd9b219c78467e7a254b948bd161a5d6
 Author: Jakub T. Jankiewicz
