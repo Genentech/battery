@@ -852,9 +852,14 @@ set.frame <- function(value, name = NULL, frame = 1) {
 #' Right now only services need session$destroy() method to clear
 #' services so you can create same service in more then one test
 #'
+#' with version 0.5.0 session mock can be used as the only object
+#' passed to root component constructor.
+#'
 #' @field token - string used by battery to distinguish users
 #' @importFrom R6 R6Class
 #' @keywords mock testing unittests
+#' @field input - shiny input
+#' @field output - shiny output
 #' @name Session
 #' @export
 #' @examples

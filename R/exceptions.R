@@ -11,7 +11,7 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
       set.exceptions(handler, session)
     }
   } else if (is.null(handler)) {
-    stop("battery::excpetion list require NULL given")
+    stop("battery::excpetion handler argument need to be list, NULL given")
   } else {
     extend.exceptions(handler, session)
   }
@@ -107,7 +107,6 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     }
   },
   battery__exception = function(cond) {
-    message(paste("battery::", cond$message))
     if (!handle.exceptions(cond, finally, session = session)) {
       invokeRestart("battery__ignore")
     }

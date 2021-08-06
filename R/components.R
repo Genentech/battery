@@ -165,7 +165,7 @@ BaseComponent <- R6::R6Class(
     #'              user components
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          error = NULL, services = NULL, spy = FALSE, ...) {
+                          services = NULL, spy = FALSE, ...) {
       ## shiny values parent inheritance
       if (is.null(parent) && is.null(session)) {
         stop(paste('Components without parent need to define session in constructor'))
