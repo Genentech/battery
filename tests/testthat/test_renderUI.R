@@ -13,10 +13,9 @@ x_test_that <- function(x,y) NULL
 
 ## --------------------------------------------------------------------------------------
 test_that('it renders the output using uiOutput', {
-  session <- list()
-  input <- activeInput(foo = NULL)
-  output <- activeOutput()
-
+  input <- battery::activeInput(foo = NULL)
+  output <- battery::activeOutput()
+  session <- battery::Session$new(input = input, output = output)
 
   Comp <- battery::component(
     classname = 'C',
@@ -35,7 +34,7 @@ test_that('it renders the output using uiOutput', {
     )
   )
   ## component.id is a way to force id when creating two instances
-  x <- Comp$new(input = input, output = output, session = session)
+  x <- Comp$new(session = session)
   ## it also work when you create active output after adding first value
   ## so you can know what is the id when creating multiple instances
   output$new(x$ns('xx'))
@@ -71,8 +70,8 @@ test_that('is should render output when uiOutput is in function', {
     uiOutput(name)
   }
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   C <- battery::component(
     classname = 'C',
@@ -112,8 +111,8 @@ test_that('is should render output when uiOutput is in function', {
 ## --------------------------------------------------------------------------------------
 test_that('it should render output when uiOutput is in other method', {
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   Comp <- battery::component(
     classname = 'C',
@@ -159,8 +158,8 @@ test_that('it should render output when uiOutput is in other method', {
 ## --------------------------------------------------------------------------------------
 test_that('is should render output when uiOutput is in other method that have if', {
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   Comp <- battery::component(
     classname = 'C',
@@ -210,8 +209,8 @@ test_that('is should render output when uiOutput is in other method that have if
 
 test_that('it should render output with active input', {
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   Comp <- battery::component(
     classname = 'C',
@@ -261,8 +260,8 @@ test_that('it should render output with active input', {
 ## --------------------------------------------------------------------------------------
 test_that('it should render output with active input in function', {
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   foo <- function(self) {
     self$input$foo
@@ -316,8 +315,8 @@ test_that('it should render output with active input in function', {
 ## --------------------------------------------------------------------------------------
 test_that('it should render output with active input in method', {
   session <- list()
-  input <- activeInput()
-  output <- activeOutput()
+  input <- battery::activeInput()
+  output <- battery::activeOutput()
 
   Comp <- battery::component(
     classname = 'C',

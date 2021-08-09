@@ -28,6 +28,10 @@ new.static.env <- function() {
 #' @name global
 global <- new.global.env()
 global$sessions <- list()
+global$exceptions <- list2env(list(
+  global = list(),
+  sessions = list()
+))
 
 #' Root component that have no parent,
 #'
@@ -113,23 +117,6 @@ BaseComponent <- R6::R6Class(
       }
     },
     ## -------------------------------------------------------------------------
-    ## global error handler
-    .error.handle = function(origin, cond, data) {
-      if (!inherits(cond, "shiny.silent.error")) {
-        if (is.function(self$static$.global$.error)) {
-          data <- c(data, list(id = self$id))
-          ret <- battery:::invoke(self$static$.global$.error, cond, data)
-          if (identical(ret, FALSE)) {
-            return()
-          }
-        }
-        message(paste("thrown in", origin))
-        message(cond$message)
-        traceback(cond)
-        stop()
-      }
-    },
-    ## -------------------------------------------------------------------------
     .indent = function() {
       if (self$static$.global$.level > 0) {
         strrep(" ", self$static$.global$.level * 2)
@@ -178,27 +165,25 @@ BaseComponent <- R6::R6Class(
     #'              user components
     initialize = function(input = NULL, output = NULL, session = NULL,
                           parent = NULL, component.name = NULL,
-                          error = NULL, services = NULL, spy = FALSE, ...) {
+                          services = NULL, spy = FALSE, ...) {
       ## shiny values parent inheritance
-      if (is.null(parent) && (is.null(input) || is.null(output) ||
-                              is.null(session))) {
-        stop(paste('Components without parent need to define input, output ',
-                   ' and session in constructor'))
+      if (is.null(parent) && is.null(session)) {
+        stop(paste('Components without parent need to define session in constructor'))
+      } else if (!is.null(parent)) {
+        self$session <- parent$session
+        self$input <- parent$input
+        self$output <- parent$output
       } else {
+        self$session <- session
         if (is.null(input)) {
-          self$input <- parent$input
+          self$input <- session$input
         } else {
           self$input <- input
         }
         if (is.null(output)) {
-          self$output <- parent$output
+          self$output <- session$output
         } else {
           self$output <- output
-        }
-        if (is.null(session)) {
-          self$session <- parent$session
-        } else {
-          self$session <- session
         }
       }
 
@@ -248,10 +233,6 @@ BaseComponent <- R6::R6Class(
       if (is.null(parent)) {
         self$services$.log <- EventEmitter$new()
       }
-      ## global error handler
-      if (!is.null(error) && is.null(parent)) {
-        self$static$.global$.error <- error
-      }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
@@ -276,15 +257,16 @@ BaseComponent <- R6::R6Class(
         ## this stimetimes prints no stack trace aviable
         ## add to handlers ($on) and fn(...) in building method
         ## with scope at the end
-        tryCatch({
+        battery::withExceptions({
           self$constructor(...)
-        }, error = function(cond) {
-          err.data <- list(
+        },
+        session = self$session,
+        error = function(cond) {
+          create.error(cond, list(
             type = "constructor",
+            origin = paste0(self$id, "::constructor"),
             args = list(...)
-          )
-          origin <- paste0(self$id, "::constructor")
-          private$.error.handle(origin, cond, err.data)
+          ))
         })
       }
     },
@@ -725,7 +707,7 @@ BaseComponent <- R6::R6Class(
           if (input) {
             reactiveEnv <- "input"
             invokeEvent <- function() {
-              tryCatch({
+              battery::withExceptions({
                 space <- private$.indent()
                 self$log(
                   c("battery", "info"),
@@ -745,21 +727,20 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
               }, error = function(cond) {
-                err.data <- list(
+                create.error(cond, list(
                   type = "event",
+                  origin = paste0(self$id, "::on('", event, "', ...)"),
                   event = event,
                   input = input
-                )
-                origin <- paste0(self$id, "::on('", event, "', ...)")
-                private$.error.handle(origin, cond, err.data)
-              }, finally = {
+                ))
+              }, finally = function() {
                 self$static$.global$.level = self$static$.global$.level - 1
-              })
+              }, session = self$session)
             }
           } else {
             self$createEvent(event)
             invokeEvent <- function() {
-              tryCatch({
+              battery::withExceptions({
                 data <- self$events[[event]]
                 space <- private$.indent()
                 self$log(
@@ -785,16 +766,15 @@ BaseComponent <- R6::R6Class(
                   type = "on"
                 )
               }, error = function(cond) {
-                err.data <- list(
+                create.error(cond, list(
                   type = "event",
                   event = event,
+                  origin = paste0(self$id, "::on('", event, "', ...)"),
                   input = input
-                )
-                origin <- paste0(self$id, "::on('", event, "', ...)")
-                private$.error.handle(origin, cond, err.data)
-              }, finally = {
+                ))
+              }, finally = function() {
                 self$static$.global$.level <- self$static$.global$.level - 1
-              })
+              }, session = self$session)
             }
             reactiveEnv <- "events"
           }
@@ -898,7 +878,7 @@ BaseComponent <- R6::R6Class(
       }
       ## clear data for different users in one R process
       if (!is.null(self$session$token)) {
-        global$sessions[[self$session$token]] <- NULL
+        global$sessions[[ self$session$token ]] <- NULL
       }
       for (handler in names(private$.observers)) {
         self$disconnect(handler)
@@ -1159,7 +1139,7 @@ r6.class.add <- function(class, seq) {
         if (env$private$.spying) {
           env$private$.spy(name = name, ...)
         }
-        tryCatch({
+        battery::withExceptions({
           space <- env$private$.indent()
           env$self$static$.global$.level = env$self$static$.global$.level + 1
           env$self$log("info", paste0(space, name, "::before"), type = "method")
@@ -1167,16 +1147,15 @@ r6.class.add <- function(class, seq) {
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
         }, error = function(cond) {
-          origin <- paste0(env$self$id, "::", name)
-          err.data <- list(
+          create.error(cond, list(
             type = "method",
+            origin = paste0(env$self$id, "::", name),
             name = name,
             args = list(...)
-          )
-          env$private$.error.handle(origin, cond, err.data)
-        }, finally = {
+          ))
+        }, finally = function() {
           env$self$static$.global$.level = env$self$static$.global$.level - 1
-        })
+        }, session = env$self$session)
       }, list(fn.expr = seq[[name]], name = name)))
       class$set(prop.name, name, fn)
     } else {

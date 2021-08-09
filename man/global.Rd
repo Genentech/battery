@@ -6,7 +6,7 @@
 \title{Global varialbe added to base component that hold each classes and component list
 for getById method}
 \format{
-An object of class \code{environment} of length 5.
+An object of class \code{environment} of length 6.
 }
 \usage{
 global

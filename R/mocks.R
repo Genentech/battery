@@ -81,9 +81,16 @@ activeInput <- function(env = new.env(), ...) {
   init.binding <- function() {
     for (name in names(input)) {
       if (name == 'self') {
-        stop("You can't use self as name")
+        stop("battery::activeInput: You can't use self as name")
       }
-      env$new(name, fn = input[[name]])
+      arg <- input[[name]]
+      if (!(is.null(arg) || is.function(arg))) {
+        stop(sprintf(
+          "battery::activeInput: name `%s' needs to be NULL or a function",
+          name
+        ))
+      }
+      env$new(name, fn = arg)
     }
   }
   if (is.active.input(env)) {
@@ -860,9 +867,14 @@ set.frame <- function(value, name = NULL, frame = 1) {
 #' Right now only services need session$destroy() method to clear
 #' services so you can create same service in more then one test
 #'
+#' with version 0.5.0 session mock can be used as the only object
+#' passed to root component constructor.
+#'
 #' @field token - string used by battery to distinguish users
 #' @importFrom R6 R6Class
 #' @keywords mock testing unittests
+#' @field input - shiny input
+#' @field output - shiny output
 #' @name Session
 #' @export
 #' @examples
@@ -886,14 +898,26 @@ Session <- R6::R6Class(
   ),
   public = list(
     token = NULL,
+    input = NULL,
+    output = NULL,
     ## -------------------------------------------------------------------------
     #' @description
     #' Session mock constructor
     #' @param token - optional token used for testing to create different
     #'        users that should get different data for services and globals
+    #' @param input - mock for shiny input
+    #' @param output - mock for shiny output
     ## -------------------------------------------------------------------------
-    initialize = function(token = NULL) {
-      self$token <- token
+    initialize = function(token = NULL,
+                          input = battery::activeInput(),
+                          output = battery::activeOutput()) {
+      self$token <- if (is.null(token)) {
+        uuid::UUIDgenerate(use.time = TRUE)
+      } else {
+        token
+      }
+      self$input <- input
+      self$output <- output
     },
     ## -------------------------------------------------------------------------
     #' @description
