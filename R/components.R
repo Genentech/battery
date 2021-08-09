@@ -233,10 +233,6 @@ BaseComponent <- R6::R6Class(
       if (is.null(parent)) {
         self$services$.log <- EventEmitter$new()
       }
-      ## global error handler
-      if (!is.null(error) && is.null(parent)) {
-        self$static$.global$.error <- error
-      }
       if (length(services) > 0) {
         for (serviceName in names(services)) {
           self$addService(serviceName, services[[serviceName]])
