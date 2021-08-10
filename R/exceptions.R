@@ -123,12 +123,15 @@ create.error <- function(cond, meta) {
 
 #' signal exception in applications
 #' @param class - string vector that indicate class of the exception
-#' @param message - string that indicate given exception
+#' @param message - string that indicate given exception or a optional list with data
 #' @param ... - eny extra data that should be added to the exception
 #' @export
 signal <- function(class, message, ...) {
   exception <- structure(
-    c(list(...), list(message = message, class = class)),
+    `if`(is.list(message),
+      c(message, list(class = class)),
+      c(list(...), list(message = message, class = class))
+    ),
     class = c("battery__exception", "condition")
   )
   signalCondition(exception)
