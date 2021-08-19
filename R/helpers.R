@@ -3,7 +3,7 @@
 #' @param ... - list of arguments
 invoke <- function(fn, ...) {
   if (!is.function(fn)) {
-    stop("invoke: argument need to be a function")
+    base::stop("invoke: argument need to be a function")
   }
   count <- length(formals(fn))
   do.call(fn, utils::head(list(...), count))

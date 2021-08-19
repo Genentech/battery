@@ -11,7 +11,7 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
       set.exceptions(handler, session)
     }
   } else if (is.null(handler)) {
-    stop("battery::excpetion handler argument need to be list, NULL given")
+    base::stop("battery::excpetion handler argument need to be list, NULL given")
   } else {
     extend.exceptions(handler, session)
   }
@@ -19,17 +19,20 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
 
 #' global handler for errors that print exception if user didn't process it
 handle.error <- function(error, finally = NULL, session = NULL) {
-  if (!handle.exceptions(error, finally = finally, session = session)) {
-    message(paste("thrown in", error$origin))
-    message(error$message)
-    stop(cond)
+  ret <- handle.exceptions(error, finally = finally, session = session)
+  if (identical(ret, battery::stop())) {
+    if (!(is.null(error) || is.null(error$meta))) {
+      meta <- error$meta
+      message(paste("thrown in", meta$origin))
+    }
+    base::stop(error$message)
   }
 }
 
 #' function that invoke global exception handler based on cond data
 #' @param cond - structure with classes that indicate exception
 handle.exceptions <- function(cond, finally = NULL, session = NULL) {
-  result <- TRUE
+  result <- NULL
   if (!is.null(cond$class)) {
     exceptions <- if (is.null(session)) {
       global$exceptions$global
@@ -45,22 +48,31 @@ handle.exceptions <- function(cond, finally = NULL, session = NULL) {
     for (c in cond$class) {
       if (is.function(exceptions[[ c ]])) {
         battery::withExceptions({
-          ret <- battery:::invoke(exceptions[[ c ]], cond)
-          if (identical(ret, FALSE) && result) {
-            result <- FALSE
+          ret <- battery:::invoke(exceptions[[ c ]], battery:::clean(cond))
+          if (is.logical(ret) && is.null(result)) {
+            result <- ret
           }
-        }, error = function(cond) {
-          if (cond$message == "") {
-            stop()
-          } else if (c == "error") {
-            message("[WARN] prevent recursive error, error exception thrown an error")
-            message(cond$message)
-            stop(cond)
-          } else {
-            create.error(cond, list(
+        }, error = function(err.cond) {
+          ## trigger error user handler
+          error.exception <- function() {
+            create.error(err.cond, list(
               type = "exception",
               name = c
             ))
+          }
+          if (is.battery.error(err.cond)) {
+            error.exception()
+          } else if (length(err.cond) == 0 || length(err.cond$message) == 0) {
+            base::stop()
+          } else if (c == "error") {
+            message("[WARN] prevent recursive error, error exception thrown an error")
+            if (!is.null(cond$meta)) {
+              message(paste("       error thrown in", cond$meta$origin))
+            }
+            message(err.cond$message)
+            base::stop(NULL)
+          } else {
+            error.exception()
           }
         }, session = session)
       }
@@ -93,7 +105,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     if (!inherits(cond, "shiny.silent.error")) {
       if (is.function(error)) {
         err <- battery:::invoke(error, cond)
-        if (is.list(err) && err$class == "error") {
+        if (is.list(err) && identical(err$class, "error")) {
           handle.error(err, finally, session = session)
         }
       } else {
@@ -107,18 +119,46 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     }
   },
   battery__exception = function(cond) {
-    if (!handle.exceptions(cond, finally, session = session)) {
+    ret <- handle.exceptions(cond, finally, session = session)
+    if (identical(ret, battery::pause())) {
       invokeRestart("battery__ignore")
+    } else if (identical(ret, battery::stop())) {
+      shiny::stopApp()
     }
   }))
 }
+
+error.marker <- "__battery_error__"
 
 #' create structure that can be used to signal error in applications
 #' @param cond - input from withCallingHandlers it should be unexpected error in app
 #' @param meta - addition extra data that should be added into meta property
 #' @export
 create.error <- function(cond, meta) {
-  c(cond, list(class = "error", meta = meta))
+  cond <- clean.error(cond)
+  cond$class <- "error"
+  cond$meta <- meta
+  cond
+}
+
+#' Helper function that revemo battery marker from error message
+clean.error <- function(cond) {
+  if (is.battery.error(cond)) {
+    cond$message <- substring(cond$message, nchar(error.marker) + 1)
+  }
+  cond
+}
+
+#' helper function that check if error was triggered by battery::error function
+is.battery.error <- function(cond) {
+  is.character(cond$message) && grepl(paste0("^", error.marker), cond$message)
+}
+
+#' helper function that can be used in exception handler to trigger error handler
+#' @param message - optional message that should be character string
+#' @export
+error <- function(message = NULL) {
+  base::stop(paste0(error.marker, message))
 }
 
 #' signal exception in applications
@@ -128,14 +168,25 @@ create.error <- function(cond, meta) {
 #' @param ... - eny extra data that should be added to the exception
 #' @export
 signal <- function(class, message = NULL, data = NULL, ...) {
-  exception <- structure(
-    `if`(is.list(data),
-      c(data, list(class = class)),
-      c(list(...), list(message = message, class = class))
-    ),
+  exception <- if (is.list(data)) {
+    if (is.null(message)) {
+      c(data, list(class = class))
+    } else {
+      c(data, list(message = message, class = class))
+    }
+  } else {
+    c(list(...), list(message = message, class = class))
+  }
+
+  signalCondition(structure(
+    exception,
     class = c("battery__exception", "condition")
-  )
-  signalCondition(exception)
+  ))
+}
+
+#' helper function that clean message and remove classes from cond object
+clean <- function(cond) {
+  structure(clean.error(cond), class = NULL)
 }
 
 
@@ -202,4 +253,17 @@ set.exceptions <- function(handler, session = NULL) {
   } else {
     global$exceptions$sessions[[ session$token ]] <- handler
   }
+}
+
+#' helper function that can be used in exception handler to pause just this context
+#' @export
+pause <- function() {
+  TRUE
+}
+
+
+#' helper function that can be used in exception handler to stop whole application
+#' @export
+stop <- function() {
+  FALSE
 }

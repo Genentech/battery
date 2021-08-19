@@ -168,7 +168,7 @@ BaseComponent <- R6::R6Class(
                           services = NULL, spy = FALSE, ...) {
       ## shiny values parent inheritance
       if (is.null(parent) && is.null(session)) {
-        stop(paste('Components without parent need to define session in constructor'))
+        base::stop(paste('Components without parent need to define session in constructor'))
       } else if (!is.null(parent)) {
         self$session <- parent$session
         self$input <- parent$input
@@ -299,7 +299,7 @@ BaseComponent <- R6::R6Class(
     ## ---------------------------------------------------------------
     appendChild = function(name, child) {
       if (!is.null(self$children[[name]])) {
-        stop(sprintf('Child with name `%s` already exists', name))
+        base::stop(sprintf('Child with name `%s` already exists', name))
       } else {
         self$children[[name]] <- child
       }
@@ -677,7 +677,7 @@ BaseComponent <- R6::R6Class(
                   ignoreNULL = TRUE,
                   init = FALSE) {
       if (private$.is.ns(substitute(events)) && !input) {
-        print(paste(
+        message(paste(
           "[WARN]",
           self$id,
           "- you should use input = TRUE when using self$ns to create event on",
@@ -689,7 +689,7 @@ BaseComponent <- R6::R6Class(
       }
       if (enabled) {
         if (!is.function(handler)) {
-          stop(sprintf("battery::component::on handler for `%s` is not a function", event))
+          base::stop(sprintf("battery::component::on handler for `%s` is not a function", event))
         }
         for (event in events) {
           if (is.null(private$.handlers[[event]])) {
@@ -910,7 +910,7 @@ BaseComponent <- R6::R6Class(
     addService = function(name, service) {
       self$log("info", "addService", name = name, type = "addService")
       if (name %in% names(self$services)) {
-        stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
+        base::stop(sprintf("[%s] Service '%s' already exists ", self$id, name))
       }
       self$services[[name]] <- service
     },
@@ -994,7 +994,7 @@ BaseComponent <- R6::R6Class(
     #' @return overwriten render by convention should return shiny tags
     ## ---------------------------------------------------------------
     render = function() {
-      stop('render function need to be overwritten in child class')
+      base::stop('render function need to be overwritten in child class')
     }
   )
 )

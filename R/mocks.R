@@ -81,11 +81,11 @@ activeInput <- function(env = new.env(), ...) {
   init.binding <- function() {
     for (name in names(input)) {
       if (name == 'self') {
-        stop("battery::activeInput: You can't use self as name")
+        base::stop("battery::activeInput: You can't use self as name")
       }
       arg <- input[[name]]
       if (!(is.null(arg) || is.function(arg))) {
-        stop(sprintf(
+        base::stop(sprintf(
           "battery::activeInput: name `%s' needs to be NULL or a function",
           name
         ))
@@ -841,7 +841,7 @@ set.frame <- function(value, name = NULL, frame = 1) {
     if (class(s) == "name") {
       name <- as.character(s)
     } else {
-      stop("set.frame: variable or name required")
+      base::stop("set.frame: variable or name required")
     }
   }
   top <- globalenv()
