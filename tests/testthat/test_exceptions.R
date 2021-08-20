@@ -257,7 +257,7 @@ test_it('should stop execution after exception', {
   battery::exceptions(list(
     foo = function(cond) {
       data <<- cond$message
-      return(FALSE)
+      battery::pause()
     }
   ))
   battery::withExceptions({
@@ -310,7 +310,7 @@ test_it('should invoke multiple exceptions when one stop execution', {
   battery::exceptions(list(
     foo = function(cond) {
       data.1 <<- cond$message
-      return(FALSE)
+      battery::pause()
     },
     bar = function(cond) {
       data.2 <<- cond$message
