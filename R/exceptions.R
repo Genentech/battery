@@ -11,7 +11,7 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
       set.exceptions(handler, session)
     }
   } else if (is.null(handler)) {
-    base::stop("battery::excpetion handler argument need to be list, NULL given")
+    stop("battery::excpetion handler argument need to be list, NULL given")
   } else {
     extend.exceptions(handler, session)
   }
@@ -20,12 +20,12 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
 #' global handler for errors that print exception if user didn't process it
 handle.error <- function(error, finally = NULL, session = NULL) {
   ret <- handle.exceptions(error, finally = finally, session = session)
-  if (identical(ret, battery::stop())) {
+  if (identical(ret, battery::end())) {
     if (!(is.null(error) || is.null(error$meta))) {
       meta <- error$meta
       message(paste("thrown in", meta$origin))
     }
-    base::stop(error$message)
+    stop(error$message)
   }
 }
 
@@ -63,14 +63,14 @@ handle.exceptions <- function(cond, finally = NULL, session = NULL) {
           if (is.battery.error(err.cond)) {
             error.exception()
           } else if (length(err.cond) == 0 || length(err.cond$message) == 0) {
-            base::stop()
+            stop()
           } else if (c == "error") {
             message("[WARN] prevent recursive error, error exception thrown an error")
             if (!is.null(cond$meta)) {
               message(paste("       error thrown in", cond$meta$origin))
             }
             message(err.cond$message)
-            base::stop(NULL)
+            stop(NULL)
           } else {
             error.exception()
           }
@@ -122,7 +122,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, session = NULL) {
     ret <- handle.exceptions(cond, finally, session = session)
     if (identical(ret, battery::pause())) {
       invokeRestart("battery__ignore")
-    } else if (identical(ret, battery::stop())) {
+    } else if (identical(ret, battery::end())) {
       shiny::stopApp()
     }
   }))
@@ -141,7 +141,7 @@ create.error <- function(cond, meta) {
   cond
 }
 
-#' Helper function that revemo battery marker from error message
+#' Helper function that removes battery marker from error message
 clean.error <- function(cond) {
   if (is.battery.error(cond)) {
     cond$message <- substring(cond$message, nchar(error.marker) + 1)
@@ -158,7 +158,7 @@ is.battery.error <- function(cond) {
 #' @param message - optional message that should be character string
 #' @export
 error <- function(message = NULL) {
-  base::stop(paste0(error.marker, message))
+  stop(paste0(error.marker, message))
 }
 
 #' signal exception in applications
@@ -264,6 +264,6 @@ pause <- function() {
 
 #' helper function that can be used in exception handler to stop whole application
 #' @export
-stop <- function() {
+end <- function() {
   FALSE
 }

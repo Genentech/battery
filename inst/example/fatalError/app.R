@@ -81,7 +81,7 @@ server <- function(input, output, session) {
       },
 
       error = function(cond) {
-        battery::stop()
+        battery::end()
       }
     )
   )

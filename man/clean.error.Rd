@@ -2,10 +2,10 @@
 % Please edit documentation in R/exceptions.R
 \name{clean.error}
 \alias{clean.error}
-\title{Helper function that revemo battery marker from error message}
+\title{Helper function that removes battery marker from error message}
 \usage{
 clean.error(cond)
 }
 \description{
-Helper function that revemo battery marker from error message
+Helper function that removes battery marker from error message
 }
