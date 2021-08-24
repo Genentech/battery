@@ -4,6 +4,12 @@ App <- battery::component(
   classname = "application",
   public = list(
     constructor = function() {
+
+      child <- Panel$new(parent = self, component.name = "panel")
+      self$output[[self$ns("panel")]] <- renderUI({
+        child$render()
+      })
+
       self$on(self$ns("fatal"), function(value) {
         print("button fatal clicked")
         battery::signal(
@@ -55,11 +61,34 @@ App <- battery::component(
         actionButton(
           self$ns("error"),
           "Generate R error with stop"
-        )
+        ),
+        uiOutput(self$ns("panel"))
       )
     }
   )
 )
+
+Panel <- battery::component(
+  classname = "Panel",
+  public = list(
+    constructor = function() {
+      self$on(self$ns("fatal"), function(value) {
+        print("button fatal clicked")
+        battery::signal(
+          class = "fatal",
+          message = paste("Fatal error (n)", value)
+        )
+      }, input = TRUE)
+    },
+    render = function() {
+      actionButton(
+        self$ns("fatal"),
+        "Generate fatal child error"
+      )
+    }
+  )
+)
+
 
 ui <- fluidPage(
   uiOutput("app")
@@ -81,7 +110,8 @@ server <- function(input, output, session) {
       },
 
       error = function(cond) {
-        battery::end()
+        print("Give me error")
+        battery::error()
       }
     )
   )

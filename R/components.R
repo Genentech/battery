@@ -261,13 +261,11 @@ BaseComponent <- R6::R6Class(
           self$constructor(...)
         },
         session = self$session,
-        error = function(cond) {
-          create.error(cond, list(
-            type = "constructor",
-            origin = paste0(self$id, "::constructor"),
-            args = list(...)
-          ))
-        })
+        meta = list(
+          origin = paste0(self$id, "::constructor"),
+          type = "constructor",
+          args = list(...)
+        ))
       }
     },
     ## ---------------------------------------------------------------
@@ -726,14 +724,14 @@ BaseComponent <- R6::R6Class(
                   input = input,
                   type = "on"
                 )
-              }, error = function(cond) {
-                create.error(cond, list(
-                  type = "event",
-                  origin = paste0(self$id, "::on('", event, "', ...)"),
-                  event = event,
-                  input = input
-                ))
-              }, finally = function() {
+              },
+              meta = list(
+                type = "event",
+                origin = paste0(self$id, "::on('", event, "', ...)"),
+                event = event,
+                input = input
+              ),
+              finally = function() {
                 self$static$.global$.level = self$static$.global$.level - 1
               }, session = self$session)
             }
@@ -765,14 +763,13 @@ BaseComponent <- R6::R6Class(
                   input = input,
                   type = "on"
                 )
-              }, error = function(cond) {
-                create.error(cond, list(
-                  type = "event",
-                  event = event,
-                  origin = paste0(self$id, "::on('", event, "', ...)"),
-                  input = input
-                ))
-              }, finally = function() {
+              },
+              meta = list(
+                type = "event",
+                event = event,
+                origin = paste0(self$id, "::on('", event, "', ...)"),
+                input = input
+              ), finally = function() {
                 self$static$.global$.level <- self$static$.global$.level - 1
               }, session = self$session)
             }
@@ -1146,14 +1143,13 @@ r6.class.add <- function(class, seq) {
           ret <- fn(...)
           env$self$log("info", paste0(space, name, "::after"), type = "method")
           ret
-        }, error = function(cond) {
-          create.error(cond, list(
-            type = "method",
-            origin = paste0(env$self$id, "::", name),
-            name = name,
-            args = list(...)
-          ))
-        }, finally = function() {
+        },
+        meta = list(
+          type = "method",
+          origin = paste0(env$self$id, "::", name),
+          name = name,
+          args = list(...)
+        ), finally = function() {
           env$self$static$.global$.level = env$self$static$.global$.level - 1
         }, session = env$self$session)
       }, list(fn.expr = seq[[name]], name = name)))
