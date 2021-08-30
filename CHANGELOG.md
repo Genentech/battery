@@ -1,3 +1,7 @@
+## 0.5.1
+### Bugfix
+* fix error handler mechanism
+
 ## 0.5.0
 ### Features
 * add global error handler
