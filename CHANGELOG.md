@@ -1,3 +1,7 @@
+## 0.5.1
+### Bugfix
+* fix error handler mechanism
+
 ## 0.5.0
 ### Features
 * add global error handler
@@ -11,6 +15,7 @@
 ## 0.4.1
 ### Bugfix
 * fix false warning about not triggered handlers on input events
+* remove the hack for observeEvent
 
 ## 0.4.0
 ### Features
