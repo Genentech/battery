@@ -275,12 +275,12 @@ set.exceptions <- function(handler, session = NULL) {
 #' helper function that can be used in exception handler to pause just this context
 #' @export
 pause <- function() {
-  TRUE
+  structure(TRUE, class = "battery.pause")
 }
 
 
 #' helper function that can be used in exception handler to stop whole application
 #' @export
 end <- function() {
-  FALSE
+  structure(FALSE, class = "battery.end")
 }
