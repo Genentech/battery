@@ -11,7 +11,7 @@ App <- battery::component(
       })
 
       self$on(self$ns("fatal"), function(value) {
-        print("button fatal clicked")
+        message("button fatal clicked")
         battery::signal(
           class = "fatal",
           message = paste("Fatal error", value)
@@ -19,12 +19,12 @@ App <- battery::component(
       }, input = TRUE)
 
       self$on(self$ns("error"), function(value) {
-        print(paste("button error clicked", value))
+        message("button error clicked", value)
         self$foo()
       }, input = TRUE)
 
       self$on(self$ns("silent"), function(value) {
-        print(paste("button silent clicked", value))
+        message("button silent clicked", value)
         battery::signal(
           "silent",
           message = paste("msg:", value),
@@ -32,7 +32,7 @@ App <- battery::component(
             pause = !self$input[[ self$ns('checkbox') ]]
           )
         )
-        print("This is after the signal")
+        message("This is after the signal")
       }, input = TRUE)
     },
 
@@ -73,7 +73,7 @@ Panel <- battery::component(
   public = list(
     constructor = function() {
       self$on(self$ns("fatal"), function(value) {
-        print("button fatal clicked")
+        message("button fatal clicked")
         battery::signal(
           class = "fatal",
           message = paste("Fatal error (n)", value)
@@ -98,19 +98,19 @@ server <- function(input, output, session) {
   battery::exceptions(
     list(
       fatal = function(cond) {
-        print(cond$message)
+        message(cond$message)
         battery::error("I also want error")
       },
 
       silent = function(cond) {
-        print(cond$message)
+        message(cond$message)
         if (cond$pause) {
           battery::pause()
         }
       },
 
       error = function(cond) {
-        print("Give me error")
+        message("Give me error")
         battery::error()
       }
     )

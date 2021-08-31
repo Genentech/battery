@@ -22,7 +22,7 @@ handle.error <- function(error, finally = NULL, meta = NULL, session = NULL) {
   ret <- handle.exceptions(error, finally = finally, meta = meta, session = session)
   if (identical(ret, battery::end())) {
     if (!is.null(meta)) {
-      message(paste("thrown in", meta$origin))
+      message("thrown in ", meta$origin)
     }
     battery::error(error$message)
   }
@@ -44,26 +44,26 @@ handle.exceptions <- function(cond, finally = NULL, meta = NULL, session = NULL)
         session.exceptions
       }
     }
-    for (c in cond$class) {
-      if (is.function(exceptions[[ c ]])) {
+    for (cls in cond$class) {
+      if (is.function(exceptions[[ cls ]])) {
         battery::withExceptions({
-          ret <- battery:::invoke(exceptions[[ c ]], battery:::clean(cond), meta)
+          ret <- battery:::invoke(exceptions[[ cls ]], battery:::clean(cond), meta)
           if (is.logical(ret) && is.null(result)) {
             result <- ret
           }
         },
         meta = meta,
         error = function(cond) {
-          if (c == "error") {
-            message(paste("[WARN] error in", c, "handler"))
+          if (cls == "error") {
+            message("[WARN] error in ", cls, " handler")
             if (!is.null(cond$message)) {
-              message(paste("      ", cond$message))
+              message("       ", cond$message)
             }
             battery::error(cond$message)
           } else {
             err <- create.error(cond, c(list(
               type = "exception",
-              name = c
+              name = cls
             ), meta))
             handle.error(err, finally, meta = meta, session = session)
           }
@@ -137,8 +137,8 @@ create.error <- function(cond, meta = NULL) {
 #' Helper function that removes battery marker from error message
 clean.error <- function(cond) {
   if (is.battery.error(cond)) {
-    c <- class(cond)
-    class(cond) <- c[c != "battery.error"]
+    cls <- class(cond)
+    class(cond) <- cls[cls != "battery.error"]
   }
   cond
 }
