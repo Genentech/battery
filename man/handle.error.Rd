@@ -4,7 +4,7 @@
 \alias{handle.error}
 \title{global handler for errors that print exception if user didn't process it}
 \usage{
-handle.error(error, finally = NULL, session = NULL)
+handle.error(error, finally = NULL, meta = NULL, session = NULL)
 }
 \description{
 global handler for errors that print exception if user didn't process it

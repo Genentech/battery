@@ -4,7 +4,7 @@
 \alias{error}
 \title{helper function that can be used in exception handler to trigger error handler}
 \usage{
-error(message = NULL)
+error(message = NULL, bubble = FALSE)
 }
 \arguments{
 \item{message}{- optional message that should be character string}

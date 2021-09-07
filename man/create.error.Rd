@@ -4,7 +4,7 @@
 \alias{create.error}
 \title{create structure that can be used to signal error in applications}
 \usage{
-create.error(cond, meta)
+create.error(cond, meta = NULL)
 }
 \arguments{
 \item{cond}{- input from withCallingHandlers it should be unexpected error in app}

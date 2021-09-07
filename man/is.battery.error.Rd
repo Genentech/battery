@@ -4,7 +4,7 @@
 \alias{is.battery.error}
 \title{helper function that check if error was triggered by battery::error function}
 \usage{
-is.battery.error(cond)
+is.battery.error(x)
 }
 \description{
 helper function that check if error was triggered by battery::error function
