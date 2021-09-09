@@ -28,11 +28,8 @@ library(battery)
 ## Battery Components
 
 Components are based on R6Class. To create new component you should call
-`battery::component` function or use `$extend` method on any component. You can also
-create new R6 class that inherit from `battery::Component`, but this should not be used
-because you will loose access to static variables inside R6Class methods (you will need to
-access them using `self$static`) and will not be able to use spy parameter to check method
-calls while testing your components.
+`battery::component` function or use `$extend` method on any existing component. You
+should not create new R6 class that inherit from `battery::Component` directly.
 
 ```R
 Button <- battery::component(
@@ -126,7 +123,7 @@ App <- battery::component(
 ```
 
 this is how you connect components to normal code, you can create one component App that
-will be added to single output using shiny::renderUI and the reset of the application can
+will be added to single output using `shiny::renderUI` and the rest of the application can
 use components.
 
 ```R
@@ -177,7 +174,7 @@ Event emitter R6Class with combination with services allow for communication bet
 components, without the need to broadcast and emit events. This is especially important if
 you want to send message to component siblings. You can do that directly with Event
 Emitter added as service.  Service can be any object. That object will be accessible from
-each instance of battery component in self$services$name.
+each instance of battery component in `self$services$name`.
 
 To add service you can use function `addService("name", obj)` inside any battery
 constructor (best is in root component so you don't accidentaly use it before it's
@@ -211,15 +208,41 @@ self$logger('battery', function(data) {
 })
 ```
 
-Inside battery type is method name message inside broadcast and emit have indent (spaces
-in from), so you can see how events are propagated.
+Inside battery logged event `$type` is a string that indicate the event origin.
+Above will log all message of the broadcast method. So you will see how event
+got propagated in application.
 
-Inside your application you can call log function to log messages use different level
-(which is just event name in EventEmitter) and you can toggle display of this messages in
+Inside your application you can call log function to log messages. You should use different
+level (which is just event name in EventEmitter) and you can toggle display of this messages in
 root constructor, e.g. when you pass specific option to your app or use specific query
-string when running the app.  You can use this to have diagnostic on production when you
-have reproducible case but can't use `browser()`. Also localy sometimes is easier to debug
-your code, when you see the logs then using `browser()`.
+string when running the app.
+
+Example:
+
+```R
+App <- battery::component(
+  classname = "App",
+  public = list(
+    constructor() {
+      if (Sys.getenv('DEBUG') == 'TRUE') {
+        self$logger('app', function(data) {
+          message(data$message)
+        })
+      }
+      self$logger('app', function(data) {
+         // save data$message to file
+      })
+    },
+    render = function() {
+      self$log('app', 'about to render function')
+    }
+  )
+)
+```
+
+You can use this to have diagnostic on production when you have reproducible case but
+can't use `browser()`. Also localy sometimes is easier to debug your code, when you see
+the logs than using `browser()`.
 
 ## Testing Components
 
@@ -241,7 +264,7 @@ creating empty input
 input <- activeInput()
 ```
 
-input with single ative binding
+input with single active binding:
 
 ```R
 input <- activeInput(foo = function(value) {
@@ -267,46 +290,77 @@ observeEvent(input$foo, {
 })
 ```
 
-observeEvent just call `input$on` and it will create listener for reactive value it will
-not create active binding so you need to call new first just in case you don't know what
-the value is before observeEvent is called (can be called in component constructor with
-`self$ns` as name the you can ten get call self$ns on component to create actual biding
-after component is created)
+observeEvent mock just call `input$on` (method of activeInput) and it will create listener
+for reactive value. It will not create active binding, so you need to call `input$new` first.
+Just in case you don't know what the even name is before observeEvent is called, (`input$on`
+can be called in component constructor with `self$ns` as name) then you can get that name
+using `self$ns` on component to create actual biding after component is created.
 
+Example:
 
-this will create active binding with default setter/getter
+```R
+battery::useMocks()
+
+Panel <- battery::component(
+  classname = "Panel",
+  public = list(
+    constructor = function() {
+      self$on(self$ns("button"), function() {
+         print("HELLO")
+      }, input = TRUE)
+    }
+  )
+)
+
+input <- battery::activeInput()
+
+p <- Panel$new(input = input, output = list(), session = list())
+
+input$new(p$ns("button"))
+
+input[[ p$ns("button") ]] <- Sys.time()
+```
+
+This will print `[1] HELLO`, observer `self$ns("button")` was created when component
+was created (inside constructor), but it was mocked after object was created.
+The same way any connection between inputs and output are mocked.
+
+Using `activeInput::new` you can create default setter/getter
 
 ```R
 input$new("foo")
-```
-
-```R
+## or
 input$new(component$ns("save"))
 ```
 
-reactive value with that may have different logic here same code as default
+But reactive value can have different logic, here code that do almost the same:
 
 
 ```R
+data <- list()
+
 input$new("foo", function(value) {
    if (missing(value)) {
-    self[["__foo"]]
+    data[["__foo"]]
   } else {
-    self[["__foo"]] <- value
+    data[["__foo"]] <- value
   }
 })
 ```
 
-if you set the value
+As you can see your can write your own logic for the active input. If you set the value:
 
 ```R
 input$foo <- 10
 ```
 
-observer expression will be avaluated also input$listeners will have data for each
-listener that will have data about each call to each listener with old and new values
+active input also have hidden list:
 
-usually there will be single listener for single active value
+* `.calls`
+
+that contain data about each value for the active input. The list items are lists:
+
+with `$new` and `$old` names. You can easily check if the input value have proper.
 
 ### Output
 
@@ -357,13 +411,22 @@ test_that('it should work', {
   session <- list()
   input <- activeInput()
   output <- activeOutput()
-  x <- Comp$new(input = input, output = output, session = session)
+  x <- ExampleComponent$new(input = input, output = output, session = session)
+})
+```
+
+You can also use single shiny session mock (that will include input and output)
+
+```R
+test_that('it should work', {
+  session <- battery::Session$new()
+  x <- ExampleComponent$new(session = session)
 })
 ```
 
 if your component have more arguments pass them to the constructor.
 
-now if component call something like this:
+now if component have something like this:
 
 ```R
 Comp <- battery::component(
@@ -384,11 +447,12 @@ output$new(x$ns("xxx"))
 ```
 
 after constructor is called, so this renderUI can be in constructor (where they usually be
-created) same is with active input active property with `$new` can be created after
-component is created, so you can get namespace id from component.
+created) same is with active input. Active property with `$new` can be created after
+component is created, so you can get namespaced name from component.
 
-```
+```R
 input$new("foo")
+input$new(exampleInstance$ns("foo"))
 ```
 
 the order doesn't matter you can create input before output and vice versa.
@@ -426,8 +490,8 @@ component R6 class (this may change in the future if will be needed).
 Battery provide handling of special cases in the code in a single place.
 The exceptions are created from those main exported API functions:
 
-* `battery::signal` - function cab be used to invoke the signal (exception)
-  and the flow of the progran will be passed to handler that was used.
+* `battery::signal` - function can be used to invoke the signal (exception)
+  and the flow of the program will be passed to handler that was used.
 * `battery::exceptions` - that accepts a list of signal handlers which are functions
   with two optional arguments. The first argument is most important since it contain
   the data for the exception that was passed to signal.
@@ -482,7 +546,7 @@ signal object. Or you can use message to just send the message.
 battery::signal('log', 'This is message')
 ```
 
-You can also use exceptions wihtout using battery using:
+You can also use exceptions without using battery components using:
 
 ```R
 server <- function(input, output, session) {
