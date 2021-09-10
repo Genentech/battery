@@ -4,7 +4,7 @@
 \alias{withExceptions}
 \title{global exception handler that is used in battery instead of tryCatch}
 \usage{
-withExceptions(expr, error = NULL, finally = NULL, session = NULL)
+withExceptions(expr, error = NULL, finally = NULL, meta = NULL, session = NULL)
 }
 \arguments{
 \item{expr}{- any expression}

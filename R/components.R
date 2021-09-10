@@ -27,6 +27,7 @@ new.static.env <- function() {
 #' for getById method
 #' @name global
 global <- new.global.env()
+## TODO: move to exceptions.R
 global$sessions <- list()
 global$exceptions <- list2env(list(
   global = list(),
@@ -261,6 +262,7 @@ BaseComponent <- R6::R6Class(
           self$constructor(...)
         },
         session = self$session,
+        ## TODO: save env and deparse(substitute
         meta = list(
           origin = paste0(self$id, "::constructor"),
           type = "constructor",

@@ -1,0 +1,578 @@
+---
+title: "Battery Components"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Battery Components}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Installation
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```bash
+git clone ssh://git@bitbucket.roche.com:7999/divos/battery.git
+R CMD INSTALL battery
+```
+
+```R
+library(battery)
+```
+
+## Battery Components
+
+Components are based on R6Class. To create new component you should call
+`battery::component` function or use `$extend` method on any existing component. You
+should not create new R6 class that inherit from `battery::Component` directly.
+
+```R
+Button <- battery::component(
+  classname = "Button",
+  public = list(
+    count = NULL,
+    label = NULL,
+    ## constructor is artifical method so you don't need to call super
+    ## which you may forget to add
+    constructor = function(label, canEdit = TRUE) {
+      self$label <- label
+      self$connect("click", self$ns("button"))
+      self$count <- 0
+      self$on("click", function() {
+        self$count <- self$count + 1
+      }, enabled = canEdit)
+      self$output[[self$ns("buttonOutput")]] <- shiny::renderUI({
+        self$events$click
+        tags$div(
+          tags$span(self$count),
+          actionButton(self$ns("button"), "click")
+        )
+      })
+    },
+    render = function() {
+      tags$div(
+        class = "button-component",
+        tags$p(class = "buton-label", self$label),
+        shiny::uiOutput(self$ns("buttonOutput"))
+      )
+    }
+  )
+)
+HelloButton <- Button$extend(
+  classname = "HelloButton",
+  public = list(
+    constructor = function() {
+      super$constructor("hello")
+    }
+  )
+)
+
+Panel <- battery::Component$extend(
+  classname = "Panel",
+  public = list(
+    title = NULL,
+    constructor = function(title) {
+      self$title <- title
+      Button$new(label = "click Me", component.name = "btn1", parent = self)
+      HelloButton$new(component.name = "btn2", parent = self)
+      ## inside each component you have access to output, input and session in self$
+      ## to make component separated if more then one is used use self$ns to create unique id
+      self$output[[self$ns("button")]] <- shiny::renderUI({
+        tags$div(
+          self$children$btn1$render(),
+          self$children$btn2$render()
+        )
+      })
+    },
+    render = function() {
+      tags$div(
+        tags$h2(self$title),
+        tags$div(shiny::uiOutput(self$ns("button")))
+      )
+    }
+  )
+)
+
+App <- battery::component(
+  classname = "App",
+  public = list(
+    constructor = function() {
+      ## for root node you don't need to use ns to create namespace but you can
+        a <- Panel$new(title = "A", component.name = "panelA", parent = self)
+        b <- Panel$new(title = "B", component.name = "panelB", parent = self)
+      self$output[[ self$ns("root") ]] <- shiny::renderUI({
+        tags$div(
+          a$render(),
+          b$render()
+        )
+      })
+    },
+    render = function() {
+      tags$div(
+        titlePanel('Shiny App using Battery R package'),
+        mainPanel(shiny::uiOutput(self$ns("root")))
+      )
+    }
+  )
+)
+```
+
+this is how you connect components to normal code, you can create one component App that
+will be added to single output using `shiny::renderUI` and the rest of the application can
+use components.
+
+```R
+## Root component that don't have parent need to be called with shiny session object.
+server <- function(input, output, session) {
+  app <- App$new(session = session)
+  output$root <- renderUI({
+    app$render()
+  })
+}
+```
+
+Every other component only need parent named argument and you don't need to specify those
+parameters in `constructor` because R6Class use `initialize` function as constructor and
+battery use handy `constructor` function so you don't need to remember to call
+`super$initalize` (that will break the components if not called), and only use extra
+parameters you need when you create components.
+
+If you're creating child component you have two options:
+
+```R
+btn <- Button$new(parent = self)
+self$appendChild("button", btn)
+```
+
+or
+
+```R
+Button$new(parent = self, component.name = "button")
+```
+
+Second is shortcut. You need use either so you have proper tree of components so event
+propagaion will work properly.
+
+See example/app.R for simple shiny app that you can run to test battery R package.
+
+## Events
+
+Nice feature of battery is that create structure for events, just like in AngularJS (which
+battery is inspired by) you can call `$emit` and `$broadcast` methods to send events to
+parents and to all children. Future versions may have notion of services but right now to
+send to siblings you need to emit the event to parent and in parent broadcast the event it
+all children.
+
+## EventEmitter and Services
+
+Event emitter R6Class with combination with services allow for communication between
+components, without the need to broadcast and emit events. This is especially important if
+you want to send message to component siblings. You can do that directly with Event
+Emitter added as service.  Service can be any object. That object will be accessible from
+each instance of battery component in `self$services$name`.
+
+To add service you can use function `addService("name", obj)` inside any battery
+constructor (best is in root component so you don't accidentaly use it before it's
+created). After adding the service it's accessed in every component inside the tree (using
+`self$services$name`. If you have two trees (two instances of root component) you will
+have different instances of the service, so they can have state. You can't add two
+services with same name, it will give error.
+
+You can use services for examples to create helpers (objects or functions) that is shared
+acorss the tree, or use it to store a model, that will hold the state of the appliction.
+
+See example/services.R for details how to use services.
+
+## Logger
+
+There is one default service (accesible in every component), it's logger, which is just
+event emitter instance. There interface for this logger in form of two methods:
+
+```R
+self$log(level, message, type = "battery", ...)
+```
+
+Battery is using this logger internaly so you can check what and when is called. e.g. to
+check how broadcast work you can use this code in your root component constructor:
+
+```R
+self$logger('battery', function(data) {
+   if (data$type == "broadcast") {
+      print(paste(data$message, data$args$name, data$path))
+   }
+})
+```
+
+Inside battery logged event `$type` is a string that indicate the event origin.
+Above will log all message of the broadcast method. So you will see how event
+got propagated in application.
+
+Inside your application you can call log function to log messages. You should use different
+level (which is just event name in EventEmitter) and you can toggle display of this messages in
+root constructor, e.g. when you pass specific option to your app or use specific query
+string when running the app.
+
+Example:
+
+```R
+App <- battery::component(
+  classname = "App",
+  public = list(
+    constructor() {
+      if (Sys.getenv('DEBUG') == 'TRUE') {
+        self$logger('app', function(data) {
+          message(data$message)
+        })
+      }
+      self$logger('app', function(data) {
+         // save data$message to file
+      })
+    },
+    render = function() {
+      self$log('app', 'about to render function')
+    }
+  )
+)
+```
+
+You can use this to have diagnostic on production when you have reproducible case but
+can't use `browser()`. Also localy sometimes is easier to debug your code, when you see
+the logs than using `browser()`.
+
+## Testing Components
+
+when testing Components you can use this mocks instead of running whole shiny app. So you
+can test single component in isolation.
+
+Here is quick summary for how to use testing framework. See `./tests/` directory to see
+how to tests you own components.
+
+### Mocks
+
+You should never need to use mocks directly but here is examples how to use it, for
+testing components see next section.
+
+creating empty input
+
+
+```R
+input <- activeInput()
+```
+
+input with single active binding:
+
+```R
+input <- activeInput(foo = function(value) {
+  if (missing(value)) {
+    self[["__foo"]]
+  } else {
+    self[["__foo"]] <- value
+  }
+})
+```
+
+NULL will create default setter/getter and inital active binding
+
+```R
+input <- activeInput(foo = NULL)
+```
+
+### ObserveEvent mock
+
+```R
+observeEvent(input$foo, {
+  print(paste0("value set to ", input$foo))
+})
+```
+
+observeEvent mock just call `input$on` (method of activeInput) and it will create listener
+for reactive value. It will not create active binding, so you need to call `input$new` first.
+Just in case you don't know what the even name is before observeEvent is called, (`input$on`
+can be called in component constructor with `self$ns` as name) then you can get that name
+using `self$ns` on component to create actual biding after component is created.
+
+Example:
+
+```R
+battery::useMocks()
+
+Panel <- battery::component(
+  classname = "Panel",
+  public = list(
+    constructor = function() {
+      self$on(self$ns("button"), function() {
+         print("HELLO")
+      }, input = TRUE)
+    }
+  )
+)
+
+input <- battery::activeInput()
+
+p <- Panel$new(input = input, output = list(), session = list())
+
+input$new(p$ns("button"))
+
+input[[ p$ns("button") ]] <- Sys.time()
+```
+
+This will print `[1] HELLO`, observer `self$ns("button")` was created when component
+was created (inside constructor), but it was mocked after object was created.
+The same way any connection between inputs and output are mocked.
+
+Using `activeInput::new` you can create default setter/getter
+
+```R
+input$new("foo")
+## or
+input$new(component$ns("save"))
+```
+
+But reactive value can have different logic, here code that do almost the same:
+
+
+```R
+data <- list()
+
+input$new("foo", function(value) {
+   if (missing(value)) {
+    data[["__foo"]]
+  } else {
+    data[["__foo"]] <- value
+  }
+})
+```
+
+As you can see your can write your own logic for the active input. If you set the value:
+
+```R
+input$foo <- 10
+```
+
+active input also have hidden list:
+
+* `.calls`
+
+that contain data about each value for the active input. The list items are lists:
+
+with `$new` and `$old` names. You can easily check if the input value have proper.
+
+### Output
+
+Output and connection between input and output can be explained using this example code
+
+```R
+input <- activeInput(foo = NULL)
+
+
+input$foo <- 100
+
+output <- activeOutput(bar = NULL)
+
+output$bar <- renderUI({ input$foo + 10 })
+
+print(output$bar) ## 110
+
+input$foo <- 200
+
+print(input$foo) ## 200
+print(output$bar) ## 210
+```
+
+### Mock reactive shiny data
+
+when you're writing tests first you need to call
+
+
+```R
+library(testthat)
+library(shiny)
+
+battery::useMocks()
+```
+
+At the root of the test. This will import testthat and shiny and `useMocks()` will patch
+the functions that came from shiny with proper mocks created by battery, Mocks give better
+way to test the active variables. You can inspect `output` and `input` without an any
+issue usually related to shiny apps (e.g. require of `isolate`).
+
+Also Battery have mocks for input and output that you can use to test your
+components. Just create session (base battery component don't use it) `activeInput` and
+`activeOutput` and create instance of component using `battery::component` or
+`battery::Component$extend`.
+
+```R
+test_that('it should work', {
+  session <- list()
+  input <- activeInput()
+  output <- activeOutput()
+  x <- ExampleComponent$new(input = input, output = output, session = session)
+})
+```
+
+You can also use single shiny session mock (that will include input and output)
+
+```R
+test_that('it should work', {
+  session <- battery::Session$new()
+  x <- ExampleComponent$new(session = session)
+})
+```
+
+if your component have more arguments pass them to the constructor.
+
+now if component have something like this:
+
+```R
+Comp <- battery::component(
+  public = list(
+    constructor = function() {
+      self$output[[self$ns("xxx")]] <- renderUI({
+        paste0("you typed: ", self$input$foo)
+      })
+    }
+  )
+)
+```
+
+you can call:
+
+```R
+output$new(x$ns("xxx"))
+```
+
+after constructor is called, so this renderUI can be in constructor (where they usually be
+created) same is with active input. Active property with `$new` can be created after
+component is created, so you can get namespaced name from component.
+
+```R
+input$new("foo")
+input$new(exampleInstance$ns("foo"))
+```
+
+the order doesn't matter you can create input before output and vice versa.
+
+After this if you call:
+
+```R
+input$foo <- "hello"
+```
+
+the output will be updated and `output[[self$ns("xxx")]]` will have string `"you typed:
+hello"`.
+
+### Spies
+
+If you create your component with spy option set to `TRUE` it will spy on all the
+methods. Each time a method s called it will be in component$.calls named list, were each
+function will have list of argument lists
+
+e.g.
+
+```R
+t <- TestingComponent$new(input = input, output = output, session = session, spy = TRUE)
+
+t$foo(10)
+t$foo(x = 20)
+expect_that(t$.calls$foo, list(list(10), list(x = 20)))
+```
+
+constructor is also on the list of `.calls`, everything except of functions that are in base
+component R6 class (this may change in the future if will be needed).
+
+## Exception handling (signals)
+
+Battery provide handling of special cases in the code in a single place.
+The exceptions are created from those main exported API functions:
+
+* `battery::signal` - function can be used to invoke the signal (exception)
+  and the flow of the program will be passed to handler that was used.
+* `battery::exceptions` - that accepts a list of signal handlers which are functions
+  with two optional arguments. The first argument is most important since it contain
+  the data for the exception that was passed to signal.
+  There is one extra handler `error` that is invoked when error happen in the code.
+* `battery::withExceptions` - function that wrap the expression where special
+  condition may happen, it can be `battery::signal` call or some error in the code.
+  (note that `stop()` call will be exactly the same as `error` in the code).
+
+To see example of the exception mechanism see example/fatalError/app.R
+
+Example:
+
+```R
+library(mailR)
+
+battery::exception(list(
+  error = (cond, meta) {
+    ## handle error
+    message("Error ", cond$message, " in ", meta$origin)
+  },
+  log = function(cond) {
+    message(cond$message)
+  },
+  sendMail = function(cond) {
+    send.mail(
+      from = "noreply@example.com",
+      to = "admin@example.com",
+      subject = cond$subject,
+      body = cond$body
+    )
+  }
+))
+```
+
+After adding this handle in shiny server function. You can use `battery::signal` to call
+the handler. Additional if error happen, in any of the battery component functions, error
+handler will be invoked with the exception.
+
+Also, if you call `battery::signal` anywhere in the components. Example:
+
+```R
+battery::signal(
+  'sendMail',
+  data = list(subject = "This is Email", body = "Lorem Ipsum")
+)
+```
+
+The handler will be invoked. You can use data where you provide your own data for the
+signal object. Or you can use message to just send the message.
+
+```R
+battery::signal('log', 'This is message')
+```
+
+You can also use exceptions without using battery components using:
+
+```R
+server <- function(input, output, session) {
+  battery::withExceptions({
+    battery::signal('log', 'Some message')
+    # some code
+    stop() ## this will trigger error handler
+  },
+  meta = list(
+    ## some data for the context
+  )
+  session = session)
+}
+```
+
+By default all `battery::withExceptions` used in battery give context where the message
+or error originated. Example when error happen in constructor meta will contain:
+
+* `origin = paste0(self$id, "::constructor")`
+* `type = "constructor"`
+* `args = list(...)`
+
+this can give you context where the error or singal was triggered. This is most
+important for errors if you want to find where they was thrown.
+
+Battery wrap all methods, handler (using `$on(` method) and constructor with call to
+`battery::withExceptions` and each have its own meta object passed to error and signals.
+
+All will have `origin` and `type` that you can check.

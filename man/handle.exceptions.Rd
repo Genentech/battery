@@ -4,7 +4,7 @@
 \alias{handle.exceptions}
 \title{function that invoke global exception handler based on cond data}
 \usage{
-handle.exceptions(cond, finally = NULL, session = NULL)
+handle.exceptions(cond, finally = NULL, meta = NULL, session = NULL)
 }
 \arguments{
 \item{cond}{- structure with classes that indicate exception}

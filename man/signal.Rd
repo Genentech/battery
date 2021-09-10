@@ -4,7 +4,7 @@
 \alias{signal}
 \title{signal exception in applications}
 \usage{
-signal(class, message = NULL, data = NULL, ...)
+signal(class, message = NULL, data = NULL, call = sys.call(-1), ...)
 }
 \arguments{
 \item{class}{- string vector that indicate class of the exception}
@@ -12,6 +12,8 @@ signal(class, message = NULL, data = NULL, ...)
 \item{message}{- string that indicate given exception}
 
 \item{data}{- optional data that should be used as exception}
+
+\item{call}{- call for stack trace}
 
 \item{...}{- eny extra data that should be added to the exception}
 }
