@@ -97,7 +97,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, sess
   error = function(cond) {
     if (is.battery.error(cond)) {
       battery::error(cond$message, bubble = TRUE)
-    } else if (!inherits(cond, "shiny.silent.error")) {
+    } else if (!is.silent(cond)) {
       if (is.function(error)) {
         battery:::invoke(error, cond)
       } else {
@@ -116,12 +116,11 @@ withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, sess
       invokeRestart("battery__ignore")
     } else if (identical(ret, battery::end())) {
       battery::error()
+    } else {
+      battery:::continue()
     }
   }))
 }
-
-
-
 
 #' create structure that can be used to signal error in applications
 #' @param cond - input from withCallingHandlers it should be unexpected error in app
@@ -145,6 +144,11 @@ clean.error <- function(cond) {
 
 #' helper function that check if error was triggered by battery::error function
 is.battery.error <- function(x) inherits(x, "battery.error")
+
+#' helper function that check if error that should be ignored
+is.silent <- function(x) {
+  inherits(x, "shiny.silent.error")
+}
 
 #' helper function that can be used in exception handler to trigger error handler
 #' @param message - optional message that should be character string
@@ -194,11 +198,22 @@ signal <- function(class, message = NULL, data = NULL, call = sys.call(-1), ...)
   } else {
     modifyList(list(...), list(message = message, class = class, call = call))
   }
+  withRestarts({
+    signalCondition(structure(
+      exception,
+      class = c("battery__exception", "condition")
+    ))
+  }, battery__continue = function() {
+    ## this should be empty, it will continue execution the code after the signal
+  })
+}
 
-  signalCondition(structure(
-    exception,
-    class = c("battery__exception", "condition")
-  ))
+#' function restart the evaluation of the code after the signal to stop
+#' the propagation of event handlers in nested withHandlers
+continue <- function() {
+  r <- findRestart("battery__continue")
+  if (is.null(r)) return()
+  invokeRestart(r)
 }
 
 #' helper function that clean message and remove classes from cond object

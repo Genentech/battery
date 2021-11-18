@@ -1,3 +1,7 @@
+## 0.5.2
+### Bugfix
+* fix multiple invocation of signal handlers on nested components
+
 ## 0.5.1
 ### Bugfix
 * fix error handler mechanism
