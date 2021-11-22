@@ -366,6 +366,7 @@ BaseComponent <- R6::R6Class(
       if (!name %in% ls(self$events)) {
         self$log("battery", "makeReactiveBinding", name = name, type = "createEvent")
         shiny::makeReactiveBinding(name, env = self$events)
+        ## TODO: Remove logical events
         if (is.logical(value) && value) {
           self$events[[name]] <- TRUE
         } else {
@@ -388,6 +389,7 @@ BaseComponent <- R6::R6Class(
     #' @param .level - internal option for logger, that is used to created indent
     ## ---------------------------------------------------------------
     trigger = function(name, data = NULL, .force = TRUE, .level = 0) {
+      ## TODO: data send value without list, make no breaking change
       indent <- .level * 2
 
       msg <- battery:::indent(indent, "trigger")
@@ -680,6 +682,7 @@ BaseComponent <- R6::R6Class(
         message(paste(
           "[WARN]",
           self$id,
+          paste0("(", events, ")"),
           "- you should use input = TRUE when using self$ns to create event on",
           "shiny input element. You should not use self$ns with battery events."
         ))

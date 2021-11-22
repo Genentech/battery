@@ -405,4 +405,57 @@ test_it('should catch exception in input', {
   expect_equal(data, msg)
 })
 
+test_it('should trigger handler only once', {
+  test <- character(0)
+
+  App <- battery::component(
+    classname = "App",
+    public = list(
+      constructor = function() {
+        self$on("start", function() {
+          Panel$new(parent = self, component.name = "main")
+        })
+        self$trigger("start")
+      }
+    )
+  )
+
+  Panel <- battery::component(
+    classname = "Panel",
+    public = list(
+      constructor = function() {
+        self$on("start", function() {
+          Button$new(parent = self, component.name = "btn")
+        })
+        self$trigger("start")
+      }
+    )
+  )
+
+  Button <- battery::component(
+    classname = "Button",
+    public = list(
+      constructor = function() {
+        self$on("run", function() {
+          test <<- c(test, "before")
+          message("before log")
+          battery::signal("log", "HELLO")
+          test <<- c(test, "after")
+        })
+        self$trigger("run")
+      }
+    )
+  )
+
+  battery::exceptions(list(
+    log = function(cond) {
+      test <<- c(test, cond$message)
+    }
+  ))
+
+  session <- battery::Session$new()
+  app <- App$new(session = session)
+  expect_equal(test, c("before", "HELLO", "after"))
+})
+
 battery::clearMocks()

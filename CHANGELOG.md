@@ -1,3 +1,9 @@
+## 0.6.0
+### Features
+* add second argument (event name) to event emitter handler
+### Bugfix
+* fix multiple invocation of signal handlers on nested components
+
 ## 0.5.1
 ### Bugfix
 * fix error handler mechanism

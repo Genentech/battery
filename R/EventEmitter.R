@@ -84,7 +84,7 @@ EventEmitter <- R6::R6Class(
     invoke = function(event, value) {
       private$.spy("invoke", event, value)
       lapply(private$handlers[[event]], function(handler) {
-        battery:::invoke(handler, value)
+        battery:::invoke(handler, value, event)
       })
     },
     ## -------------------------------------------------------------------------

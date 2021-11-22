@@ -31,6 +31,12 @@ Components are based on R6Class. To create new component you should call
 `battery::component` function or use `$extend` method on any existing component. You
 should not create new R6 class that inherit from `battery::Component` directly.
 
+<!--
+
+TODO: add self$events$name reactiveness documentation
+
+-->
+
 ```R
 Button <- battery::component(
   classname = "Button",
