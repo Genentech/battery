@@ -57,6 +57,10 @@ App <- battery::component(
 
 For full documentation see [Battery Components](vignettes/battery-components.Rmd) Vignette.
 
+You can also read tutorial about the framework features at DEV.to:<br/>
+[Architecture for Non-Trivial R Shiny Applications](https://dev.to/jcubic/architecture-for-non-trivial-r-shiny-applications-3816)
+
+
 ## Contributors
 * Jakub T. Jankiewicz
 * Michał Jakubczak
