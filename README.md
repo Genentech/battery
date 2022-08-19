@@ -12,14 +12,14 @@ that need to have lots of different parts.
 
 ## Installation
 
-```bash
+```sh
 git clone ssh://git@bitbucket.roche.com:7999/divos/battery.git
 R CMD INSTALL battery
 ```
 
 ## Basic usage
 
-```
+```R
 Button <- battery::component(
   classname = "Button",
   label = NULL,
