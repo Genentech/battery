@@ -4,7 +4,7 @@
 
 The components design is based on AngularJS that can emit event from root it it's children
 and broadcast events from child to parents. It give better structure of non trivial shiny apps,
-that need to have lots of differnt parts.
+that need to have lots of different parts.
 
 ## Installation
 
@@ -59,3 +59,4 @@ For full documentation see [Battery Components](vignettes/battery-components.Rmd
 
 ## License
 Copyright (c) 2019-2021 Genentech, Inc.<br/>
+Released under MIT license
