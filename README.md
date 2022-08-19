@@ -1,6 +1,10 @@
-# Battery - R6Class based component architecture framework for Shiny apps.
+<h1 align="center">
+  <img src="https://github.com/Genentech/battery/blob/master/inst/extra/battery-logo.svg?raw=true"
+       alt="Battery R package Logo" />
+</h1>
 
-![Battery Logo](inst/extra/battery-logo.svg)
+[R6Class based component architecture framework for Shiny apps](https://github.com/Genentech/battery)
+
 
 The components design is based on AngularJS that can emit event from root it it's children
 and broadcast events from child to parents. It give better structure of non trivial shiny apps,
