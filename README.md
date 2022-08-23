@@ -13,7 +13,7 @@ that need to have lots of different parts.
 ## Installation
 
 ```sh
-git clone ssh://git@bitbucket.roche.com:7999/divos/battery.git
+git clone https://github.com/Genentech/battery.git
 R CMD INSTALL battery
 ```
 
