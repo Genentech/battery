@@ -84,7 +84,7 @@ EventEmitter <- R6::R6Class(
     invoke = function(event, value) {
       private$.spy("invoke", event, value)
       lapply(private$handlers[[event]], function(handler) {
-        battery:::invoke(handler, value, event)
+        invoke(handler, value, event)
       })
     },
     ## -------------------------------------------------------------------------
@@ -131,7 +131,7 @@ EventEmitter <- R6::R6Class(
           if (is.null(private$observers[[event]])) {
             shiny::makeReactiveBinding(event, env = self$events)
 
-            private$observers[[event]] <- battery:::observeWrapper(self$events[[event]], {
+            private$observers[[event]] <- observeWrapper(self$events[[event]], {
               data <- self$events[[event]]
 
               if (is.null(data) || is.logical(data)) {
@@ -256,7 +256,7 @@ EventEmitter <- R6::R6Class(
           )
         }
         if (private$shiny) {
-          battery:::force(function() {
+          force(function() {
             self$events[[name]] <- value
           })
         } else {

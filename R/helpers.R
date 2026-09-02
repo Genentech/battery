@@ -123,7 +123,9 @@ observeWrapper <- function(eventExpr,
   }
 
   initialized <- FALSE
-  shiny::observe({
+  ## the observer needs to be bound to a name, the handler below refers to it
+  ## when `once` is used to destroy itself after the first invocation
+  observer <- shiny::observe({
     e <- exprFun()
     if (ignoreInit && !initialized) {
       initialized <<- TRUE
@@ -135,7 +137,7 @@ observeWrapper <- function(eventExpr,
         if (is.null(exitHandler)) {
           observer$destroy()
         } else if (is.function(exitHandler)) {
-          battery:::invoke(exitHandler, observer)
+          invoke(exitHandler, observer)
         }
       })
     }
@@ -146,4 +148,5 @@ observeWrapper <- function(eventExpr,
 
     shiny::isolate(handlerFun())
   })
+  observer
 }

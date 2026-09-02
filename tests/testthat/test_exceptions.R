@@ -524,4 +524,40 @@ test_it('should report unused argument passed to component constructor', {
   expect_true(any(grepl("A1::constructor", msgs)))
 })
 
+## --------------------------------------------------------------------------------------
+## battery::error marks the message with `__<n>__` so it can be tracked while it
+## propagates through nested handlers, every bubble increases the counter
+## --------------------------------------------------------------------------------------
+error.message <- function(...) {
+  tryCatch(battery::error(...), error = function(cond) conditionMessage(cond))
+}
+
+test_it('should throw the message unchanged when it does not bubble', {
+  expect_equal(error.message("BOOM"), "BOOM")
+})
+
+test_it('should use default message when message is missing', {
+  expect_equal(error.message(), "__<1>__BUBBLE__")
+})
+
+test_it('should mark the message on first bubble', {
+  expect_equal(error.message("BOOM", bubble = TRUE), "__<1>__BOOM")
+})
+
+test_it('should increase the counter on every bubble', {
+  expect_equal(error.message("__<1>__BOOM", bubble = TRUE), "__<2>__BOOM")
+  expect_equal(error.message("__<2>__BOOM", bubble = TRUE), "__<3>__BOOM")
+  expect_equal(error.message("__<9>__BOOM", bubble = TRUE), "__<10>__BOOM")
+})
+
+test_it('should mark the message that has digits but no marker', {
+  expect_equal(error.message("BOOM 42", bubble = TRUE), "__<1>__BOOM 42")
+})
+
+test_it('should take the counter from the first number in the message', {
+  ## quirk of the implementation - the counter is read from the first number
+  ## anywhere in the message, not from the marker itself
+  expect_equal(error.message("42 __<1>__ BOOM", bubble = TRUE), "42 __<43>__ BOOM")
+})
+
 battery::clearMocks()

@@ -11,6 +11,8 @@ capture_signal_messages(expr, signal, session = NULL)
 \item{expr}{- any expression}
 
 \item{signal}{- charcater vector with signals that should be captured}
+
+\item{session}{- optional shiny session used to find the exception handlers}
 }
 \description{
 helper function that capture all signal messages into a vector

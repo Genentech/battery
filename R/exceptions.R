@@ -1,6 +1,6 @@
 #' function allows to add global exception handler for all battery components
 #' @param handler - list of handlers
-#' @param rest - indicate if old handlers should be removed
+#' @param reset - indicate if old handlers should be removed
 #' @param session - optional shiny session where to register the exception handler
 #' @export
 exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
@@ -78,7 +78,7 @@ handle.exceptions <- function(cond, meta = NULL, session = NULL) {
     for (cls in cond$class) {
       if (is.function(exceptions[[ cls ]])) {
         battery::withExceptions({
-          ret <- battery:::invoke(exceptions[[ cls ]], battery:::clean(cond), meta)
+          ret <- invoke(exceptions[[ cls ]], clean(cond), meta)
           if (is.logical(ret) && is.null(result)) {
             result <- ret
           }
@@ -135,7 +135,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, sess
       battery::error(cond$message, bubble = TRUE)
     } else if (!is.silent(cond)) {
       if (is.function(error)) {
-        battery:::invoke(error, cond)
+        invoke(error, cond)
       } else {
         err <- create.error(cond, c(list(
           type = "exception",
@@ -153,7 +153,7 @@ withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, sess
     } else if (identical(ret, battery::end())) {
       battery::error()
     } else {
-      battery:::continue()
+      continue()
     }
   }))
 }
@@ -170,6 +170,7 @@ create.error <- function(cond, meta = NULL) {
 }
 
 #' Helper function that removes battery marker from error message
+#' @param cond - condition object
 clean.error <- function(cond) {
   if (is.battery.error(cond)) {
     cls <- class(cond)
@@ -179,15 +180,19 @@ clean.error <- function(cond) {
 }
 
 #' helper function that check if error was triggered by battery::error function
+#' @param x - condition object
 is.battery.error <- function(x) inherits(x, "battery.error")
 
 #' helper function that check if error that should be ignored
+#' @param x - condition object
 is.silent <- function(x) {
   inherits(x, "shiny.silent.error")
 }
 
 #' helper function that can be used in exception handler to trigger error handler
 #' @param message - optional message that should be character string
+#' @param bubble - if set to TRUE the message is marked so it can be tracked
+#'        while it propagates through nested handlers
 #' @export
 error <- function(message = NULL, bubble = FALSE) {
   if (is.null(message)) {
@@ -195,7 +200,7 @@ error <- function(message = NULL, bubble = FALSE) {
   } else if (bubble) {
     re <- "__<[0-9]+>__"
     message <- if (grepl(re, message)) {
-      num <- as.numeric(stringr::str_extract(message, '[0-9]+'))
+      num <- as.numeric(regmatches(message, regexpr('[0-9]+', message)))
       gsub(re, paste0("__<", num + 1, ">__"), message)
     } else {
       paste0("__<1>__", message)
@@ -209,6 +214,7 @@ error <- function(message = NULL, bubble = FALSE) {
 #' @param subclass - string vector for the subclass
 #' @param message - message string of a given condition
 #' @param call - for stack trace
+#' @param ... - any extra attributes that should be added to the condition
 condition <- function(subclass, message, call = sys.call(-1), ...) {
   structure(
     class = c(subclass, "condition"),
@@ -253,6 +259,7 @@ continue <- function() {
 }
 
 #' helper function that clean message and remove classes from cond object
+#' @param cond - condition object
 clean <- function(cond) {
   structure(clean.error(cond), class = NULL)
 }
@@ -262,6 +269,7 @@ clean <- function(cond) {
 #' it can be used in unit tests to check if the function sent proper messages
 #' @param expr - any expression
 #' @param signal - charcater vector with signals that should be captured
+#' @param session - optional shiny session used to find the exception handlers
 #' @export
 capture_signal_messages <- function(expr, signal, session = NULL) {
   data <- c()
@@ -284,6 +292,7 @@ capture_signal_messages <- function(expr, signal, session = NULL) {
 }
 
 #' helper function that returns exception handler
+#' @param session - optional shiny session, if omitted the global handlers are used
 get.exceptions <- function(session = NULL) {
   if (is.null(session)) {
     global$exceptions$global
@@ -293,6 +302,7 @@ get.exceptions <- function(session = NULL) {
 }
 
 #' helper function that reset exceptions
+#' @param session - optional shiny session, if omitted the global handlers are reset
 reset.exceptions <- function(session = NULL) {
   if (is.null(session)) {
     global$exceptions$sessions <- list()
@@ -304,6 +314,8 @@ reset.exceptions <- function(session = NULL) {
 
 #' helper function that extend existing exception handler
 #' note that if same handler function is used it will be overwritten
+#' @param handler - named list of exception handlers
+#' @param session - optional shiny session, if omitted the global handlers are extended
 extend.exceptions <- function(handler, session = NULL) {
   exceptions <- get.exceptions(session)
   exceptions <- if (is.null(exceptions)) {
@@ -315,6 +327,8 @@ extend.exceptions <- function(handler, session = NULL) {
 }
 
 #' helper function that set exception uncoditionaly, old handler is discarded
+#' @param handler - named list of exception handlers
+#' @param session - optional shiny session, if omitted the global handlers are set
 set.exceptions <- function(handler, session = NULL) {
   if (is.null(session)) {
     global$exceptions$global <- handler

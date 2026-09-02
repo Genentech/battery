@@ -6,6 +6,11 @@
 \usage{
 set.exceptions(handler, session = NULL)
 }
+\arguments{
+\item{handler}{- named list of exception handlers}
+
+\item{session}{- optional shiny session, if omitted the global handlers are set}
+}
 \description{
 helper function that set exception uncoditionaly, old handler is discarded
 }

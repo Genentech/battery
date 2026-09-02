@@ -380,7 +380,7 @@ BaseComponent <- R6::R6Class(
         } else {
           data <- list(
             value = value,
-            timestamp = battery:::now()
+            timestamp = now()
           )
           self$events[[name]] <- data
         }
@@ -400,13 +400,13 @@ BaseComponent <- R6::R6Class(
       ## TODO: data send value without list, make no breaking change
       indent <- .level * 2
 
-      msg <- battery:::indent(indent, "trigger")
+      msg <- indent(indent, "trigger")
       self$log("battery", msg, name = name, target = self$id, type = "trigger")
 
       if (name %in% ls(self$events)) {
         update <- if (is.null(data)) {
           function() {
-            msg <- battery:::indent(indent, "trigger::force (NULL)")
+            msg <- indent(indent, "trigger::force (NULL)")
             self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
 
             self$events[[name]] <- shiny::isolate({
@@ -414,7 +414,7 @@ BaseComponent <- R6::R6Class(
                 !self$events[[name]]
               } else if (is.list(self$events[[name]])) {
                 list(
-                  timestamp = battery:::now(),
+                  timestamp = now(),
                   target = self$id,
                   value = self$events[[name]]$value
                 )
@@ -430,11 +430,11 @@ BaseComponent <- R6::R6Class(
           }
         } else if (is.list(data)) {
           function() {
-            data$timestamp <- battery:::now()
+            data$timestamp <- now()
             if (is.null(data$target)) {
               data$target <- self$id
             }
-            msg <- battery:::indent(indent, "trigger::force (list)")
+            msg <- indent(indent, "trigger::force (list)")
             self$log("battery", msg, name = name, force = .force, target = self$id, type = "trigger")
             self$events[[name]] <- data
           }
@@ -450,7 +450,7 @@ BaseComponent <- R6::R6Class(
         private$.pending(name, increment = 1)
         ## force is hack that always trigger the event, even if shiny decide not to
         if (.force) {
-          battery:::force(update)
+          force(update)
         } else {
           update()
         }
@@ -519,7 +519,7 @@ BaseComponent <- R6::R6Class(
         target <- self$id
       }
 
-      msg <- battery:::indent(.level * 2, "emit")
+      msg <- indent(.level * 2, "emit")
       self$log("battery", msg, name = name, value = value, target = target, type = "emit")
 
       if (include.self) {
@@ -602,7 +602,7 @@ BaseComponent <- R6::R6Class(
         target <- self$id
       }
 
-      msg <- battery:::indent(.level * 2, "broadcast")
+      msg <- indent(.level * 2, "broadcast")
       self$log("battery", msg, name = name, value = value, target = target, type = "broadcast")
 
       if (include.self) {
@@ -729,7 +729,7 @@ BaseComponent <- R6::R6Class(
                 )
                 self$static$.global$.level <- self$static$.global$.level + 1
                 ## invoke handler function with only argument it accept
-                battery:::invoke(handler, self$input[[event]], self$id)
+                invoke(handler, self$input[[event]], self$id)
                 self$log(
                   c("battery", "info"),
                   paste0(space, "observer after(input)"),
@@ -765,9 +765,9 @@ BaseComponent <- R6::R6Class(
                 private$.pending(event, increment = -1, fn = handler)
                 ## invoke handler function with only argument it accept
                 if (is.null(data) || is.logical(data)) {
-                  battery:::invoke(handler, NULL, NULL)
+                  invoke(handler, NULL, NULL)
                 } else {
-                  battery:::invoke(handler, data[["value"]], data[["target"]])
+                  invoke(handler, data[["value"]], data[["target"]])
                 }
                 self$log(
                   c("battery", "info"),
@@ -792,7 +792,7 @@ BaseComponent <- R6::R6Class(
           ## We use variable with string because for unknonw reason
           ## shiny::exprToFunction try to evaluate self$TRUE
           ## instead of self$input probably because of some substitute
-          observer <- battery:::observeWrapper(
+          observer <- observeWrapper(
             self[[reactiveEnv]][[event]],
             handlerExpr = {
               invokeEvent()
@@ -919,7 +919,7 @@ BaseComponent <- R6::R6Class(
     ## ---------------------------------------------------------------
     #' @description
     #' Helper method that create \code{shiny::htmlTemplate}
-    #' with self and private as defaults variables to be used in html (inside {{ }})
+    #' with self and private as defaults variables to be used in html (inside \code{\{\{ \}\}})
     #'
     #' @param filename - name of the template
     #' @param ... - any number of arguments that will be accessible in
@@ -1005,13 +1005,13 @@ BaseComponent <- R6::R6Class(
 #'
 #' @description Use this function to create new battery class object.
 #'
-#' @return \code{\link{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
+#' @return \code{\link[R6]{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
 #' @param classname - name of the class as string
 #' @param public - list of public functions and properties
 #' @param private - list of private functions and properties
 #' @param static - list of fields that will stay the same for every instance of the component
 #' @param inherit - base class - if not specifed it will inherit from Base class \code{\link{BaseComponent}}
-#' @param ... - reset option passed to \code{\link{R6Class}} constructor
+#' @param ... - reset option passed to \code{\link[R6]{R6Class}} constructor
 #' @export
 #' @examples
 #' \dontrun{
@@ -1077,7 +1077,7 @@ component <- function(classname,
                       public = NULL,
                       private = NULL,
                       static = NULL,
-                      inherit = battery:::BaseComponent,
+                      inherit = BaseComponent,
                       ...) {
   static.env <- new.static.env()
   if (!is.null(static)) {

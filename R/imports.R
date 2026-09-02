@@ -16,4 +16,12 @@ NULL
 #' @export
 NULL
 
+#' Functions used internally that need to be imported
+#'
+#' @importFrom utils modifyList
+#' @importFrom uuid UUIDgenerate
+#' @name battery-imports
+#' @keywords internal
+NULL
+
 

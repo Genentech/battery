@@ -6,6 +6,9 @@
 \usage{
 is.battery.error(x)
 }
+\arguments{
+\item{x}{- condition object}
+}
 \description{
 helper function that check if error was triggered by battery::error function
 }

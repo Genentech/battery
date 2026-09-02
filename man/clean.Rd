@@ -6,6 +6,9 @@
 \usage{
 clean(cond)
 }
+\arguments{
+\item{cond}{- condition object}
+}
 \description{
 helper function that clean message and remove classes from cond object
 }

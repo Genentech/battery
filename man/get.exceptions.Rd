@@ -6,6 +6,9 @@
 \usage{
 get.exceptions(session = NULL)
 }
+\arguments{
+\item{session}{- optional shiny session, if omitted the global handlers are used}
+}
 \description{
 helper function that returns exception handler
 }

@@ -44,15 +44,15 @@ component <- TestComponent$new(input = input, output = output, session = session
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Session$new()}}
-\item \href{#method-destroy}{\code{Session$destroy()}}
-\item \href{#method-onSessionEnded}{\code{Session$onSessionEnded()}}
-\item \href{#method-clone}{\code{Session$clone()}}
+\item \href{#method-Session-new}{\code{Session$new()}}
+\item \href{#method-Session-destroy}{\code{Session$destroy()}}
+\item \href{#method-Session-onSessionEnded}{\code{Session$onSessionEnded()}}
+\item \href{#method-Session-clone}{\code{Session$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Session-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Session-new}{}}}
 \subsection{Method \code{new()}}{
 Session mock constructor
 \subsection{Usage}{
@@ -77,8 +77,8 @@ users that should get different data for services and globals}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-destroy"></a>}}
-\if{latex}{\out{\hypertarget{method-destroy}{}}}
+\if{html}{\out{<a id="method-Session-destroy"></a>}}
+\if{latex}{\out{\hypertarget{method-Session-destroy}{}}}
 \subsection{Method \code{destroy()}}{
 Mock for destroy session
 
@@ -89,8 +89,8 @@ it will trigger handlers added by \code{onSessionEnded}
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-onSessionEnded"></a>}}
-\if{latex}{\out{\hypertarget{method-onSessionEnded}{}}}
+\if{html}{\out{<a id="method-Session-onSessionEnded"></a>}}
+\if{latex}{\out{\hypertarget{method-Session-onSessionEnded}{}}}
 \subsection{Method \code{onSessionEnded()}}{
 Mock for the function that add handler on session destroy
 \subsection{Usage}{
@@ -107,8 +107,8 @@ is called}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-Session-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-Session-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

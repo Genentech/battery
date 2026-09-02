@@ -314,7 +314,7 @@ observeWrapperMock <- function(eventExpr,
   name <- if (sub[[1]] == '$') {
     as.character(sub[[3]])
   } else if (sub[[1]] == '[[') {
-    if (class(sub[[3]]) == 'name') {
+    if (is.name(sub[[3]])) {
       get(deparse(sub[[3]]), event.env)
     } else {
       sub[[3]]
@@ -795,8 +795,8 @@ originals <- new.env()
 useMocks <- function() {
   env <- parent.frame()
   ## we mock obseveEvent for unit tests
-  mock('observeEvent', battery:::observeWrapperMock, env)
-  mock('observeWrapper', battery:::observeWrapperMock, env, package = 'battery')
+  mock('observeEvent', observeWrapperMock, env)
+  mock('observeWrapper', observeWrapperMock, env, package = 'battery')
   mock('isolate', battery::isolate, env)
   mock('makeReactiveBinding', battery::makeReactiveBinding, env)
   mock('renderUI', battery::renderUIMock, env)
@@ -846,7 +846,7 @@ clearMock <- function(name, env, package = 'shiny') {
 set.frame <- function(value, name = NULL, frame = 1) {
   if (is.null(name)) {
     s <- substitute(value)
-    if (class(s) == "name") {
+    if (is.name(s)) {
       name <- as.character(s)
     } else {
       stop("set.frame: variable or name required")

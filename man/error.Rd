@@ -8,6 +8,9 @@ error(message = NULL, bubble = FALSE)
 }
 \arguments{
 \item{message}{- optional message that should be character string}
+
+\item{bubble}{- if set to TRUE the message is marked so it can be tracked
+while it propagates through nested handlers}
 }
 \description{
 helper function that can be used in exception handler to trigger error handler

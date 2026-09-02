@@ -48,18 +48,20 @@ otherwise it's normal environment but with R active bindings that can't be used 
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{EventEmitter$new()}}
-\item \href{#method-on}{\code{EventEmitter$on()}}
-\item \href{#method-emit}{\code{EventEmitter$emit()}}
-\item \href{#method-off}{\code{EventEmitter$off()}}
-\item \href{#method-finalize}{\code{EventEmitter$finalize()}}
-\item \href{#method-clone}{\code{EventEmitter$clone()}}
+\item \href{#method-EventEmitter-new}{\code{EventEmitter$new()}}
+\item \href{#method-EventEmitter-on}{\code{EventEmitter$on()}}
+\item \href{#method-EventEmitter-emit}{\code{EventEmitter$emit()}}
+\item \href{#method-EventEmitter-off}{\code{EventEmitter$off()}}
+\item \href{#method-EventEmitter-clone}{\code{EventEmitter$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-EventEmitter-new"></a>}}
+\if{latex}{\out{\hypertarget{method-EventEmitter-new}{}}}
 \subsection{Method \code{new()}}{
+R6Class destructor. Cleans up event handlers
+
+
 R6Class Constructor. If shiny option is used it will create ReactiveBinding
 with hack that always trigger reactive context (the same cases the
 \code{\link{component}} events - this is shiny bug)
@@ -78,8 +80,8 @@ with hack that always trigger reactive context (the same cases the
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-on"></a>}}
-\if{latex}{\out{\hypertarget{method-on}{}}}
+\if{html}{\out{<a id="method-EventEmitter-on"></a>}}
+\if{latex}{\out{\hypertarget{method-EventEmitter-on}{}}}
 \subsection{Method \code{on()}}{
 Method add new handler for given event
 
@@ -103,8 +105,8 @@ on next handler on single event, we keep it just in case it may be of use
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-emit"></a>}}
-\if{latex}{\out{\hypertarget{method-emit}{}}}
+\if{html}{\out{<a id="method-EventEmitter-emit"></a>}}
+\if{latex}{\out{\hypertarget{method-EventEmitter-emit}{}}}
 \subsection{Method \code{emit()}}{
 Method emit event add trigger all handlers added by \code{on}
 \subsection{Usage}{
@@ -122,8 +124,8 @@ Method emit event add trigger all handlers added by \code{on}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-off"></a>}}
-\if{latex}{\out{\hypertarget{method-off}{}}}
+\if{html}{\out{<a id="method-EventEmitter-off"></a>}}
+\if{latex}{\out{\hypertarget{method-EventEmitter-off}{}}}
 \subsection{Method \code{off()}}{
 Method removes single handler or all handlers and observer of no handler left
 \subsection{Usage}{
@@ -141,18 +143,8 @@ Method removes single handler or all handlers and observer of no handler left
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-finalize"></a>}}
-\if{latex}{\out{\hypertarget{method-finalize}{}}}
-\subsection{Method \code{finalize()}}{
-R6Class destructor. Cleans up event handlers
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{EventEmitter$finalize()}\if{html}{\out{</div>}}
-}
-
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-EventEmitter-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-EventEmitter-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

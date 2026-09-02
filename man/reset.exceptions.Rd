@@ -6,6 +6,9 @@
 \usage{
 reset.exceptions(session = NULL)
 }
+\arguments{
+\item{session}{- optional shiny session, if omitted the global handlers are reset}
+}
 \description{
 helper function that reset exceptions
 }

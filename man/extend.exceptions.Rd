@@ -7,6 +7,11 @@ note that if same handler function is used it will be overwritten}
 \usage{
 extend.exceptions(handler, session = NULL)
 }
+\arguments{
+\item{handler}{- named list of exception handlers}
+
+\item{session}{- optional shiny session, if omitted the global handlers are extended}
+}
 \description{
 helper function that extend existing exception handler
 note that if same handler function is used it will be overwritten

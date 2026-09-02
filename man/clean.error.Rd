@@ -6,6 +6,9 @@
 \usage{
 clean.error(cond)
 }
+\arguments{
+\item{cond}{- condition object}
+}
 \description{
 Helper function that removes battery marker from error message
 }

@@ -6,6 +6,9 @@
 \usage{
 is.silent(x)
 }
+\arguments{
+\item{x}{- condition object}
+}
 \description{
 helper function that check if error that should be ignored
 }

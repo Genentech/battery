@@ -9,7 +9,7 @@ component(
   public = NULL,
   private = NULL,
   static = NULL,
-  inherit = battery:::BaseComponent,
+  inherit = BaseComponent,
   ...
 )
 }

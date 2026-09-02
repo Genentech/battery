@@ -9,9 +9,9 @@ exceptions(handler = NULL, reset = FALSE, session = NULL)
 \arguments{
 \item{handler}{- list of handlers}
 
-\item{session}{- optional shiny session where to register the exception handler}
+\item{reset}{- indicate if old handlers should be removed}
 
-\item{rest}{- indicate if old handlers should be removed}
+\item{session}{- optional shiny session where to register the exception handler}
 }
 \description{
 function allows to add global exception handler for all battery components

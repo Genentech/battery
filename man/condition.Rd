@@ -12,6 +12,8 @@ condition(subclass, message, call = sys.call(-1), ...)
 \item{message}{- message string of a given condition}
 
 \item{call}{- for stack trace}
+
+\item{...}{- any extra attributes that should be added to the condition}
 }
 \description{
 Helper condition object

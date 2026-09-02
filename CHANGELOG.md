@@ -6,6 +6,16 @@
   expression finished without an error (it fixes ever growing indentation in the logs)
 * fix example application that passed removed `error` argument to the root component
 * fix mocks that failed on expressions with an empty argument (e.g. `m[1, ]`)
+* fix `observeWrapper` that referred to an undefined `observer` when `once` was used
+  without `exitHandler`
+* drop undeclared `stringr` dependency, `battery::error` uses base R to read the
+  bubble counter
+* declare `utils::modifyList` and `uuid::UUIDgenerate` imports
+* use `is.name()` instead of comparing `class()` to a string in the mocks
+* correct the license declaration to `MIT + file LICENSE`, the full license text moved
+  to `COPYING` (which is shipped with the package) because R requires `LICENSE` to
+  hold only the year and the copyright holder
+* document all arguments so `R CMD check` passes without warnings and notes
 
 ## 0.6.0
 ### Features

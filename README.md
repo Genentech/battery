@@ -4,7 +4,7 @@
 
 [![test](https://github.com/Genentech/battery/actions/workflows/test.yaml/badge.svg)](https://github.com/Genentech/battery/actions/workflows/test.yaml)
 [![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
-[![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/LICENSE)
+[![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/COPYING)
 
 </div>
 
@@ -79,4 +79,4 @@ You can also read tutorial about the framework features at DEV.to:<br/>
 
 ## License
 Copyright (c) 2019-2021 Genentech, Inc.<br/>
-Released under MIT license
+Released under the MIT License. See [COPYING](https://github.com/Genentech/battery/blob/master/COPYING) for the full text.
