@@ -12,6 +12,14 @@ that need to have lots of different parts.
 
 ## Installation
 
+From R:
+
+```R
+devtools::install_github("Genentech/battery")
+```
+
+From source:
+
 ```sh
 git clone https://github.com/Genentech/battery.git
 R CMD INSTALL battery
@@ -24,7 +32,7 @@ Button <- battery::component(
   classname = "Button",
   label = NULL,
   constructor = function(label = NULL) {
-    self$label = label
+    self$label <- label
   },
   render = function() {
     shiny::tags$button(self$label)
