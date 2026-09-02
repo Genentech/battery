@@ -161,6 +161,16 @@ EventEmitter <- R6::R6Class(
           })
         }
       }
+    },
+    ## -------------------------------------------------------------------------
+    #' @description
+    #' R6Class destructor. Cleans up event handlers
+    ## -------------------------------------------------------------------------
+    finalize = function() {
+      private$.spy("finalize")
+      lapply(names(private$handlers), function(event) {
+        private$unbind(event)
+      })
     }
   ),
   public = list(
@@ -273,16 +283,6 @@ EventEmitter <- R6::R6Class(
           }
         }
       }
-    },
-    ## -------------------------------------------------------------------------
-    #' @description
-    #' R6Class destructor. Cleans up event handlers
-    ## -------------------------------------------------------------------------
-    finalize = function() {
-      private$.spy("finalize")
-      lapply(names(private$handlers), function(event) {
-        private$unbind(event)
-      })
     }
   )
 )

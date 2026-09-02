@@ -130,6 +130,14 @@ BaseComponent <- R6::R6Class(
     ## -------------------------------------------------------------------------
     .is.ns = function(expr) {
       length(expr) == 2 && class(expr[[1]]) == 'call' && deparse(expr[[1]]) == 'self$on'
+    },
+    ## ---------------------------------------------------------------
+    #' @description
+    #' R6Class method that will be called when object is destroyed
+    #' it just calls \code{destroy}
+    ## ---------------------------------------------------------------
+    finalize = function() {
+      self$destroy()
     }
   ),
   ## -----------------------------------------------------------------
@@ -888,14 +896,6 @@ BaseComponent <- R6::R6Class(
       if (!is.null(self$parent)) {
         self$parent$removeChild(name = self$name, self)
       }
-    },
-    ## ---------------------------------------------------------------
-    #' @description
-    #' R6Class method that will be called when object is destroyed
-    #' it just calls \code{destroy}
-    ## ---------------------------------------------------------------
-    finalize = function() {
-      self$destroy()
     },
     ## ---------------------------------------------------------------
     #' @description
