@@ -102,19 +102,22 @@ App <- battery::component(
 
 server <- function(input, output, session) {
 
-  ## Root component that don't have parent need to be called with input output and session.
-  root <- App$new(
-    session = session,
+  ## error handlers are registered with battery::exceptions, using the session
+  ## so each user of the application gets its own handler
+  battery::exceptions(list(
     error = function(cond, details) {
       message(cond$message)
       if (details$type == "method") {
-        message(paste("  thrown from", details$name, "in", details$id))
+        message(paste("  thrown from", details$origin))
       }
       return(FALSE)
     }
-  )
+  ), reset = TRUE, session = session)
+
+  ## Root component that don't have parent need to be called with session.
+  root <- App$new(session = session)
   root$logger(c('info'), function(data) {
-    #print(data$message)
+    print(data$message)
   })
 
   output$app <- renderUI({
