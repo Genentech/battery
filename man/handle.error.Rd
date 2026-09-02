@@ -4,7 +4,14 @@
 \alias{handle.error}
 \title{global handler for errors that print exception if user didn't process it}
 \usage{
-handle.error(error, finally = NULL, meta = NULL, session = NULL)
+handle.error(error, meta = NULL, session = NULL)
+}
+\arguments{
+\item{error}{- error structure created by \code{create.error}}
+
+\item{meta}{- context of the error (origin, type, ...)}
+
+\item{session}{- optional shiny session used to find the exception handlers}
 }
 \description{
 global handler for errors that print exception if user didn't process it

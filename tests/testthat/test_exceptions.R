@@ -458,4 +458,70 @@ test_it('should trigger handler only once', {
   expect_equal(test, c("before", "HELLO", "after"))
 })
 
+test_it('should report error when no error handler is registered', {
+  msgs <- testthat::capture_messages({
+    battery::withExceptions({
+      stop("BATTERY UNHANDLED")
+    }, meta = list(origin = "A1::constructor"))
+  })
+
+  expect_true(any(grepl("BATTERY UNHANDLED", msgs)))
+  expect_true(any(grepl("A1::constructor", msgs)))
+})
+
+test_it('should not report error when handler processed it', {
+  data <- NULL
+  battery::exceptions(list(
+    error = function(cond) {
+      data <<- cond$message
+      return(FALSE)
+    }
+  ))
+
+  msgs <- testthat::capture_messages({
+    battery::withExceptions({
+      stop("BATTERY HANDLED")
+    }, meta = list(origin = "A1::constructor"))
+  })
+
+  expect_equal(data, "BATTERY HANDLED")
+  expect_equal(msgs, character(0))
+})
+
+test_it('should report error thrown in component constructor', {
+  session <- battery::Session$new()
+  A <- battery::component(
+    classname = "A",
+    public = list(
+      constructor = function() {
+        undefined.function.call()
+      }
+    )
+  )
+
+  msgs <- testthat::capture_messages({
+    A$new(session = session)
+  })
+
+  expect_true(any(grepl("A1::constructor", msgs)))
+})
+
+test_it('should report unused argument passed to component constructor', {
+  session <- battery::Session$new()
+  A <- battery::component(
+    classname = "A",
+    public = list(
+      constructor = function() {
+        invisible(NULL)
+      }
+    )
+  )
+
+  msgs <- testthat::capture_messages({
+    A$new(session = session, unknown.argument = TRUE)
+  })
+
+  expect_true(any(grepl("A1::constructor", msgs)))
+})
+
 battery::clearMocks()

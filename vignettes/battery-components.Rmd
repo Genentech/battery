@@ -536,6 +536,21 @@ After adding this handle in shiny server function. You can use `battery::signal`
 the handler. Additional if error happen, in any of the battery component functions, error
 handler will be invoked with the exception.
 
+Note that the `error` handler is the only place where you decide what happens with the
+error. If you don't register the `error` handler, battery prints the message together
+with the `origin` from the meta object, so errors thrown inside constructors, methods
+and event handlers are never lost:
+
+```
+thrown in App1::constructor
+could not find function "undefined.function.call"
+```
+
+This is important because battery catches every error to keep the rest of the application
+running. Without the `error` handler a component that fails in its constructor simply
+stops in the middle, e.g. the `renderUI` after the failing line is never registered and
+its `uiOutput` stays empty.
+
 Also, if you call `battery::signal` anywhere in the components. Example:
 
 ```R
@@ -582,3 +597,17 @@ Battery wrap all methods, handler (using `$on(` method) and constructor with cal
 `battery::withExceptions` and each have its own meta object passed to error and signals.
 
 All will have `origin` and `type` that you can check.
+
+`battery::withExceptions` also accepts a `finally` function. It is invoked exactly once,
+when the expression is done, no matter if it finished normally, raised an error or
+signalled an exception. Note that signal handlers are calling handlers, so the expression
+is resumed after the signal is handled and `finally` is not invoked at that point:
+
+```R
+battery::withExceptions({
+  battery::signal('log', 'Some message')
+  ## execution continues here, finally was not called yet
+}, finally = function() {
+  ## invoked once, here
+}, session = session)
+```

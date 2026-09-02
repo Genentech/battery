@@ -18,32 +18,63 @@ exceptions <- function(handler = NULL, reset = FALSE, session = NULL) {
 }
 
 #' global handler for errors that print exception if user didn't process it
-handle.error <- function(error, finally = NULL, meta = NULL, session = NULL) {
-  ret <- handle.exceptions(error, finally = finally, meta = meta, session = session)
+#' @param error - error structure created by \code{create.error}
+#' @param meta - context of the error (origin, type, ...)
+#' @param session - optional shiny session used to find the exception handlers
+handle.error <- function(error, meta = NULL, session = NULL) {
+  ## we need to know if the user registered an error handler before we invoke it,
+  ## the return value is not enough - a handler that returns NULL (e.g. one that
+  ## ends with a call to message) is still a handler that processed the error
+  handled <- !is.null(error$class) &&
+    is.function(resolve.exceptions(session)[["error"]])
+  ret <- handle.exceptions(error, meta = meta, session = session)
   if (identical(ret, battery::end())) {
-    if (!is.null(meta)) {
-      message("thrown in ", meta$origin)
-    }
+    report.error(error, meta)
     battery::error(error$message)
+  } else if (!handled) {
+    ## nothing processed the error, report it so it's not silently discarded
+    report.error(error, meta)
+    message(error$message)
+  }
+}
+
+#' helper function that print the context in which the error was thrown
+#' @param error - error structure created by \code{create.error}
+#' @param meta - context of the error (origin, type, ...)
+report.error <- function(error, meta = NULL) {
+  if (!is.null(meta) && !is.null(meta$origin)) {
+    message("thrown in ", meta$origin)
+  }
+}
+
+#' helper function that return exception handlers that apply to given session
+#'
+#' handlers registered for the session take precedence, if the session has no
+#' handlers it falls back to the global ones
+#'
+#' @param session - optional shiny session
+resolve.exceptions <- function(session = NULL) {
+  if (is.null(session)) {
+    global$exceptions$global
+  } else {
+    session.exceptions <- global$exceptions$sessions[[ session$token ]]
+    if (is.null(session.exceptions)) {
+      ## fallback if no session exceptions
+      global$exceptions$global
+    } else {
+      session.exceptions
+    }
   }
 }
 
 #' function that invoke global exception handler based on cond data
 #' @param cond - structure with classes that indicate exception
-handle.exceptions <- function(cond, finally = NULL, meta = NULL, session = NULL) {
+#' @param meta - context of the exception (origin, type, ...)
+#' @param session - optional shiny session used to find the exception handlers
+handle.exceptions <- function(cond, meta = NULL, session = NULL) {
   result <- NULL
   if (!is.null(cond$class) && !is.battery.error(cond)) {
-    exceptions <- if (is.null(session)) {
-      global$exceptions$global
-    } else {
-      session.exceptions <- global$exceptions$sessions[[ session$token ]]
-      if (is.null(session.exceptions)) {
-        ## fallback if no session exceptions
-        global$exceptions$global
-      } else {
-        session.exceptions
-      }
-    }
+    exceptions <- resolve.exceptions(session)
     for (cls in cond$class) {
       if (is.function(exceptions[[ cls ]])) {
         battery::withExceptions({
@@ -65,14 +96,11 @@ handle.exceptions <- function(cond, finally = NULL, meta = NULL, session = NULL)
               type = "exception",
               name = cls
             ), meta))
-            handle.error(err, finally, meta = meta, session = session)
+            handle.error(err, meta = meta, session = session)
           }
         }, session = session)
       }
     }
-  }
-  if (is.function(finally)) {
-    finally()
   }
   result
 }
@@ -82,10 +110,18 @@ handle.exceptions <- function(cond, finally = NULL, meta = NULL, session = NULL)
 #' @param error - function that will be triggered on error default NULL
 #'                if added it should return add add meta data create.error(cond, list(...))
 #'                it is used internally by battery, it can safely ignored.
-#' @param finally - function that is always executed after exception is handled
+#' @param finally - function that is always executed when the expression is done,
+#'                  no matter if it raised an error, signalled an exception or
+#'                  finished normally (it is always invoked exactly once)
+#' @param meta - context of the expression (origin, type, ...) passed to the handlers
 #' @param session - optional shiny session to create exception handler only for given session
 #' @export
 withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, session = NULL) {
+  ## finally needs to run on every exit path, signal handlers are calling
+  ## handlers so they resume the expression and must not trigger it early
+  if (is.function(finally)) {
+    on.exit(finally(), add = TRUE)
+  }
   invisible(withCallingHandlers({
     withRestarts(
       expr = expr,
@@ -105,13 +141,13 @@ withExceptions <- function(expr, error = NULL, finally = NULL, meta = NULL, sess
           type = "exception",
           name = c
         ), meta))
-        handle.error(err, finally, meta = meta, session = session)
+        handle.error(err, meta = meta, session = session)
       }
       invokeRestart("battery__ignore")
     }
   },
   battery__exception = function(cond) {
-    ret <- handle.exceptions(cond, finally, meta = meta, session = session)
+    ret <- handle.exceptions(cond, meta = meta, session = session)
     if (identical(ret, battery::pause())) {
       invokeRestart("battery__ignore")
     } else if (identical(ret, battery::end())) {

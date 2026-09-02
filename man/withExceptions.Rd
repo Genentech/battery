@@ -13,7 +13,11 @@ withExceptions(expr, error = NULL, finally = NULL, meta = NULL, session = NULL)
 if added it should return add add meta data create.error(cond, list(...))
 it is used internally by battery, it can safely ignored.}
 
-\item{finally}{- function that is always executed after exception is handled}
+\item{finally}{- function that is always executed when the expression is done,
+no matter if it raised an error, signalled an exception or
+finished normally (it is always invoked exactly once)}
+
+\item{meta}{- context of the expression (origin, type, ...) passed to the handlers}
 
 \item{session}{- optional shiny session to create exception handler only for given session}
 }

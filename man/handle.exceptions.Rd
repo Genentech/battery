@@ -4,10 +4,14 @@
 \alias{handle.exceptions}
 \title{function that invoke global exception handler based on cond data}
 \usage{
-handle.exceptions(cond, finally = NULL, meta = NULL, session = NULL)
+handle.exceptions(cond, meta = NULL, session = NULL)
 }
 \arguments{
 \item{cond}{- structure with classes that indicate exception}
+
+\item{meta}{- context of the exception (origin, type, ...)}
+
+\item{session}{- optional shiny session used to find the exception handlers}
 }
 \description{
 function that invoke global exception handler based on cond data

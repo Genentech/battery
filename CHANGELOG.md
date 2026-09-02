@@ -1,3 +1,11 @@
+## 0.6.1
+### Bugfix
+* fix warnings about public destructor
+* report errors that no exception handler processed, before they were silently discarded
+* always invoke `finally` in `battery::withExceptions` exactly once, also when the
+  expression finished without an error (it fixes ever growing indentation in the logs)
+* fix example application that passed removed `error` argument to the root component
+
 ## 0.6.0
 ### Features
 * add second argument (event name) to event emitter handler
