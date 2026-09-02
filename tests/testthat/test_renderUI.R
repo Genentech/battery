@@ -367,4 +367,50 @@ test_that('it should render output with active input in method', {
   )
 })
 
+## --------------------------------------------------------------------------------------
+## expressions like `m[1, ]` or `m[, 1]` have an empty argument, R returns the empty
+## symbol for it and reading it raises `argument "item" is missing, with no default`.
+## the walker also descends into bodies of the functions that are called, so an empty
+## argument can come from any package the tested code happens to use
+## --------------------------------------------------------------------------------------
+test_that('it should walk expression with empty argument', {
+  result <- battery:::extractActiveNames(list(
+    expr = quote(m[1, ]),
+    env = environment()
+  ))
+
+  expect_equal(length(result$input), 0)
+  expect_equal(length(result$output), 0)
+})
+
+test_that('it should walk function with empty argument in the body', {
+  empty.argument <- function() {
+    m <- matrix(1:4, nrow = 2)
+    m[1, ]
+  }
+
+  result <- battery:::extractActiveNames(list(
+    expr = quote({ empty.argument() }),
+    env = environment()
+  ))
+
+  expect_equal(length(result$input), 0)
+  expect_equal(length(result$output), 0)
+})
+
+test_that('it should find active input next to empty argument', {
+  input <- battery::activeInput(foo = NULL)
+
+  result <- battery:::extractActiveNames(list(
+    expr = quote({
+      m <- matrix(1:4, nrow = 2)
+      list(m[1, ], input$foo)
+    }),
+    env = environment()
+  ))
+
+  expect_equal(length(result$input), 1)
+  expect_equal(result$input[[1]]$prop, 'foo')
+})
+
 battery::clearMocks()

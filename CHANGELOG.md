@@ -5,6 +5,7 @@
 * always invoke `finally` in `battery::withExceptions` exactly once, also when the
   expression finished without an error (it fixes ever growing indentation in the logs)
 * fix example application that passed removed `error` argument to the root component
+* fix mocks that failed on expressions with an empty argument (e.g. `m[1, ]`)
 
 ## 0.6.0
 ### Features

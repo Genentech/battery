@@ -679,6 +679,14 @@ extractActiveNames <- function(arg) {
   isolate <- FALSE
 
   for (i in seq_along(s)) {
+    ## expressions like `m[1, ]` or `m[, 1]` have an empty argument for which R returns
+    ## the empty symbol. It needs to be skipped before it is assigned, because reading
+    ## a variable that holds the empty symbol raises "argument is missing, with no
+    ## default". We walk the bodies of called functions, so the empty argument can come
+    ## from any package the tested code uses, not only from the tested expression.
+    if (identical(s[[i]], quote(expr = ))) {
+      next
+    }
     item <- s[[i]]
     ## detect isolate() or self$isolate used in components active values should be ignored
     if ((is.symbol(item) && item == 'isolate') ||
