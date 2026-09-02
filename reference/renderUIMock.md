@@ -1,0 +1,21 @@
+# RenderUI just send exression to output active prop, the prop need to be added first if renderUI is called in constructor and it use self\$ns() you can pass component.id to constructor so instance will have same id and you can generate the name before constructor is called - using: output\$new(name) the output will parse the expression and bind input and output note: input can have different name for instance events in components
+
+RenderUI just send exression to output active prop, the prop need to be
+added first if renderUI is called in constructor and it use self\$ns()
+you can pass component.id to constructor so instance will have same id
+and you can generate the name before constructor is called - using:
+output\$new(name) the output will parse the expression and bind input
+and output note: input can have different name for instance events in
+components
+
+## Usage
+
+``` r
+renderUIMock(expr)
+```
+
+## Arguments
+
+- expr:
+
+  \- any expression
