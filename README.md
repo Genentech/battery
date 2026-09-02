@@ -9,7 +9,7 @@
 [![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
 [![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/LICENSE)
 
-</center>
+</div>
 
 ## R6Class based component architecture framework for Shiny apps
 
