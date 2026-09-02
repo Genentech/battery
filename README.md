@@ -1,9 +1,6 @@
-<h1 align="center">
-  <img src="https://github.com/Genentech/battery/blob/master/inst/extra/battery-logo.svg?raw=true"
-       alt="Battery R package Logo" />
-</h1>
-
 <div align="center">
+
+# ![Battery R package Logo](https://github.com/Genentech/battery/blob/master/inst/extra/battery-logo.svg?raw=true)
 
 [![test](https://github.com/Genentech/battery/actions/workflows/test.yaml/badge.svg)](https://github.com/Genentech/battery/actions/workflows/test.yaml)
 [![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
@@ -11,7 +8,7 @@
 
 </div>
 
-## R6Class based component architecture framework for Shiny apps
+## R6Class-based component architecture framework for Shiny apps
 
 The component's design is based on AngularJS, which can emit events from the root to its children
 and broadcast events from children to parents. It gives better structure to non-trivial Shiny apps
