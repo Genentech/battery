@@ -75,7 +75,7 @@ You can also read tutorial about the framework features at DEV.to:<br/>
 
 
 ## Contributors
-* [Jakub T. Jankiewicz](https://github.com/jcubic) - main author
+* [Jakub T. Jankiewicz](https://jakub.jankiewicz.org/) - main author
 * Michał Jakubczak
 
 ## License
