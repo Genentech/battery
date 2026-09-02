@@ -3,12 +3,19 @@
        alt="Battery R package Logo" />
 </h1>
 
-[R6Class based component architecture framework for Shiny apps](https://github.com/Genentech/battery)
+<div align="center">
 
+[![test](https://github.com/Genentech/battery/actions/workflows/test.yaml/badge.svg)](https://github.com/Genentech/battery/actions/workflows/test.yaml)
+[![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
+[![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/LICENSE)
 
-The components design is based on AngularJS that can emit event from root it it's children
-and broadcast events from child to parents. It give better structure of non trivial shiny apps,
-that need to have lots of different parts.
+</center>
+
+## R6Class based component architecture framework for Shiny apps
+
+The component's design is based on AngularJS, which can emit events from the root to its children
+and broadcast events from children to parents. It gives better structure to non-trivial Shiny apps
+that need to have many different parts.
 
 ## Installation
 
@@ -18,7 +25,7 @@ From R:
 devtools::install_github("Genentech/battery")
 ```
 
-From source:
+From the source:
 
 ```sh
 git clone https://github.com/Genentech/battery.git
