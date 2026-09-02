@@ -80,7 +80,7 @@ Applications](https://dev.to/jcubic/architecture-for-non-trivial-r-shiny-applica
 
 ## Contributors
 
-- [Jakub T. Jankiewicz](https://github.com/jcubic) - main author
+- [Jakub T. Jankiewicz](https://jakub.jankiewicz.org/) - main author
 - Michał Jakubczak
 
 ## License

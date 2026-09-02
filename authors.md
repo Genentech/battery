@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/Genentech/battery/blob/0.6.1/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/Genentech/battery/blob/master/DESCRIPTION)
 
 Jankiewicz JT (2026). *battery: Battery R6Class Components*. R package
 version 0.6.1, <https://genentech.github.io/battery/>.
