@@ -1,10 +1,39 @@
 name: pkgdown
 
+# the site is built from the man pages, the vignettes and the markdown files,
+# so R/ counts as a documentation source too (roxygen comments live there)
 on:
   push:
     branches: [master]
+    paths:
+      - 'R/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - 'pkgdown/**'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'LICENSE'
+      - 'LICENSE.md'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '_pkgdown.yml'
+      - '.github/workflows/pkgdown.yaml'
   pull_request:
     branches: [master]
+    paths:
+      - 'R/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - 'pkgdown/**'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'LICENSE'
+      - 'LICENSE.md'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '_pkgdown.yml'
+      - '.github/workflows/pkgdown.yaml'
+  # a release always rebuilds the site, paths filters do not apply here
   release:
     types: [published]
   workflow_dispatch:

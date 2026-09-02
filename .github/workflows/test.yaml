@@ -1,10 +1,38 @@
 name: test
 
+# the check job runs R CMD check --as-cran, so this needs to cover everything
+# that ends up in the tarball, not only the code
 on:
   push:
     branches: [master]
+    paths:
+      - 'R/**'
+      - 'tests/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - 'inst/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - 'NEWS.md'
+      - 'LICENSE'
+      - 'LICENSE.md'
+      - '.Rbuildignore'
+      - '.github/workflows/test.yaml'
   pull_request:
     branches: [master]
+    paths:
+      - 'R/**'
+      - 'tests/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - 'inst/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - 'NEWS.md'
+      - 'LICENSE'
+      - 'LICENSE.md'
+      - '.Rbuildignore'
+      - '.github/workflows/test.yaml'
   workflow_dispatch:
 
 permissions:
