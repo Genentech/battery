@@ -24,10 +24,10 @@ component(
 
 \item{inherit}{- base class - if not specifed it will inherit from Base class \code{\link{BaseComponent}}}
 
-\item{...}{- reset option passed to \code{\link{R6Class}} constructor}
+\item{...}{- reset option passed to \code{\link[R6]{R6Class}} constructor}
 }
 \value{
-\code{\link{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
+\code{\link[R6]{R6Class}}, with battery specific methods (see \code{\link{BaseComponent}}).
 }
 \description{
 Use this function to create new battery class object.
