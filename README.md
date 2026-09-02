@@ -3,6 +3,7 @@
 # ![Battery R package Logo](https://github.com/Genentech/battery/blob/master/inst/extra/battery-logo.svg?raw=true)
 
 [![test](https://github.com/Genentech/battery/actions/workflows/test.yaml/badge.svg)](https://github.com/Genentech/battery/actions/workflows/test.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/Genentech/battery/badge.svg?branch=master)](https://coveralls.io/github/Genentech/battery?branch=master)
 [![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
 [![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/COPYING)
 

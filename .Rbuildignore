@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^cobertura\.xml$
 CHANGELOG.md
 ^doc$
 ^Meta$
