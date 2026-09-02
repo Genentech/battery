@@ -13,7 +13,7 @@
 * declare `utils::modifyList` and `uuid::UUIDgenerate` imports
 * use `is.name()` instead of comparing `class()` to a string in the mocks
 * correct the license declaration to `MIT + file LICENSE`, the full license text moved
-  to `COPYING` (which is shipped with the package) because R requires `LICENSE` to
+  to `LICENSE.md` (which is shipped with the package) because R requires `LICENSE` to
   hold only the year and the copyright holder
 * document all arguments so `R CMD check` passes without warnings and notes
 

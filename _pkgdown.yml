@@ -1,0 +1,107 @@
+url: https://genentech.github.io/battery/
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Components
+  desc: >
+    Building the tree of components. Every component is created with
+    `component()` and inherits the methods documented in `BaseComponent`.
+  contents:
+  - component
+  - BaseComponent
+
+- title: Events
+  desc: Event emitters that can be used as services shared by the whole tree.
+  contents:
+  - EventEmitter
+
+- title: Exceptions
+  desc: >
+    Signals and errors raised anywhere in the component tree are handled in
+    one place, see the `vignette("battery-components")` for the whole picture.
+  contents:
+  - exceptions
+  - withExceptions
+  - signal
+  - error
+  - create.error
+  - pause
+  - end
+  - capture_signal_messages
+
+- title: Testing
+  desc: >
+    Mocks that replace the shiny reactive machinery so components can be
+    tested without a running shiny session.
+  contents:
+  - Session
+  - useMocks
+  - clearMocks
+  - activeInput
+  - activeOutput
+  - renderUIMock
+  - makeReactiveBinding
+  - isolate
+  - is.active.binding
+  - is.active.input
+  - is.active.output
+
+- title: Utilities
+  contents:
+  - load
+  - "%>%"
+  - is
+
+# not shown in the index, pkgdown special-cases the "internal" title,
+# but every topic must be listed somewhere or the build fails
+- title: internal
+  contents:
+  - battery-imports
+  - clean
+  - clean.error
+  - clearMock
+  - condition
+  - continue
+  - debug
+  - escapeRegex
+  - extend.exceptions
+  - extractActiveNames
+  - force
+  - get.exceptions
+  - get.object
+  - global
+  - handle.error
+  - handle.exceptions
+  - indent
+  - invoke
+  - is.battery.error
+  - is.dbbracket.variable
+  - is.dolar.variable
+  - is.function.call
+  - is.inline.fucntion
+  - is.internal.function
+  - is.silent
+  - is.variable
+  - isNullEvent
+  - make.extend
+  - make.uiOutput
+  - merge.env
+  - merge.props
+  - mock
+  - new.global.env
+  - new.static.env
+  - now
+  - observeWrapper
+  - observeWrapperMock
+  - parse.function
+  - r6.class.add
+  - recur.list
+  - report.error
+  - reset.exceptions
+  - resolve.exceptions
+  - safe.get
+  - set.exceptions
+  - set.frame
+

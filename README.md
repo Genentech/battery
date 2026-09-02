@@ -5,11 +5,11 @@
 [![test](https://github.com/Genentech/battery/actions/workflows/test.yaml/badge.svg)](https://github.com/Genentech/battery/actions/workflows/test.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/Genentech/battery/badge.svg?branch=master)](https://coveralls.io/github/Genentech/battery?branch=master)
 [![battery GitHub repo](https://img.shields.io/badge/github-batery-orange?logo=github)](https://github.com/Genentech/battery)
-[![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/COPYING)
+[![LICENSE MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Genentech/battery/blob/master/LICENSE.md)
 
 </div>
 
-## R6Class-based component architecture framework for Shiny apps
+## [R6Class-based component architecture framework for Shiny apps](https://genentech.github.io/battery/)
 
 The component's design is based on AngularJS, which can emit events from the root to its children
 and broadcast events from children to parents. It gives better structure to non-trivial Shiny apps
@@ -80,4 +80,4 @@ You can also read tutorial about the framework features at DEV.to:<br/>
 
 ## License
 Copyright (c) 2019-2021 Genentech, Inc.<br/>
-Released under the MIT License. See [COPYING](https://github.com/Genentech/battery/blob/master/COPYING) for the full text.
+Released under the MIT License. See [LICENSE.md](https://github.com/Genentech/battery/blob/master/LICENSE.md) for the full text.
